@@ -1,0 +1,71 @@
+
+' ---------------------------------------------------------------------
+' 5. DIAGRAMME DE PACKAGES  (organisation modulaire, ENF15)
+' ---------------------------------------------------------------------
+@startuml fig-packages
+skinparam shadowing false
+skinparam defaultFontName Liberation Serif
+skinparam defaultFontSize 12
+skinparam linetype ortho
+
+left to right direction
+
+title Diagramme de packages — Organisation modulaire de l'application
+
+package "app" {
+
+  package "Administration" as SOCLE {
+    [Authentification]
+    [Habilitations]
+    [Journalisation]
+    [Référentiels]
+  }
+
+  package "Demandes" as MDEM {
+    [Dépôt]
+    [Pièces justificatives]
+    [Suivi]
+  }
+
+  package "Commission" as MCOM {
+    [Sessions]
+    [Attributions]
+    [Prestations]
+  }
+
+  package "Stocks" as MSTK {
+    [Approvisionnements]
+    [Enlèvements]
+    [États de stock]
+  }
+
+  package "Suivi post-attribution" as MSPA {
+    [Bons d'attribution]
+    [Échéances de crédit]
+    [Locations]
+  }
+
+  package "Restitution" as MRES {
+    [Synthèses]
+    [Exports tableur]
+    [Éditions PDF]
+  }
+}
+
+MDEM ..> SOCLE : <<use>>
+MCOM ..> SOCLE : <<use>>
+MSTK ..> SOCLE : <<use>>
+MSPA ..> SOCLE : <<use>>
+MRES ..> SOCLE : <<use>>
+
+MCOM ..> MSTK : <<use>>
+MSPA ..> MCOM : <<use>>
+MRES ..> MCOM : <<use>>
+MRES ..> MSTK : <<use>>
+
+note bottom
+  Les dépendances sont orientées vers le socle et jamais
+  en sens inverse : un module peut être ajouté sans
+  modification des modules existants (exigence ENF15).
+end note
+@enduml

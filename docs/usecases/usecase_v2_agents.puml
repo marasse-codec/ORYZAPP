@@ -1,0 +1,116 @@
+@startuml
+title Diagramme de cas d'utilisation — Espace Agent ADERIZ
+
+left to right direction
+
+skinparam packageStyle rectangle
+skinparam shadowing false
+skinparam linetype ortho
+skinparam usecase {
+    BackgroundColor #F9F9F9
+    BorderColor #333333
+    ArrowColor #555555
+}
+
+' ============================================================
+' ACTEURS
+' ============================================================
+
+actor "Directeur" as Directeur
+actor "Agent de service" as AgentService
+actor "Agent de commission" as AgentCommission
+actor "Responsable de commission" as ResponsableCommission
+actor "Gestionnaire de stock" as GestionnaireStock
+actor "Administrateur" as Administrateur
+
+' ============================================================
+' GÉNÉRALISATION DES ACTEURS DE LA FILIÈRE
+' ============================================================
+
+Directeur --|> AgentService
+
+' ============================================================
+' SYSTÈME
+' ============================================================
+
+rectangle "Plateforme de gestion des appuis — Espace Agent ADERIZ" {
+
+    ' ========================================================
+    ' GESTION DES DEMANDES
+    ' ========================================================
+
+    usecase "Réceptionner les\ndemandes de sa direction" as UC_Receptionner
+
+    usecase "Observer une\ndemande" as UC_Observer
+
+
+    ' ========================================================
+    ' COMMISSIONS
+    ' ========================================================
+
+    usecase "Gérer la création\net la clôture\nd'une commission" as UC_Commission
+
+    usecase "Instruire les\ndemandes en commission" as UC_Instruire
+
+
+    ' ========================================================
+    ' ADMINISTRATION
+    ' ========================================================
+
+    usecase "Gérer le système" as UC_Systeme
+
+
+    ' ========================================================
+    ' GESTION DES STOCKS
+    ' ========================================================
+
+    usecase "Servir les\nattributions d'appuis" as UC_Servir
+
+    usecase "Renseigner les\napprovisionnements\nd'appuis" as UC_Entree
+
+}
+
+
+' ============================================================
+' ASSOCIATIONS — DIRECTEUR
+' ============================================================
+
+Directeur --> UC_Receptionner
+
+
+' ============================================================
+' ASSOCIATIONS — AGENT DE SERVICE
+' ============================================================
+
+AgentService --> UC_Observer
+
+
+' ============================================================
+' ASSOCIATIONS — RESPONSABLE DE COMMISSION
+' ============================================================
+
+ResponsableCommission --> UC_Commission
+
+
+' ============================================================
+' ASSOCIATIONS — AGENT DE COMMISSION
+' ============================================================
+
+AgentCommission --> UC_Instruire
+
+
+' ============================================================
+' ASSOCIATIONS — GESTIONNAIRE DE STOCK
+' ============================================================
+
+GestionnaireStock --> UC_Servir
+GestionnaireStock --> UC_Entree
+
+
+' ============================================================
+' ASSOCIATIONS — ADMINISTRATEUR
+' ============================================================
+
+Administrateur --> UC_Systeme
+
+@enduml

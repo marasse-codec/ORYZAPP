@@ -1,0 +1,259 @@
+@startuml mlides_aderiz
+skinparam Linetype ortho
+skinparam nodesep 50
+skinparam ranksep 50
+
+entity "roles" as roles {
+  * id_role : PK
+  --
+  lib_role
+}
+
+entity "users" as users {
+  * id_user : PK
+  --
+  login
+  password
+  # id_role : FK
+}
+
+entity "directions" as dirs {
+  * id_direction : PK
+  --
+  lib_direction
+}
+
+entity "services" as servs {
+  * id_service : PK
+  --
+  lib_service
+  # id_direction : FK
+}
+
+entity "types_agents" as tyag {
+  * id_type_agent : PK
+  --
+  lib_type_agent
+}
+
+entity "agents" as agents {
+  * id_agent : PK
+  --
+  nom
+  prenoms
+  # id_user : FK
+  # id_type_agent : FK
+}
+
+entity "types_acteurs" as tyacs {
+  * id_type_acteur : PK
+  --
+  lib_type_acteur
+}
+
+entity "acteurs" as actes {
+  * id_acteur : PK
+  --
+  nom
+  numero
+  email
+  mdp
+  # id_user : FK
+}
+
+entity "types_cultures" as tycus {
+  *idtypcul : PK
+  --
+  libtypcul
+  '(irriguée, bas-fond, plateau)
+}
+
+entity "types_pieces" as typieco {
+  * id_type_piece : PK
+  --
+  lib_type_piece
+}
+
+entity "pieces_justificatives" as pieco {
+  * id_piece : PK
+  --
+  chemin_fichier
+  # id_type_piece : FK
+  # id_demande : FK
+}
+
+entity "unites_appuis" as unaps {
+  * id_unite_appui : PK
+  --
+  lib_unite_appui
+}
+
+entity "types_appuis" as tyaps {
+  * id_type_appui : PK
+  --
+  lib_type_appui
+  # id_service : FK
+}
+
+entity "appuis" as apps {
+  * id_appui : PK
+  --
+  lib_appui
+  dose_predefini_ha : decimal(10,2)
+  quantite_stock : decimal(10,2)
+  cout_unitaire : decimal(10,2)
+  est_louable : boolean
+  # id_type_appui : FK
+  # id_unite_appui : FK
+}
+
+entity "prestataires" as prest {
+  * id_prestataire : PK
+  --
+  nom
+  contact
+  specialite
+}
+
+entity "demandes" as demas {
+  * id_demande : PK
+  --
+  damienplap : date
+  'Date de mise en place des appuis
+  created_at : date
+  # id_acteur : FK
+}
+
+entity "lignes_demandes" as lides {
+    *idligdeman : PK
+    --
+    detaideman : text
+}
+
+
+entity "beneficiaires" as benes {
+  #idbenef : PK/FK
+  #iddeman : PK/FK
+  --
+}
+
+benes }o--|| demas : "lister"
+actes |o--o{ benes : "être"
+
+entity "cultures" as cults {
+  #idbenes : PK/FK
+  #idtypcul : PK/FK
+  --
+  superficie
+}
+
+entity "localites" as locas {
+  *id_localite : PK
+  --
+  lib_localite
+}
+  
+entity "departements" as depas {
+  *id_departement : PK
+  --
+  lib_departement
+}
+
+locas }o--o| depas
+cults }o--o| locas
+
+
+entity "demandes_services" as deses {
+  * idcopdeman : PK
+  --
+  statut
+  motif_rejet
+  date_derniere_maj
+  # id_demande : FK
+  # id_service : FK
+}
+
+entity "types_rapports" as tyras {
+  * id_type_rapport : PK
+  --
+  lib_type_rapport
+} 
+
+entity "rapports" as rapps {
+  * idprco : PK
+  --
+  commentaire
+  date_action
+  # idcopdeman : FK
+  # id_agent : FK
+  # id_type_rapport : FK
+}
+
+entity "delegations_service" as deleg {
+  * id_delegation : PK
+  --
+  date_delegation
+  commentaire
+  # idcopdeman : FK
+  # id_agent : FK
+  # id_prestataire : FK
+}
+
+entity "attributions" as attrs {
+  * id_octroi : PK
+  --
+  commentaires : text
+  # idcopdeman : FK
+  # id_agent : FK
+}
+
+entity "contenir" as lioc {
+  * id_octroi : PK/FK
+  * id_appui : PK/FK
+  --
+  quantite : integer
+  cout_attribution : decimal(10,2)
+}
+
+' ============================================================
+' RELATIONS (Pattes d'oie / ER Notation)
+' ============================================================
+roles ||--o{ users : "contenir"
+dirs ||--o{ servs : "englober"
+tyag ||--o{ agents : "categoriser"
+users ||--o| agents : "associer"
+users ||--o| actes : "associer"
+tyacs ||--o{ actes : "typer"
+typieco ||--o{ pieco : "caracteriser"
+
+actes ||--o{ demas : "effectuer"
+demas ||--o{ pieco : "justifier"
+
+demas ||--o{ lides : "comporter"
+lides ||--o{ tyaps : "demander">
+
+benes ||--o{ cults : "cultiver"
+tycus ||--o{ cults : "classer"
+
+demas ||--|{ deses : "dupliquer"
+servs ||--o{ deses : "recevoir"
+
+deses ||--o{ rapps : "generer"
+agents ||--o{ rapps : "rediger"
+tyras ||--o{ rapps : "caracteriser"
+
+deses ||--o| deleg : "faire_objet"
+agents ||--o{ deleg : "attribuer"
+prest ||--o{ deleg : "recevoir"
+
+servs ||--o{ tyaps : "gerer"
+unaps ||--o{ apps : "mesurer"
+tyaps ||--o{ apps : "classer"
+
+deses ||--o{ attrs : "donner_lieu"
+agents ||--o{ attrs : "accorder"
+
+attrs ||--o{ lioc : "inclure1"
+apps ||--o{ lioc : "inclure2"
+
+@enduml

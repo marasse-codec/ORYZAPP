@@ -1,0 +1,34 @@
+@startuml
+title Diagramme de séquence d'analyse « Imprimer formulaire de commission »
+
+skinparam shadowing false
+skinparam sequence {
+    LifeLineBorderColor #888888
+    ParticipantBorderThickness 1.5
+    ArrowColor #333333
+    ActorBorderColor #333333
+    ActorBackgroundColor #F9F9F9
+}
+
+autonumber
+
+' ============================================================
+' PARTICIPANTS (Système Boîte Noire)
+' ============================================================
+
+actor "Agent de synthèse" as Acteur
+participant "Système" as Systeme #EBF3F9
+participant "Imprimante" as Imprimante
+
+' ============================================================
+' ÉCHANGES CONCEPTUELS
+' ============================================================
+
+Acteur -> Systeme : Demander la liste des demandes 
+Systeme --> Acteur : Retourner la liste des demandes non traitées
+Acteur -> Systeme : Choisir les demandes à indexer \net s'il faut joindre les pièces
+Systeme ->> Imprimante : Imprimer les formulaires des demandes
+Systeme --> Acteur : Confirmer impression en cours
+
+
+@enduml

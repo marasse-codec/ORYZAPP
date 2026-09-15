@@ -1,0 +1,27 @@
+@startuml
+left to right direction
+skinparam Linetype ortho
+skinparam componentStyle uml2
+
+actor "Utilisateur" as User
+
+component "Application Parent" as App {
+
+  portin "Ecran" as Nav
+
+  component "Frontend" as Frontend
+  component "Moteur Interne" as Moteur
+  
+  ' Délégation (Liaison du port au premier sous-composant)
+  Nav <== Frontend : <<delegate>>
+  
+  ' Communication interne classique entre sous-composants
+  Frontend ..> Moteur
+}
+
+interface "IGui" as IGui
+Nav -up- () IGui
+
+' L'utilisateur consomme l'interface
+User ..> IGui : Utilise
+@enduml

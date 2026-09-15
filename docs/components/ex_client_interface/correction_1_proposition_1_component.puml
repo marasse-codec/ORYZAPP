@@ -1,0 +1,59 @@
+@startuml
+left to right direction
+
+skinparam linetype ortho
+skinparam componentStyle uml2
+
+actor "Utilisateur" as User
+
+'====================================================
+' Interface graphique exposée par l'application
+'====================================================
+
+interface "IGui" as IGui
+
+'====================================================
+' Application principale
+'====================================================
+
+component "Application Parent" as App {
+
+    ' Port d'entrée de l'application
+    portin "Ecran" as Ecran
+
+    ' Composants internes
+    component "Frontend" as Frontend
+    component "Moteur Interne" as Moteur
+
+    '================================================
+    ' Interface fournie par le Frontend
+    '================================================
+
+    Frontend - IGui
+
+    '================================================
+    ' Délégation du port vers le Frontend
+    '================================================
+
+    Ecran ..> Frontend : <<delegate>>
+
+    '================================================
+    ' Dépendance interne
+    '================================================
+
+    Frontend ..> Moteur : utilise
+}
+
+'====================================================
+' Interface exposée par le port de l'application
+'====================================================
+
+Ecran - IGui
+
+'====================================================
+' Utilisateur utilise l'interface graphique
+'====================================================
+
+User ..> IGui : utilise
+
+@enduml

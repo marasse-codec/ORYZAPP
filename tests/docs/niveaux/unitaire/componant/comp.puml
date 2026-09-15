@@ -1,0 +1,25 @@
+@startuml
+
+skinparam componentStyle uml2
+
+package "Environnement de Test" {
+  [AuthServiceTest] <<TestContext>>
+  [MockUserRepository] <<Mock>>
+}
+
+package "Environnement Applicatif" {
+  [AuthService] <<SUT>>
+  interface UserRepository <<Interface>>
+}
+
+' Relations pour Test Unitaire
+[AuthServiceTest] .> [AuthService] : 1. Exécute & Vérifie
+[AuthService] ..> UserRepository : Requis
+[MockUserRepository] -( UserRepository : 2. Implémente (Isolation)
+[AuthServiceTest] ..> [MockUserRepository] : Injecte
+
+note bottom of [MockUserRepository]
+  En test unitaire, la BDD est simulée 
+  par ce Mock pour tester la logique isolée.
+end note
+@enduml

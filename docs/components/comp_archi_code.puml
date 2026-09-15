@@ -1,0 +1,34 @@
+@startuml
+skinparam componentStyle uml2
+
+package "1er Tier : Couche Présentation" {
+    [Frontend (Blade / Tailwind / AlpineJS)] as Frontend
+    [Contrôleurs (HTTP Controllers)] as Controllers
+}
+
+package "2e Tier : Couche Logique Métier" {
+    [Services Métier] as Services
+}
+
+package "3e Tier : Couche Accès aux Données & Stockage" {
+    [Modèles Eloquent (ORM)] as Models
+    [Stockage Fichiers (Storage Laravel)] as FileStorage
+}
+
+database "SGBDR" {
+    [MySQL] as DB
+}
+
+folder "Système de Fichiers Serveur" {
+    [Pièces Justificatives (Uploads)] as Disk
+}
+
+' Interactions et dépendances dans la chaîne
+Frontend ..> Controllers : "Requêtes HTTP / Réponses"
+Controllers ..> Services : "Appelle la logique métier"
+Controllers ..> FileStorage : "Transfère les fichiers téléversés"
+Services ..> Models : "Manipule les données (Objets)"
+Models ..> DB : "Requêtes SQL"
+FileStorage ..> Disk : "Écrit / Lit les fichiers physiques"
+
+@enduml

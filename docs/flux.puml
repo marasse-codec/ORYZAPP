@@ -1,0 +1,65 @@
+@startuml
+skinparam conditionStyle inside
+skinparam TitleFontSize 16
+skinparam DefaultFontSize 12
+
+title Diagramme des flux - Gestion des demandes d'appuis
+
+start
+
+partition "1. Sollicitation des appuis" {
+    :Émission de la demande par l'acteur\n(Producteur, Transformateur ou Distributeur);
+    
+    if (Mode de transmission ?) then (Email)
+        :Envoi électronique de la demande\n(Par le DP, l'acteur ou le centre);
+    else (Dépôt physique)
+        :Dépôt physique de la demande\n(Par le DP, l'acteur ou le centre);
+    endif
+    :Réception du courrier par le Secrétariat du DG;
+    :Transmission du courrier au DG;
+    :Affectation de la demande par le DG\nà la direction concernée;
+}
+
+partition "2. Traitement des demandes" {
+    :Attente d'une session d'attribution\n(Prévu dans les mois de juin/septembre );
+    
+    :Ouverture de la session d'attribution;
+    
+    :Vérification des critères;
+    
+    if (La demande est conforme ?) then (Oui)
+        if (Les stocks peuvent \ncouvrir toute la demande ?) then (Oui)
+        else (Non)
+        endif
+            :Produire un bon d'attribution\n des appuis demandés disponibles;
+    else (Non)
+        :Rejeter la demande et argumenter le rejet;
+    endif
+}
+
+partition "3. Publication des résultats" {
+    :Établissement des deux listes\n(Acceptés et Rejetés);
+    :Transmission des résultats aux Délégués de Pôles (DP)\net aux demandeurs \npar les canaux de communication disponibles;
+    :Relais de l'information aux demandeurs;
+}
+
+partition "4. Enlèvement des appuis" {
+    if (Le requérant est-il retenu ?) then (Oui)
+        :Présentation du requérant au point de retrait\n(Centre de conditionnement de Yamoussoukro);
+        
+        if (Retrait par le bénéficiaire lui-même ?) then (Oui)
+            :Présentation de la pièce d'identité;
+        else (Non - Pour le compte d'un tiers)
+            :Présentation de la pièce d'identité\n+ Procuration valide;
+        endif
+        
+        :Vérification de la conformité du récipiendaire;
+        :Remise des appuis;
+        stop
+    else (Non)
+        :Fin du processus pour cette demande;
+        end
+    endif
+}
+
+@enduml

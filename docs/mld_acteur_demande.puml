@@ -1,0 +1,179 @@
+@startuml mld_acteur_demande
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Context.puml
+skinparam Linetype ortho
+skinparam nodesep 50
+skinparam ranksep 50
+
+' ============================================================
+' AUTHENTICATION & USERS
+' ============================================================
+entity "users" as users {
+  * id : PK
+  --
+  email : unique
+  password
+  timestamps
+}
+
+entity "roles" as roles {
+  * id : PK
+  --
+  name
+}
+
+' ============================================================
+' ACTEURS (Agriculteurs / Bénéficiaires)
+' ============================================================
+entity "acteurs" as acts {
+  * id_acteur : PK
+  --
+  nom
+  adresse
+  telephone
+  # user_id : FK
+  timestamps
+}
+
+' ============================================================
+' DEMANDES (Core Business Logic)
+' ============================================================
+entity "statuts_demandes" as statdmd {
+  * id_statut_demande : PK
+  --
+  lib_statut_demande : enum
+  timestamps
+}
+
+entity "commissions_attributions" as commattr {
+  * id_commission : PK
+  --
+  date_ouverture_commission
+  date_fermeture_commission
+  timestamps
+}
+
+entity "demandes" as dmds {
+  * id_demande : PK
+  --
+  date_demande
+  debut_periode_mise_en_place
+  fin_periode_mise_en_place
+  commentaire_rejet
+  # id_acteur : FK
+  # id_statut_demande : FK
+  # id_commission : FK (nullable)
+  timestamps
+}
+
+entity "demandes_types_cultures" as demtypcul {
+  * id : PK
+  --
+  superficie : integer
+  # id_demande : FK
+  # id_type_culture : FK
+  timestamps
+}
+
+' ============================================================
+' APPUIS & TYPES
+' ============================================================
+entity "types_cultures" as typcul {
+  * id_type_culture : PK
+  --
+  lib_type_culture
+  timestamps
+}
+
+entity "types_appuis" as tyaps {
+  * id_type_appui : PK
+  --
+  lib_type_appui
+  timestamps
+}
+
+entity "unites_appuis" as unaps {
+  * id_unite_appui : PK
+  --
+  lib_unite_appui
+  timestamps
+}
+
+entity "appuis" as apps {
+  * id_appui : PK
+  --
+  lib_appui
+  dose_predefini_ha : decimal(10,2)
+  quantite_stock : decimal(10,2)
+  cout_unitaire : decimal(10,2)
+  est_louable : boolean
+  # id_type_appui : FK
+  # id_unite_appui : FK
+  timestamps
+}
+
+' ============================================================
+' LIGNES DEMANDES (Détail Appuis)
+' ============================================================
+entity "lignes_demandes" as ld {
+  * id_ligne_demande : PK
+  --
+  details : text
+  # id_demande : FK
+  # id_appui : FK
+  timestamps
+}
+
+' ============================================================
+' BENEFICIAIRES & CULTURES
+' ============================================================
+entity "beneficiaires" as bens {
+  * id_beneficiaire : PK
+  --
+  nom
+  localite
+  departement
+  contact
+  # id_demande : FK
+  timestamps
+}
+
+entity "beneficiaires_types_cultures" as bentc {
+  * id : PK
+  --
+  superficie : integer
+  # id_beneficiaire : FK
+  # id_type_culture : FK
+  timestamps
+}
+
+' ============================================================
+' RELATIONS
+' ============================================================
+
+' Authentication
+roles ||--o{ users : "has"
+
+' User → Acteur
+users ||--|| acts : "creates"
+
+' Acteur → Demandes
+acts ||--o{ dmds : "submits"
+
+' Demande Status & Commission
+statdmd ||--o{ dmds : "characterizes"
+commattr ||--o| dmds : "evaluates (optional)"
+
+' Demande Contents
+dmds ||--o{ ld : "contains"
+ld ||--|| apps : "requests"
+
+' Beneficiaires & Cultures
+dmds ||--o{ bens : "has"
+bens ||--o{ bentc : "cultivates"
+typcul ||--o{ bentc : "is_cultivated_by"
+
+' Types & Classifications
+tyaps ||--|| apps : "classifies"
+unaps ||--|| apps : "measures_in"
+
+@enduml

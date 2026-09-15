@@ -1,0 +1,19 @@
+@startuml mvc_flow
+skinparam shadowing false
+skinparam defaultFontName "Segoe UI", sans-serif
+skinparam backgroundColor #FFFFFF
+
+actor "Agent / Utilisateur" as User
+box "Architecture de Présentation (MVC)" #F8F9FA
+participant "Vue\n(Templates Blade)" as View #E3F2FD
+participant "Contrôleur\n(Http Controllers)" as Controller #FFFDE7
+end box
+participant "Cœur Métier & Modèles\n(Services / Entités)" as Model #E8F5E9
+
+User -> View : 1. Effectue une action (ex: Valider un bon)
+View -> Controller : 2. Transmet la requête HTTP
+Controller -> Model : 3. Invoque le traitement métier
+Model --> Controller : 4. Renvoie le résultat du traitement
+Controller -> View : 5. Injection des données & génération HTML
+View --> User : 6. Affichage de la vue mise à jour
+@endumls

@@ -1,0 +1,49 @@
+@startuml class
+
+skinparam Linetype ortho
+
+class "User" {
+    + id_user
+    + email
+    + password
+}
+
+class "Acteur" as act {
+    + id_acteur
+    + nom
+    + numero
+    + adresse
+}
+
+enum "TypeActeur" as typact {
+    PRI
+    GIN
+    CPR
+    SCO
+    EAG
+    ONG
+    AUT
+}
+
+' Association propre avec l'énumération
+act --> "1" typact : "a pour type" >
+User "1" -- "0..1" act : "possède profil >"
+
+' Pattern Strategy pour l'inscription
+interface "ActeurInscriptionStrategy" as ais {
+    + inscrire(donnees)
+}
+
+class "ProducteurIndividuelInscriptionStrategy" as piis {
+    + inscrire(donnees)
+}
+
+class "CooperativeInscriptionStrategy" as coois {
+    + inscrire(donnees)
+}
+
+' Correction du sens de la flèche d'implémentation
+piis .u.|> ais
+coois .u.|> ais
+
+@enduml

@@ -1,0 +1,134 @@
+@startuml
+title Diagramme de cas d'utilisation — Plateforme de gestion des appuis
+
+left to right direction
+
+skinparam packageStyle rectangle
+skinparam shadowing false
+skinparam linetype ortho
+skinparam usecase {
+    BackgroundColor #F9F9F9
+    BorderColor #333333
+    ArrowColor #555555
+}
+
+' ============================================================
+' ACTEURS
+' ============================================================
+
+actor "Acteur de la filière" as Filiere
+actor "Producteur" as Producteur
+actor "Transformateur" as Transformateur
+actor "Distributeur" as ProducteurCV
+
+actor "Directeur" as AgentDirection
+actor "Agent de commission" as AgentCommission
+
+actor "Gestionnaire de stock" as GestionnaireStock
+actor "Administrateur" as Administrateur
+actor "Responsable de commission" as ResponsableCommission
+
+' ============================================================
+' GÉNÉRALISATION DES ACTEURS DE LA FILIÈRE
+' ============================================================
+
+Producteur --|> Filiere
+Transformateur --|> Filiere
+ProducteurCV --|> Filiere
+
+' ============================================================
+' SYSTÈME
+' ============================================================
+
+rectangle "Plateforme de gestion des appuis" {
+
+    ' ----------------------------
+    ' Authentification
+    ' ----------------------------
+
+    'usecase "S'inscrire /\ns'authentifier" as UC_Auth
+
+    ' ----------------------------
+    ' Gestion des demandes
+    ' ----------------------------
+
+    usecase "Soumettre une\ndemande d'appui" as UC_Soumettre
+
+    usecase "Réceptionner résultat \nde commission" as UC_Suivre
+
+    usecase "Réceptionner les\ndemandes des services" as UC_Receptionner
+
+    usecase "Observer une demande" as UC_Observer
+
+    ' ----------------------------
+    ' Commissions
+    ' ----------------------------
+    usecase "Gérer commission" as UC_Commission
+    usecase "Instruire demandes en commission" as UC_Instruire
+
+    ' ----------------------------
+    ' Administration
+    ' ----------------------------
+
+    usecase "Gérer le système" as UC_Systeme
+
+    ' ----------------------------
+    ' Gestion des stocks
+    ' ----------------------------
+
+    usecase "Servir les\nattributions d'appuis" as UC_Servir
+    usecase "Renseigner les\n approvisionnement d'appuis" as UC_Entree
+
+}
+
+' ============================================================
+' ASSOCIATIONS — ACTEUR DE LA FILIÈRE
+' ============================================================
+
+'Filiere --> UC_Auth
+Filiere --> UC_Soumettre
+Filiere --> UC_Suivre
+
+' ============================================================
+' ASSOCIATIONS — DIRECTION
+' ============================================================
+
+'AgentDirection --> UC_Auth
+AgentDirection --> UC_Receptionner
+
+
+' ============================================================
+' ASSOCIATIONS — SERVICE
+' ============================================================
+
+'ChefService --> UC_Auth
+AgentService --> UC_Observer
+
+' ============================================================
+' ASSOCIATIONS — ADMINISTRATEUR
+' ============================================================
+
+'Administrateur -u-> UC_Auth
+Administrateur -u-> UC_Systeme
+
+
+' ============================================================
+' ASSOCIATIONS — RESPONSABLE COMMISSION
+' ============================================================
+ResponsableCommission -u-> UC_Commission
+
+' ============================================================
+' ASSOCIATIONS — GESTIONNAIRE DE STOCK
+' ============================================================
+
+'GestionnaireStock --> UC_Auth
+GestionnaireStock --> UC_Servir
+GestionnaireStock --> UC_Entree
+
+' ============================================================
+' ASSOCIATIONS - AGENT COMMISSON
+' ============================================================
+
+AgentCommission --> UC_Instruire
+
+@enduml

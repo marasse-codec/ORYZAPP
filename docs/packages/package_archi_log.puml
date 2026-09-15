@@ -1,0 +1,29 @@
+@startuml arch_simplifiee_non_tech
+skinparam shadowing false
+skinparam defaultFontName "Segoe UI", sans-serif
+skinparam backgroundColor #FFFFFF
+
+skinparam rectangle {
+    RoundCorner 15
+    BorderThickness 2
+    FontSize 13
+}
+
+rectangle "1. INTERFACES UTILISATEUR\n(Ce que l'utilisateur voit et manipule)" as UI #E3F2FD {
+    [Formulaires de saisie, écrans de validation & relevés de stock]
+}
+
+rectangle "2. CŒUR MÉTIER & RÈGLES DE GESTION\n(L'intelligence de l'application)" as Core #FFFDE7 {
+    [Vérification automatique des droits, calcul des disponibilités, validation des bons]
+}
+
+rectangle "3. REGISTRE & SAUVEGARDE DES DONNÉES\n(La mémoire sécurisée)" as Data #E8F5E9 {
+    [Historique des mouvements, fiches équipements, agents et approvisionnements]
+}
+
+UI -down-> Core : "1. L'agent saisit une demande"
+Core -down-> Data : "2. Le système vérifie et enregistre les données"
+Data -up-> Core : "3. Renvoie l'état du stock à jour"
+Core -up-> UI : "4. Affiche la confirmation à l'écran"
+
+@enduml

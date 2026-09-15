@@ -1,0 +1,49 @@
+@startuml
+title Réception et imputation d'une demande d'appui
+
+skinparam defaultFontName Arial
+skinparam defaultFontSize 12
+skinparam activity {
+  BackgroundColor #FFFFFF
+  BorderColor #333333
+  DiamondBackgroundColor #FFFFFF
+  DiamondBorderColor #333333
+}
+
+|Acteur de la filière|
+start
+:Constituer le dossier
+(lettre + pièces justificatives);
+:Transmettre le dossier
+(délégué de pôle, centre de
+conditionnement ou siège);
+
+|Secrétariat de la Direction Générale|
+:Réceptionner le courrier;
+:Enregistrer dans le logiciel
+de gestion des courriers;
+:Imputer le courrier à la DAP
+et établir les copies;
+
+|Direction des Appuis à la Production|
+:Imputer aux services compétents
+selon les types d'appuis sollicités;
+note right
+Une lettre portant sur plusieurs
+types d'appuis est découpée :
+chaque partie suit ce circuit
+dans le service concerné.
+end note
+
+fork
+|Service Semence|
+:Recevoir le courrier de la demande;
+
+fork again
+|Service Mecanisation|
+:Recevoir le courrier de la demande;
+end fork
+
+stop
+
+@enduml

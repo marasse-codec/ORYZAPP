@@ -1,0 +1,55 @@
+@startuml fig-deploiement
+skinparam shadowing false
+skinparam defaultFontName Liberation Serif
+skinparam defaultFontSize 12
+skinparam Linetype ortho
+
+title Diagramme de déploiement « Plateforme de gestion des appuis »
+
+node "Poste du délégué de pôle\n(ordinateur / smartphone)" as CLI1 {
+  component "Navigateur web" as NAV1
+}
+
+node "Poste de l'agent ADERIZ\n(siège et directions régionales)" as CLI2 {
+  component "Navigateur web" as NAV2
+}
+
+cloud "Internet" as NET
+
+node "Serveur applicatif (Linux)" as APP {
+  component "Nginx" as NGX
+  component "PHP-FPM 8.2" as FPM
+  artifact "aderiz-appuis\n(application Laravel)" as ART
+  artifact "Tâches planifiées\n(scheduler : alertes d'échéance)" as CRON
+  folder "storage/app/pieces\n(hors racine publique)" as STO
+}
+
+node "Serveur de base de données (Linux)" as DBS {
+  database "MySQL 8" as MDB
+}
+
+node "Serveur de sauvegarde" as BCK {
+  artifact "Dumps SQL quotidiens\n(rétention 30 jours)" as DUMP
+  artifact "Copie des pièces\njustificatives" as CPJ
+}
+
+cloud "Service de messagerie\n(SMTP)" as MAIL
+
+NAV1 --> NET : HTTPS / TLS
+NAV2 --> NET : HTTPS / TLS
+NET --> NGX : 443
+NGX --> FPM : FastCGI
+FPM --> ART : exécute
+ART --> STO : lecture / écriture
+ART --> MDB : TCP 3306\n(réseau privé)
+CRON --> ART
+ART --> MAIL : SMTP (notifications)
+MDB --> DUMP : sauvegarde planifiée
+STO --> CPJ : sauvegarde planifiée
+
+note bottom of DBS
+  Le serveur de base de données n'est
+  pas exposé sur Internet : il n'accepte
+  que les connexions du serveur applicatif.
+end note
+@enduml

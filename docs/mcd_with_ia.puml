@@ -1,0 +1,265 @@
+@startuml mcd_v2
+skinparam Linetype ortho
+skinparam nodesep 50
+skinparam ranksep 50
+
+' ==============================id_statut_demande==============================
+' 1. AUTHENTIFICATION / ROLES
+' ============================================================
+entity "roles" as roles {
+  *id_role : PK
+  --
+  code_role
+  lib_role
+  '(ACT,DPL,MCM,RCC,DGE,SGE)
+}
+entity "users" as users {
+  *id_user : PK
+  --
+  login
+  password
+  #id_role
+}
+roles "1" -- "0..*" users : "avoir"
+
+' ============================================================
+' 2. STRUCTURE INTERNE (directions / services / agents)
+' ============================================================
+entity "directions" as dirs {
+  *id_direction : PK
+  --
+  lib_direction
+  '(Infrastructure, Production, Valorisation)
+}
+
+entity "services" as servs {
+  *id_service : PK
+  --
+  lib_service
+  #id_direction
+}
+dirs "0..*" -- "1" servs : "regrouper"
+
+entity "types_agents" as tyag {
+  *id_type_agent : PK
+  --
+  lib_type_agent
+  '(Directeur, Chef de service, ...)
+}
+entity "agents" as agents {
+  *id_agent : PK
+  --
+  nom
+  prenoms
+}
+users "1" -- "0..1" agents : "correspondre"
+tyag "1" -- "0..*" agents : "occuper"
+
+' ============================================================
+' 3. ACTEURS EXTERNES
+' ============================================================
+entity "types_acteurs" as tyacs {
+  *id_type_acteur : PK
+  --
+  lib_type_acteur
+  '(Producteur individuel, Groupement informel, ONG, Coopérative, Entreprise, Société agricole)
+}
+entity "acteurs" as actes {
+  *id_acteur : PK
+  --
+  nom
+  numero
+  email
+  mdp
+}
+
+tyacs "0..*" -- "1" actes : "typer"
+users "1" -- "0..1" actes : "profiler"
+
+' ============================================================
+' 4. DOCUMENTS / PIECES JUSTIFICATIVES (généralisées)
+' ============================================================
+entity "types_pieces" as typieco {
+  *id_type_piece : PK
+  --
+  lib_type_piece
+  '(récépissé, agrément, demande-projet, statuts constitution...)
+}
+entity "pieces_justificatives" as pieco {
+  *id_piece : PK
+  --
+  chemin_fichier
+}
+
+typieco "1" -- "0..*" pieco : "concerne"
+
+' ============================================================
+' 5. CAMPAGNE / DEMANDE / DOMAINES
+' ============================================================
+
+entity "demandes" as demas {
+  *id_demande : PK
+  --
+  date_demande
+  date_debut_appuis
+}
+
+actes "0..*" -- "1" demas : "effectuer"
+pieco "1" -- "0..*" demas : "joindre"
+
+entity "beneficiaires" as benes {
+  *idbenes : PK
+  --
+}
+
+benes "1" -- "1..*" demas : "lister"
+actes "0..*" -- "1" benes : "être"
+
+entity "types_cultures" as typcul {
+  *id_type_culture : PK
+  --
+  lib_type_culture
+  '(irriguée, bas-fond, plateau)
+}
+
+entity "cultures" as cults {
+  superficie
+}
+
+benes "0..*" -- "1" cults : "cultiver"
+typcul "0..*" -- "1" cults : "caractériser"
+
+entity "departements" as depas {
+  *id_departement : PK
+  --
+  lib_departement
+}
+
+entity "localites" as locas {
+  *id_localite : PK
+  --
+  lib_localite
+}
+  
+locas "1" -- "0..*" depas : "situer"
+cults "0..*" -- "1" locas : "implanter"
+
+entity "demandes_services" as deses {
+  *iddmddir : PK
+  --
+  statut
+  '(transmise, affectee_service, en_traitement, validee, rejetee)
+  motif_rejet (0..1)
+  date_derniere_maj
+}
+
+demas "1..*" -- "1" deses : engendrer
+servs "0..*" -- "1" deses : receptionner
+
+' ============================================================
+' 6. WORKFLOW DETAILLE (une entité par étape métier)
+' ============================================================
+
+' 6.1 Prise de contact (Chef de service)
+entity "types_rapports" as tyras {
+  *id_type_rapport : PK
+  --
+  lib_type_rapport
+  '(contact, visite)
+} 
+entity "rapports" as rapps {
+  *idprco : PK
+  --
+  commentaire
+  date_action
+}
+
+deses "0..*" -- "1" rapps : "documenter"
+agents "0..*" -- "1" rapps : "rédiger"
+tyras "1" -- "0..*" rapps : "classifier"
+
+entity "delegations_service" as deleg {
+  *id_delegation : PK
+  --
+  date_delegation
+  commentaire
+}
+
+deses "1" -- "0..1" deleg : "déléguer"
+agents "1" -- "0..*" deleg : "décider"
+
+entity "commissions_attributions" as coats {
+ *id
+  --
+  date
+
+
+}
+' ============================================================
+' 7. CATALOGUE DES APPUIS
+' ============================================================
+entity "unites_appuis" as unaps {
+  *id_unite_appui : PK
+  --
+  lib_unite_appui
+}
+
+entity "type_appuis" as tyaps {
+  *id_type_appui : PK
+  --
+  lib_type_appui
+  '(intrants, semences, matériels, engins, ...)
+}
+
+servs "0..*" -- "1" tyaps : "garantir"
+tyaps "0..*" -- "1..*" demas : "demander"
+
+entity "appuis" as apps {
+  *id_appui : PK
+  --
+  dose_predefini_ha ? : decimal(10,2)
+  quantite_stock ? : decimal(10,2)
+  cout_unitaire ? : decimal(10,2)
+  est_louable : boolean
+}
+
+unaps "1" -- "0..1" apps : "mesurer"
+apps "1" -- "0..*" tyaps : "classer"
+
+' ============================================================
+' 8. PRESTATAIRES
+' ============================================================
+entity "prestataires" as prest {
+  *id_prestataire : PK
+  --
+  nom
+  contact
+  specialite
+}
+prest "1" -- "0..*" deleg : "exécuter"
+
+' ============================================================
+' 9. APPUIS EFFECTIVEMENT OCTROYES (transactionnel, avec crédit)
+' ============================================================
+entity "attributions" as attrs {
+  *id_octroi : PK
+  --
+  commentaires : text
+}
+
+deses "0..1" -- "1" attrs : "recevoir"
+agents "0..*" -- "0..1" attrs : "formuler"
+
+entity "contenir" as liats {
+  --
+  quantite : integer
+  cout_attribution : decimal(10,2)
+}
+
+apps "0..*" -- "1" liats
+attrs "1..*" -- "1" liats
+
+' Le prestataire n'est plus porté ici : un seul prestataire est délégué
+' par demande_domaine, cf. entité "delegations_service" en section 6.4
+
+@enduml

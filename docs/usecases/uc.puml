@@ -1,0 +1,156 @@
+@startuml uc_plateforme
+left to right direction
+
+' ============================================================
+' DÉFINITION DES VARIABLES DE COULEURS (Sans #, couleurs soutenues)
+' ============================================================
+!$COLOR_VISITEUR  = Orange
+!$COLOR_AGENT     = SlateGray
+!$COLOR_DELEGUE   = DodgerBlue
+!$COLOR_SERV      = DarkViolet
+!$COLOR_VALID     = ForestGreen
+!$COLOR_CENTRE    = DarkCyan
+!$COLOR_ADMIN     = Crimson
+!$COLOR_DIR       = DarkSlateBlue
+!$COLOR_HORLOGE   = DarkGoldenRod
+
+title <b>Diagramme de cas d'utilisation de la plateforme de gestion des appuis</b>
+
+' ============================================================
+' CONFIGURATION
+' ============================================================
+skinparam shadowing false
+skinparam defaultFontName "Segoe UI"
+skinparam defaultFontSize 12
+skinparam backgroundColor #FFFFFF
+skinparam packageStyle rectangle
+skinparam Linetype ortho
+
+skinparam title {
+    FontSize 18
+    FontStyle bold
+    FontColor #1A202C
+}
+
+skinparam actor {
+    BorderColor #2D3748
+    BorderThickness 2
+    FontStyle bold
+    FontSize 12
+}
+
+skinparam usecase {
+    BorderColor #1A202C
+    BorderThickness 2
+    FontStyle bold
+    FontSize 11
+}
+
+skinparam rectangle {
+    BackgroundColor #FFFFFF
+    BorderThickness 3
+    FontStyle bold
+    FontSize 14
+}
+
+skinparam arrow {
+    Thickness 2
+    FontSize 10
+    FontStyle bold
+}
+
+' ============================================================
+' ACTEURS DE GAUCHE
+' ============================================================
+actor "Visiteur" as Visiteur #$COLOR_VISITEUR
+actor "Tous les agents" as TousAgents #$COLOR_AGENT
+actor "Délégué de pôle" as Delegue #$COLOR_DELEGUE
+actor "Agent de service" as AgentService #$COLOR_SERV
+actor "Validateur" as Validateur #$COLOR_VALID
+actor "Agent de centre" as AgentCentre #$COLOR_CENTRE
+actor "Administrateur" as Admin #$COLOR_ADMIN
+rectangle "<color:Black>Horloge</color>" as Horloge
+
+' ============================================================
+' PLATEFORME CENTRALE
+' ============================================================
+rectangle "<b>Plateforme de gestion des appuis</b>" as systeme {
+    
+    rectangle " " as left #transparent;line:transparent {
+
+        usecase "S'authentifier" as UC_Auth
+
+        usecase "Consulter les conditions de dépôt" as UC_ConditionsDepot
+
+        usecase "Enregistrer et Soumettre une demande d'appui" as UC_Demande
+        usecase "Suivre ses demandes déposées" as UC_SuiviDemande
+        usecase "Consulter les décisions publiées" as UC_DecisionPublique
+    
+        usecase "Enregistrer et soumettre une attribution" as UC_AttrService
+        usecase "Rejeter une demande" as UC_RejeterDemande
+
+        usecase "Enregistrer un approvisionnement d'appuis" as UC_Appro
+        usecase "Enregistrer l'enlèvement d'appuis" as UC_Enlevement
+        usecase "Consulter les matériels confiés en cours" as UC_MatosCours
+        usecase "Enregistrer la restitution d'un matériel" as UC_Restitution
+        usecase "Réintégrer les appuis d'une attribution caduque" as UC_Reintegration
+
+    }
+
+
+    rectangle " " as right #transparent;line:transparent {
+
+    usecase "Enregistrer une session de commission" as UC_SessionComm
+    usecase "Valider ou rejeter une attribution" as UC_ValiderAttr
+    usecase "Imprimer formulaire d’arbitrage" as UC_ImpForm
+    usecase "Imprimer l'état des stocks" as UC_ImpStocks
+    usecase "Simuler des attributions" as UC_SimulAttr
+    usecase "Enregistrer le résultat de délibération" as UC_ResDelib
+    usecase "Publier les décisions de la commission" as UC_PublierComm
+    usecase "Imprimer les listes de résultats" as UC_ImpRes
+    usecase "Imprimer un bon d'attribution" as UC_ImpBon
+
+    usecase "Consulter le journal des actions" as UC_Journal
+    usecase "Gérer le système" as UC_GererSys
+    usecase "Consulter les synthèses d'appuis" as UC_Synthese
+
+    usecase "Émettre les alertes de délai" as UC_Alertes
+
+    }
+
+    left -d[hidden]- right
+
+}
+
+TousAgents --> UC_Auth #$COLOR_AGENT
+
+Visiteur --> UC_ConditionsDepot #$COLOR_VISITEUR
+
+Delegue --> UC_Demande #$COLOR_DELEGUE
+Delegue --> UC_SuiviDemande #$COLOR_DELEGUE
+Delegue --> UC_DecisionPublique #$COLOR_DELEGUE
+
+AgentService --> UC_AttrService #$COLOR_SERV
+AgentService --> UC_RejeterDemande #$COLOR_SERV
+
+Validateur -u-> UC_SessionComm #$COLOR_VALID
+Validateur -u-> UC_ValiderAttr #$COLOR_VALID
+Validateur -u-> UC_ImpForm #$COLOR_VALID
+Validateur -u-> UC_ImpStocks #$COLOR_VALID
+Validateur -u-> UC_SimulAttr #$COLOR_VALID
+Validateur -u-> UC_ResDelib #$COLOR_VALID
+Validateur -u-> UC_PublierComm #$COLOR_VALID
+Validateur -u-> UC_ImpRes #$COLOR_VALID
+Validateur -u-> UC_ImpBon #$COLOR_VALID
+
+AgentCentre --> UC_Appro #$COLOR_CENTRE
+AgentCentre --> UC_Enlevement #$COLOR_CENTRE
+AgentCentre --> UC_MatosCours #$COLOR_CENTRE
+AgentCentre --> UC_Restitution #$COLOR_CENTRE
+AgentCentre --> UC_Reintegration #$COLOR_CENTRE
+
+Admin -u-> UC_Journal #$COLOR_ADMIN
+Admin -u-> UC_GererSys #$COLOR_ADMIN
+Admin -u-> UC_Synthese #$COLOR_ADMIN
+
+Horloge -u-> UC_Alertes #$COLOR_HORLOGE

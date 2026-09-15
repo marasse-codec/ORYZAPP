@@ -1,0 +1,177 @@
+@startuml mcd_test
+
+entity "poles" {
+    id_pole
+    nom_pole
+    numero_pole
+}
+
+'(dp de region)
+entity "dps" {
+    nom
+    prenom
+    numero
+    mail
+}
+
+entity "dgs" {
+    nom
+    prenom
+    numero
+    mail
+}
+
+entity "secretaires_dgs" {
+    nom
+    prenom
+    numero
+    mail
+}
+
+entity "responsable_centres_conditionnements" {
+    nom
+    prenom
+    numero
+    mail
+}
+
+dps "1..1" -- "0..1" poles : "rattacher"
+
+entity "ongs" {}
+
+entity "entreprises_agricoles" {
+    id_entreprise_agricole
+    nom_entreprise_agricole
+}
+
+
+entity "beneficiaires_entreprises_agricoles" {
+    id_beneficiaire_entreprise_agricole
+    lib_beneficiaire_entreprise_agricole
+}
+
+entity "listes_beneficiaires" {
+    "id_liste_beneficiaire"
+    "lib_liste_beneficiaire"
+}
+
+beneficiaires_entreprises_agricoles "1" -- "0..*" listes_beneficiaires : "appartenir"
+
+entity "producteurs_individuels" {
+    id_producteur_individuel
+    nom
+    numero
+}
+
+entity "types_cooperatives" {
+    id_type_cooperative
+    lib_type_cooperative
+    ' (cooperative simple, societe cooperatives)
+}
+
+entity "cooperatives" {
+    id_cooperative
+    nom_cooperative
+}
+
+types_cooperatives "0..*" -- "1" cooperatives: "associer"
+
+entity "membres_cooperatives" {
+    id_membre_cooperative (PK)
+    nom
+    numero
+    id_producteur_individuel
+}
+
+membres_cooperatives "1" -- "1..*" cooperatives : "contenir"
+
+entity "membres_groupememnts" {
+    id_membre_groupe (PK)
+    nom
+    numero
+    superficie
+    id_producteur_individuel
+}
+
+entity "groupements_informels" {
+    nom
+    numero
+}
+
+entity "types_pieces_coops" {
+    id_type_piece_coops
+    lib_type_piece_coops
+}
+
+entity "recepisses_coops" {
+    id_recipisse (PK)
+}
+
+entity "agrements_coops" {
+    id_recipisse (PK)
+}
+
+recepisses_coops "1" -- "0..1" cooperatives : "posseder"
+agrements_coops "1" -- "0..1" cooperatives : "posseder"
+
+types_pieces_coops "0..*" -- "1" recepisses_coops : ""
+types_pieces_coops "0..*" -- "1" agrements_coops : ""
+
+entity "dettes_cooperatives" {
+    id_dette_cooperative
+    montant_dette_cooperative
+    date_contraction
+    en_cours
+}
+
+dettes_cooperatives "1" -- "0..*" cooperatives : "contracter"
+
+entity "dettes_producteurs_individuels" {
+    id_dette_producteur_individuel
+    montant_dette_producteur_individuel
+    date_contraction
+    en_cours
+}
+
+dettes_producteurs_individuels "1" -- "0..*" producteurs_individuels : "contracter"
+
+membres_groupememnts "1..*" -- "1..*" groupements_informels
+
+'--------demandes-------------'
+
+entity "demandes_cooperatives" {
+    id_demande_cooperative
+    superficie
+    debut_periode
+    fin_periode
+}
+
+cooperatives "0..*" -- "1" demandes_cooperatives : "faire"
+
+entity "demandes_producteurs_individuels" {
+    id_demande_producteur_individuel
+    superficie
+    debut_periode
+    fin_periode
+}
+
+producteurs_individuels "0..*" -- "1" demandes_producteurs_individuels : "faire"
+
+entity "demandes_groupements_informels" {
+    id_demande_groupement_informel
+    superficie
+    debut_periode
+    fin_periode
+}
+
+groupements_informels "0..*" -- "1" demandes_groupements_informels : "faire"
+
+entity "demandes_ongs" {
+    id_demande_ongs
+    superficie
+}
+
+ongs "0..*" -- "1" demandes_ongs : "faire"
+
+
+@enduml

@@ -1,0 +1,36 @@
+@startuml Diagramme de séquence d'analyse
+title Diagramme de séquence d'analyse — Enregrister approvisionnement d'appuis
+
+skinparam shadowing false
+skinparam sequence {
+    LifeLineBorderColor #888888
+    ParticipantBorderThickness 1.5
+    ArrowColor #333333
+    ActorBorderColor #333333
+    ActorBackgroundColor #F9F9F9
+}
+
+autonumber
+
+' ============================================================
+' PARTICIPANTS (Système Boîte Noire)
+' ============================================================
+
+actor "Gestionnaire de stock" as Gestionnaire
+participant "Système" as Systeme #EBF3F9
+
+' ============================================================
+' ÉCHANGES CONCEPTUELS
+' ============================================================
+
+Gestionnaire -> Systeme : Demander le formulaire d'approvisionnement
+
+Systeme --> Gestionnaire : Afficher le catalogue des appuis et le formulaire de saisie
+
+Gestionnaire -> Systeme : Saisir les données d'approvisionnement\n(date, appuis concernés, quantités ajoutées)
+
+Gestionnaire -> Systeme : Valider l'approvisionnement
+
+Systeme --> Gestionnaire : Enregistrer l'approvisionnement, incrémenter les stocks et confirmer
+
+@enduml

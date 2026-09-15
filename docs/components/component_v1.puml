@@ -1,0 +1,56 @@
+@startuml
+title Diagramme de composants - Plateforme de gestion des appuis
+
+skinparam componentStyle uml2
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam packageStyle rectangle
+skinparam Linetype ortho
+
+' Ajustement de l'espacement global
+skinparam nodesep 60
+skinparam ranksep 50
+
+rectangle "Plateforme de gestion des appuis" as SYSTEME {
+
+    ' COMPOSANTS
+    component "Frontend" as FRONTEND
+    component "Contrôleurs\nLaravel" as CONTROLLERS
+    component "Services métier" as SERVICES
+    component "Notifications" as NOTIFICATIONS
+    component "Stockage fichiers" as STORAGE
+    component "Modèles Eloquent" as ELOQUENT
+    database "MySQL" as MYSQL
+
+    ' INTERFACES (Déclarées avec libellé explicite)
+    () "HTTP / API" as I_HTTP
+    () "Services applicatifs" as I_SERVICES
+    () "Service de stockage" as I_STORAGE
+    () "Service de notification" as I_NOTIFICATION
+    () "Accès aux données" as I_DATA
+
+    ' ========================================================
+    ' RELATIONS ET DISPOSITION DIRIGÉE
+    ' ========================================================
+
+    ' Flux principal descendant
+    FRONTEND -( I_HTTP
+    CONTROLLERS - I_HTTP
+
+    CONTROLLERS --0)- I_SERVICES
+    I_SERVICES -down- SERVICES
+
+    SERVICES --0)- I_DATA
+    I_DATA -down- ELOQUENT
+
+    ELOQUENT -down-> MYSQL
+
+    ' Éléments secondaires disposés latéralement
+    CONTROLLERS --0)- I_STORAGE
+    I_STORAGE -right- STORAGE
+
+    SERVICES --0)- I_NOTIFICATION
+    I_NOTIFICATION -left- NOTIFICATIONS
+}
+
+@enduml

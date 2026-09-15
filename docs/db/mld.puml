@@ -1,0 +1,377 @@
+@startuml mld_complet_appuis
+title Modèle Logique de Données (MLD)
+
+skinparam shadowing false
+skinparam defaultFontName "Segoe UI", sans-serif
+skinparam backgroundColor #FFFFFF
+skinparam Linetype ortho
+
+hide empty members
+
+skinparam package {
+  BorderThickness 5
+  BorderColor #1A1A1A
+  BackgroundColor #FAFAFA
+  FontColor #333333
+  FontSize 14
+  FontStyle bold
+}
+
+skinparam class {
+    BackgroundColor #FFFFFF
+    HeaderBackgroundColor #EAECEE
+    BorderColor #1A1A1A
+    FontColor #000000
+    FontSize 12
+    BorderThickness 1.5
+    ArrowThickness 2
+}
+
+' ============================================================
+' PACKAGE HABILITATIONS & TRAÇABILITÉ
+' ============================================================
+package "Habilitations & Traçabilité" {
+  entity "roles" as roles {
+    * id_role : BIGINT <<PK>>
+    --
+    * libelle_role : VARCHAR(100)
+  }
+
+  entity "postes" as postes {
+    * id_poste : BIGINT <<PK>>
+    --
+    * libelle_poste : VARCHAR(100)
+  }
+
+  entity "agents" as agents {
+    * id_agent : BIGINT <<PK>>
+    --
+    * id_poste : BIGINT <<FK>>
+    * id_service : BIGINT <<FK>>
+    * matricule_agent : VARCHAR(50)
+    * nom : VARCHAR(100)
+    * prenoms : VARCHAR(150)
+    telephone : VARCHAR(20)
+    * email : VARCHAR(150)
+    * mot_de_passe : VARCHAR(255)
+    * actif : BOOLEAN
+  }
+
+  entity "agents_roles" as agents_roles {
+    * id_agent : BIGINT <<PK, FK>>
+    * id_role : BIGINT <<PK, FK>>
+  }
+
+  entity "journaux_actions" as journaux_actions {
+    * id_journal_action : BIGINT <<PK>>
+    --
+    * id_agent : BIGINT <<FK>>
+    * entite_concernee : VARCHAR(100)
+    * id_entite : BIGINT
+    * action : VARCHAR(50)
+    * date_action : DATETIME
+    valeur_avant : TEXT
+    valeur_apres : TEXT
+  }
+}
+
+' ============================================================
+' PACKAGE ÉLABORATION DES DEMANDES
+' ============================================================
+package "Élaboration des Demandes" {
+  entity "types_demandeurs" as types_demandeurs {
+    * id_type_demandeur : BIGINT <<PK>>
+    --
+    * libelle_type_demandeur : VARCHAR(100)
+  }
+
+  entity "types_pieces" as types_pieces {
+    * id_type_piece : BIGINT <<PK>>
+    --
+    * libelle_type_piece : VARCHAR(100)
+  }
+
+  entity "types_demandeurs_pieces" as types_demandeurs_pieces {
+    * id_type_demandeur : BIGINT <<PK, FK>>
+    * id_type_piece : BIGINT <<PK, FK>>
+  }
+
+  entity "demandeurs" as demandeurs {
+    * id_demandeur : BIGINT <<PK>>
+    --
+    * id_type_demandeur : BIGINT <<FK>>
+    * nom : VARCHAR(150)
+    * telephone : VARCHAR(20)
+    email : VARCHAR(150)
+  }
+
+  entity "departements" as departements {
+    * id_departement : BIGINT <<PK>>
+    --
+    * libelle_departement : VARCHAR(100)
+  }
+
+  entity "localites" as localites {
+    * id_localite : BIGINT <<PK>>
+    --
+    * id_departement : BIGINT <<FK>>
+    * libelle_localite : VARCHAR(100)
+  }
+
+  entity "campagnes" as campagnes {
+    * id_campagne : BIGINT <<PK>>
+    --
+    * libelle_campagne : VARCHAR(100)
+    * date_debut_campagne : DATE
+    * date_fin_campagne : DATE
+  }
+
+  entity "statuts_demandes" as statuts_demandes {
+    * id_statut_demande : BIGINT <<PK>>
+    --
+    * libelle_statut_demande : VARCHAR(50)
+  }
+
+  entity "demandes" as demandes {
+    * id_demande : BIGINT <<PK>>
+    --
+    * id_demandeur : BIGINT <<FK>>
+    * id_agent_enregistreur : BIGINT <<FK>>
+    * id_statut_demande : BIGINT <<FK>>
+    * id_campagne : BIGINT <<FK>>
+    * id_localite : BIGINT <<FK>>
+    * date_demande : DATE
+    date_debut_mise_en_place_souhaitee : DATE
+    date_fin_mise_en_place_souhaitee : DATE
+    motif_rejet : TEXT
+  }
+
+  entity "pieces_justificatives" as pieces_justificatives {
+    * id_piece_justificative : BIGINT <<PK>>
+    --
+    * id_demande : BIGINT <<FK>>
+    * id_type_piece : BIGINT <<FK>>
+    * chemin_fichier : VARCHAR(255)
+  }
+
+  entity "types_systemes_production" as types_systemes_production {
+    * id_type_systeme_production : BIGINT <<PK>>
+    --
+    * libelle_type_systeme_production : VARCHAR(100)
+  }
+
+  entity "systemes_production" as systemes_production {
+    * id_systeme_production : BIGINT <<PK>>
+    --
+    * id_demande : BIGINT <<FK>>
+    * id_type_systeme_production : BIGINT <<FK>>
+    superficie : DOUBLE
+  }
+
+  entity "lignes_demandes" as lignes_demandes {
+    * id_ligne_demande : BIGINT <<PK>>
+    --
+    * id_demande : BIGINT <<FK>>
+    * id_reference_appui : BIGINT <<FK>>
+    * quantite_demandee : INT
+  }
+}
+
+' ============================================================
+' PACKAGE CATALOGUE & RÉFÉRENTIEL APPUIS
+' ============================================================
+package "Catalogue & Référentiel Appuis" {
+  entity "services" as services {
+    * id_service : BIGINT <<PK>>
+    --
+    * libelle_service : VARCHAR(100)
+  }
+
+  entity "categories_appuis" as categories_appuis {
+    * id_categorie_appui : BIGINT <<PK>>
+    --
+    * libelle_categorie_appui : VARCHAR(100)
+  }
+
+  entity "unites_appuis" as unites_appuis {
+    * id_unite_appui : BIGINT <<PK>>
+    --
+    * libelle_unite_appui : VARCHAR(50)
+  }
+
+  entity "references_appuis" as references_appuis {
+    * id_reference_appui : BIGINT <<PK>>
+    --
+    * id_service : BIGINT <<FK>>
+    * id_categorie_appui : BIGINT <<FK>>
+    * id_unite_appui : BIGINT <<FK>>
+    * libelle_reference_appui : VARCHAR(150)
+    * quantite_en_stock : INT
+    * cout_unitaire : DOUBLE
+    * est_consommable : BOOLEAN
+  }
+
+  entity "equipements" as equipements {
+    * id_equipement : BIGINT <<PK>>
+    --
+    * id_reference_appui : BIGINT <<FK>>
+    * matricule_equipement : VARCHAR(100)
+    * etat : VARCHAR(50)
+    * en_service : BOOLEAN
+  }
+}
+
+' ============================================================
+' PACKAGE OCTROI & COMMISSION
+' ============================================================
+package "Octroi & Commission" {
+  entity "types_sessions_commissions" as types_sessions_commissions {
+    * id_type_session_commission : BIGINT <<PK>>
+    --
+    * libelle_type_session_commission : VARCHAR(100)
+  }
+
+  entity "sessions_commissions" as sessions_commissions {
+    * id_session_commission : BIGINT <<PK>>
+    --
+    * id_type_session_commission : BIGINT <<FK>>
+    resume : TEXT
+    * date_session : DATE
+    date_publication : DATE
+  }
+
+  entity "statuts_bons_attributions" as statuts_bons_attributions {
+    * id_statut_bon_attribution : BIGINT <<PK>>
+    --
+    * libelle_statut_bon_attribution : VARCHAR(50)
+  }
+
+  entity "bons_attributions" as bons_attributions {
+    * id_bon_attribution : BIGINT <<PK>>
+    --
+    * id_demande : BIGINT <<FK>>
+    * id_session_commission : BIGINT <<FK>>
+    * id_statut_bon_attribution : BIGINT <<FK>>
+    * id_agent_emetteur : BIGINT <<FK>>
+    * date_signature : DATE
+    observation : TEXT
+  }
+
+  entity "bons_attributions_pieces" as bons_attributions_pieces {
+    * id_bon_attribution : BIGINT <<PK, FK>>
+    * id_type_piece : BIGINT <<PK, FK>>
+  }
+
+  entity "lignes_bons_attributions" as lignes_bons_attributions {
+    * id_ligne_bon_attribution : BIGINT <<PK>>
+    --
+    * id_bon_attribution : BIGINT <<FK>>
+    * id_ligne_demande : BIGINT <<FK>>
+    * id_reference_appui : BIGINT <<FK>>
+    * quantite_attribuee : INT
+    remise : DOUBLE
+    date_restitution_prevue : DATE
+  }
+
+  entity "pieces_enlevements" as pieces_enlevements {
+    * id_piece_enlevement : BIGINT <<PK>>
+    --
+    * id_bon_attribution : BIGINT <<FK>>
+    * id_type_piece : BIGINT <<FK>>
+    * chemin_fichier : VARCHAR(255)
+    * date_recuperation : DATE
+  }
+}
+
+' ============================================================
+' PACKAGE GESTION DES STOCKS
+' ============================================================
+package "Gestion des Stocks" {
+  entity "approvisionnements" as approvisionnements {
+    * id_approvisionnement : BIGINT <<PK>>
+    --
+    * id_agent_receptionnaire : BIGINT <<FK>>
+    * reference_commande : VARCHAR(100)
+    * date_approvisionnement : DATE
+    origine : VARCHAR(150)
+  }
+
+  entity "types_mouvements" as types_mouvements {
+    * id_type_mouvement : BIGINT <<PK>>
+    --
+    * libelle_type_mouvement : VARCHAR(50)
+  }
+
+  entity "mouvements_stocks" as mouvements_stocks {
+    * id_mouvement_stock : BIGINT <<PK>>
+    --
+    * id_type_mouvement : BIGINT <<FK>>
+    * id_reference_appui : BIGINT <<FK>>
+    * id_agent_enregistreur : BIGINT <<FK>>
+    id_equipement : BIGINT <<FK>>
+    id_approvisionnement : BIGINT <<FK>>
+    id_ligne_bon_attribution : BIGINT <<FK>>
+    * quantite : INT
+    * date_mouvement : DATETIME
+    motif : TEXT
+  }
+}
+
+' ============================================================
+' RELATIONS RELATIONNELLES (CLÉS ÉTRANGÈRES)
+' ============================================================
+
+' Habilitations & Traçabilité
+postes ||--o{ agents
+services ||--o{ agents
+agents ||--o{ agents_roles
+roles ||--o{ agents_roles
+agents ||--o{ journaux_actions
+
+' Élaboration des demandes
+types_demandeurs ||--o{ demandeurs
+types_demandeurs ||--o{ types_demandeurs_pieces
+types_pieces ||--o{ types_demandeurs_pieces
+demandeurs ||--o{ demandes
+agents ||--o{ demandes
+statuts_demandes ||--o{ demandes
+campagnes ||--o{ demandes
+localites ||--o{ demandes
+departements ||--o{ localites
+demandes ||--o{ pieces_justificatives
+types_pieces ||--o{ pieces_justificatives
+demandes ||--o{ systemes_production
+types_systemes_production ||--o{ systemes_production
+demandes ||--o{ lignes_demandes
+
+' Catalogue & Appuis
+references_appuis ||--o{ lignes_demandes
+services ||--o{ references_appuis
+categories_appuis ||--o{ references_appuis
+unites_appuis ||--o{ references_appuis
+references_appuis ||--o{ equipements
+
+' Commission & Octroi
+types_sessions_commissions ||--o{ sessions_commissions
+sessions_commissions ||--o{ bons_attributions
+demandes ||--|| bons_attributions
+statuts_bons_attributions ||--o{ bons_attributions
+bons_attributions ||--o{ bons_attributions_pieces
+types_pieces ||--o{ bons_attributions_pieces
+agents ||--o{ bons_attributions
+bons_attributions ||--o{ lignes_bons_attributions
+lignes_demandes ||--|| lignes_bons_attributions
+references_appuis ||--o{ lignes_bons_attributions
+bons_attributions ||--o{ pieces_enlevements
+types_pieces ||--o{ pieces_enlevements
+
+' Stocks & Mouvements
+agents ||--o{ approvisionnements
+types_mouvements ||--o{ mouvements_stocks
+references_appuis ||--o{ mouvements_stocks
+equipements ||--o| mouvements_stocks
+approvisionnements ||--o| mouvements_stocks
+lignes_bons_attributions ||--o| mouvements_stocks
+agents ||--o{ mouvements_stocks
+
+@enduml

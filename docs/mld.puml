@@ -1,0 +1,245 @@
+@startuml
+
+hide circle
+skinparam linetype ortho
+
+' --- Sécurité & Accès ---
+entity "users" {
+  *id_user : PK
+  --
+  name
+  email
+  password
+}
+
+entity "groups" {
+  *id_group : PK
+  --
+  group_name
+}
+
+entity "roles" {
+  *id_role : PK
+  --
+  role_name
+}
+
+entity "permissions" {
+  *id_permission : PK
+  --
+  permission_name
+}
+
+' Tables Pivot (Indispensables pour le Many-to-Many)
+entity "user_has_roles" {
+  #id_user : FK
+  #id_role : FK
+}
+
+entity "group_has_roles" {
+  #id_group : FK
+  #id_role : FK
+}
+
+entity "role_has_permissions" {
+  #id_role : FK
+  #id_permission : FK
+}
+
+entity "group_user" {
+  #id_user : FK
+  #id_group : FK
+}
+
+' --- Métier ADERIZ ---
+
+entity "groupes_membres" as gmem {
+    #id_responsable (FK)
+    #id_membre (FK)
+    date_adhesion
+    statut 
+}
+
+entity "categories_acteurs" as catacts {
+    id_catacs (PK)
+    lib_catacts
+}
+
+entity "types_acteurs" as typact {
+    id_type_acteur (PK)
+    lib_type_acteur
+}
+
+entity "acteurs" {
+  *id_acteur (PK)
+  nom
+  adresse
+  telephone
+  id_mandataire (FK)
+}
+
+entity "producteurs" {
+  *id_acteur : PK
+  --
+  #id_user : FK
+  nom
+  adresse
+  telephone
+}
+
+entity "appuis" {
+  *id_appui (PK)
+  --
+  #id_type_appui : FK
+  libelle: varchar(100)
+}
+
+entity "appuis_materiels" {
+  *id_appui_mat : PK
+  --
+  #id_appui
+  dose_ha ?
+  cout_unitaire : decimal(10,2)
+  est_louable: boolean
+  quantite: entier
+}
+
+entity "unites_types_appuis" as untyaps {
+    id_unite_appui (PK)
+    lib_unite_appui
+}
+
+entity "types_appuis" {
+  *id_type_appui (PK)
+  libelle: varchar(100)
+  dose_predefini_ha
+}
+
+entity "categories_acteurs_types_appuis" as caactyaps {
+  #id_catacs
+  #id_type_appui
+}
+
+entity "types_cultures" as typcul {
+  * id_type_culture (PK)
+  '(BFO,PLA,IRR)
+  --
+  lib_type_culture
+    '(bas-fond, plateau, irriguée)
+}
+
+entity "demandes" {
+  *id_demande : PK
+  --
+  #id_acteur : FK
+  #id_commission : FK
+  commentaire_rejet : varchar(1000)
+  date_demande : date
+  statut : string
+  detials : string
+}
+
+entity "demandes_types_cultures" as detycus {
+  id (PK)
+  #id_demande
+  #id_type_culture
+}
+
+entity "statuts_demandes" {
+  *id_statut_demande : PK
+  --
+  lib_statut_demande : varchar(15)
+}
+
+entity "commissions_attributions" {
+  *id_commission : PK
+  --
+  date_ouverture_commission : date
+  date_fermeture_commission : date
+}
+'
+'alter old:ligne_demande
+entity "lignes_demandes" {
+  *id_ligne : PK
+  --
+  #id_demande : FK
+  #id_appui : FK
+  details : text
+}
+
+'alter
+entity "attributions" {
+  *id_attribution : PK
+  --
+  #id_demande : FK
+  #id_user : FK
+  date_attribution : date
+  date_retrait : date
+}
+'
+entity "lignes_attributions" {
+  *id_ligne_attribution : PK
+  --
+  #id_attribution : FK
+  #id_appui : FK
+  quantite : integer
+  'alter old cout_prestation
+  cout_attribution : decimal(10,2)
+  '
+}
+
+entity "location_appui" {
+  *id_location_appui : PK
+  --
+  #id_ligne_attribution: FK
+  date_debut_location: date
+  date_fin_location: date
+}
+
+entity "retrait" {
+  *id_retrait : PK
+  --
+  #id_attribution : FK
+  date_retrait : date
+  cni : varchar(255)
+}
+
+
+' Relations Sécurité
+roles ||-u-o{ user_has_roles
+roles ||--o{ group_has_roles
+roles ||--o{ role_has_permissions
+permissions ||--o{ role_has_permissions
+users ||--o{ group_user
+users ||--o{ user_has_roles
+groups ||--o{ group_user
+groups ||--o{ group_has_roles
+
+' Relations Métier
+' o{ : hasMany
+' || : belongsTo
+' o| : hasOne
+users ||-r-o| acteurs : "représente"
+acteurs ||--o{ demandes : "émet"
+demandes ||-r-|{ lignes_demandes : "contient"
+appuis ||--o{ lignes_demandes : "concerne"
+appuis }o--|| types_appuis : "est de type"
+demandes ||--o| attributions : "reçoit"
+users ||--|| attributions : "envoit"
+appuis ||--o{ lignes_attributions : "intervient"
+attributions ||--o{ lignes_attributions : "contient"
+lignes_attributions ||--o| location_appui : "créer"
+appuis ||--|| appuis_materiels: "correspondre";
+demandes }o--|| statuts_demandes: "prendre"
+demandes }o--|| commisions_attributions: "traiter"
+typact }o--|| acteurs : ""
+gmem }o--|| acteurs : "former"
+catacts ||--|| acteurs : < "appartenir"
+catacts }o--|| caactyaps : "acceder1"
+types_appuis }o--|| caactyaps : "acceder2"
+untyaps ||--o{ types_appuis : "mesurer"
+'new
+typcul ||--o{ detycus : "concerner1"
+demandes ||--o{ detycus : "concerner2"
+
+@enduml

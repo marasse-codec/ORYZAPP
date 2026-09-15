@@ -1,0 +1,133 @@
+@startuml class_gestion_stock
+title Diagramme de classes : Classe utiles pour la gestion des stocks d'appuis
+
+skinparam shadowing false
+skinparam defaultFontName "Segoe UI", sans-serif
+
+hide empty members
+
+' Suppression de tout fond de diagramme (transparent / blanc)
+skinparam backgroundColor #FFFFFF
+
+skinparam class {
+    BackgroundColor #FFFFFF
+    HeaderBackgroundColor #F2F4F4
+    BorderColor #1A1A1A
+    FontColor #000000
+    AttributeFontColor #000000
+    MethodFontColor #000000
+    FontSize 16
+    AttributeFontSize 14
+    MethodFontSize 14
+    BorderThickness 1.5
+}
+
+skinparam arrow {
+    Color #1A1A1A
+    FontColor #000000
+    FontSize 14
+}
+
+
+' ============================================================
+' CATALOGUE ET ÉQUIPEMENTS
+' ============================================================
+
+class ReferenceAppui {
+  - idReferenceAppui : Long
+  - libelleReferenceAppui : String
+  - quantiteEnStock : Integer
+  - coutUnitaire : Double
+  - estEquipement : Boolean
+}
+
+class Equipement {
+  - idEquipement : Long
+  - matriculeEquipement : String
+  - enService : Boolean
+}
+
+ReferenceAppui "1" *-- "0..*" Equipement : inventorier >
+
+' ============================================================
+' BON D'ATTRIBUTION ET ENLÈVEMENT
+' ============================================================
+
+class TypePieceBon {
+  - idTypePiece : Long
+  - libelleTypePiece : String
+}
+
+class BonAttribution {
+  - idBonAttribution : Long
+  - dateEditionBon : Date
+  - dateSignatureBon : Date
+  - dateEnlevementAppuis : Date
+  - observation : String
+}
+
+note right of [BonAttribution]
+  ! Remarque !
+  Ajout de dateEnlevementAppuis
+  Pour suivre la date à laquelle
+  les appuis ont été retirés du stock
+end note
+
+class LigneBonAttribution {
+  - idLigneBonAttribution : Long
+  - quantiteAttribuee : Integer
+  - remise : Double
+}
+
+class PieceEnlevement {
+  - idPieceEnlevement : Long
+  - cheminFichier : String
+}
+
+BonAttribution "1" *-- "1..*" LigneBonAttribution : comporter >
+BonAttribution "1" *-- "0..*" PieceEnlevement : autoriser <
+TypePieceBon "1" -- "0..*" PieceEnlevement : typer 
+LigneBonAttribution "0..*" -- "1" ReferenceAppui : concerner >
+
+' ============================================================
+' MOUVEMENTS LOGISTIQUES ET STOCK
+' ============================================================
+
+class Approvisionnement {
+  - idApprovisionnement : Long
+  - referenceCommande : String
+  - dateApprovisionnement : Date
+  - origine : String
+}
+
+class TypeMouvement {
+  - idTypeMouvement : Long
+  - libelleTypeMouvement : String
+}
+
+class MouvementStock {
+  - idMouvementStock : Long
+  - quantite : Integer
+  - dateMouvement : DateTime
+  - motif : String
+}
+
+MouvementStock "0..*" -- "1" TypeMouvement : qualifier 
+MouvementStock "0..*" -r- "1" ReferenceAppui : impacter >
+MouvementStock "0..*" -- "0..1" Equipement : tracer >
+Approvisionnement "0..1" o-- "0..*" MouvementStock : alimenter >
+LigneBonAttribution "0..1" -- "0..*" MouvementStock : provoquer >
+
+class Agent {
+  - idAgent : Long
+  - matriculeAgent : String
+  - nom : String
+  - prenoms : String
+  - motDePasse : String
+  - actif : Boolean
+}
+
+' à ajouter parmi les associations
+Agent "1" -r- "0..*" MouvementStock : enregistrer >
+
+@enduml

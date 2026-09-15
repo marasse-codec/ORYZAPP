@@ -1,0 +1,42 @@
+@startuml
+title Diagramme de séquence d'analyse — Instruire une demande en commission
+
+skinparam shadowing false
+skinparam sequence {
+    LifeLineBorderColor #888888
+    ParticipantBorderThickness 1.5
+    ArrowColor #333333
+    ActorBorderColor #333333
+    ActorBackgroundColor #F9F9F9
+}
+
+autonumber
+
+' ============================================================
+' PARTICIPANTS (Système Boîte Noire)
+' ============================================================
+
+actor "Agent de commission" as AgentCommission
+participant "Système" as Systeme #EBF3F9
+
+' ============================================================
+' ÉCHANGES CONCEPTUELS
+' ============================================================
+
+AgentCommission -> Systeme : Ouvrir le dossier de la demande
+
+Systeme --> AgentCommission : Afficher le dossier complet
+
+alt#Transparent #3f2b9633 ["Octroyer les appuis"]
+    autonumber 3.1
+    AgentCommission -> Systeme : Sélectionner les appuis octroyés \npendant la session physique et valider la décision
+else ["Rejeter la demande"]
+    autonumber 3.1
+    AgentCommission -> Systeme : Saisir le motif de rejet et valider le rejet
+end
+
+autonumber 4
+Systeme --> AgentCommission : Confirmer l'enregistrement de la décision de la commission
+
+
+@enduml

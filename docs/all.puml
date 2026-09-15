@@ -1,0 +1,393 @@
+' =====================================================================
+'  MÉMOIRE ADERIZ — PARTIE 3 : RÉALISATION DE LA SOLUTION
+'  Diagrammes UML au format PlantUML
+'  Chaque bloc @startuml <nom> produit un fichier <nom>.png (ou .svg)
+'  Rendu : java -jar plantuml.jar -tsvg diagrammes-partie3.puml
+' =====================================================================
+
+
+' ---------------------------------------------------------------------
+' 4. DIAGRAMME D'ÉTATS-TRANSITIONS DE LA DEMANDE
+' ---------------------------------------------------------------------
+@startuml fig-etats-demande
+skinparam shadowing false
+skinparam defaultFontName Liberation Serif
+skinparam defaultFontSize 12
+title Diagramme d'états-transitions — Cycle de vie d'une demande d'appui
+
+[*] --> Enregistree : enregistrer la demande\n(délégué de pôle)
+
+state "Enregistrée" as Enregistree
+state "Routée" as Routee
+state "Conforme" as Conforme
+state NonConforme as "Non conforme"
+state "Programmée" as Programmee
+state "Attribuée" as Attribuee
+state "Rejetée" as Rejetee
+state "Déléguée" as Deleguee
+state "Servie" as Servie
+state "Soldée" as Soldee
+
+Enregistree --> Routee : routage automatique\nvers le ou les services
+Routee --> Conforme : contrôle de conformité\n(agent de service)
+Routee --> NonConforme : pièce manquante\nou champ non renseigné
+NonConforme --> Routee : régularisation du dossier
+Conforme --> Programmee : affectation à une\nsession de commission
+Programmee --> Attribuee : décision favorable\n+ lignes d'attribution
+Programmee --> Rejetee : décision défavorable\n+ motifs de rejet
+Attribuee --> Deleguee : exécution confiée\nà un prestataire
+Attribuee --> Servie : enlèvement enregistré\n(gestionnaire de stock)
+Deleguee --> Servie : appuis fournis\npar le prestataire
+
+state Servie {
+  state "Sans crédit" as SansCredit
+  state "À crédit" as AvecCredit
+  [*] --> SansCredit
+  [*] --> AvecCredit
+}
+
+Servie --> Soldee : appuis non soumis à crédit
+Servie --> Soldee : remboursement constaté\navant échéance
+Rejetee --> [*]
+Soldee --> [*]
+
+note right of Programmee
+  Le passage à « Attribuée » et le
+  décrément de stock sont enregistrés
+  dans une même transaction (ENF06).
+end note
+
+note left of Servie
+  L'approche de l'échéance déclenche
+  une alerte automatique (SF24).
+end note
+@enduml
+
+
+
+' ---------------------------------------------------------------------
+' 6. SÉQUENCE — INSTRUIRE UNE DEMANDE EN COMMISSION (conception)
+' ---------------------------------------------------------------------
+@startuml fig-sequence-instruction
+skinparam shadowing false
+skinparam defaultFontName Liberation Serif
+skinparam defaultFontSize 12
+title Diagramme de séquence — Instruction et octroi d'un appui en commission
+
+actor "Agent de commission" as AG
+participant "Vue Blade\ncommission.instruire" as V
+participant "AttributionController" as C
+participant "AttribuerAppuiRequest" as R
+participant "AttributionService" as S
+participant "StockService" as ST
+participant "NotificationService" as N
+database "MySQL" as DB
+
+AG -> V : ouvrir la session de commission
+activate V
+V -> C : GET /commissions/{id}/demandes
+activate C
+C -> DB : SELECT demandes programmées\n+ stocks disponibles
+DB --> C : demandes et disponibilités
+C --> V : liste des dossiers à instruire
+deactivate C
+V --> AG : afficher les dossiers et les stocks
+deactivate V
+
+AG -> V : saisir les appuis attribués\net les quantités
+V -> C : POST /attributions
+activate C
+C -> R : valider la saisie
+activate R
+R --> C : données validées
+deactivate R
+
+alt Décision favorable
+  C -> S : attribuer(demande, lignes)
+  activate S
+  S -> DB : BEGIN TRANSACTION
+  S -> DB : INSERT attribution + lignes_attribution
+  S -> ST : decrementer(appui, quantite)
+  activate ST
+  ST -> DB : UPDATE appuis SET quantite_stock
+  ST --> S : stock mis à jour
+  deactivate ST
+  S -> DB : UPDATE demandes SET statut = 'attribuee'
+  S -> DB : COMMIT
+  S --> C : attribution enregistrée
+  deactivate S
+else Quantité supérieure au stock disponible
+  C -> S : attribuer(demande, lignes)
+  activate S
+  S -> DB : ROLLBACK
+  S --> C : erreur « stock insuffisant »
+  deactivate S
+  C --> V : message d'erreur désignant l'appui en cause
+else Décision défavorable
+  C -> S : rejeter(demande, motifs)
+  activate S
+  S -> DB : UPDATE demandes SET statut = 'rejetee',\nmotifs_rejet, date_rejet
+  S --> C : rejet enregistré
+  deactivate S
+end
+
+C -> N : notifier la décision au délégué de pôle
+activate N
+N --> C : notification mise en file
+deactivate N
+C --> V : confirmation
+deactivate C
+V --> AG : décision enregistrée et notifiée
+@enduml
+
+
+' ---------------------------------------------------------------------
+' 7. SÉQUENCE — ENREGISTRER UN ENLÈVEMENT D'APPUIS (conception)
+' ---------------------------------------------------------------------
+@startuml fig-sequence-enlevement
+skinparam shadowing false
+skinparam defaultFontName Liberation Serif
+skinparam defaultFontSize 12
+title Diagramme de séquence — Enregistrement d'un enlèvement d'appuis
+
+actor "Gestionnaire de stock" as GS
+participant "Vue Blade\nenlevement.create" as V
+participant "EnlevementController" as C
+participant "EnregistrerEnlevementRequest" as R
+participant "StockService" as S
+participant "Gestionnaire\nde stockage" as FS
+database "MySQL" as DB
+
+GS -> V : saisir la référence du bon d'attribution
+activate V
+V -> C : GET /enlevements/{reference}
+activate C
+C -> DB : SELECT attribution WHERE reference_bon
+
+alt Bon introuvable ou déjà servi
+  DB --> C : aucun résultat exploitable
+  C --> V : « bon introuvable ou déjà servi »
+  V --> GS : message d'erreur
+else Bon valide
+  DB --> C : attribution et lignes
+  C --> V : formulaire de confirmation d'enlèvement
+  deactivate C
+  V --> GS : afficher le détail des appuis à servir
+
+  GS -> V : joindre la pièce d'identité\net la procuration éventuelle
+  GS -> V : valider l'enlèvement
+  V -> C : POST /enlevements
+  activate C
+  C -> R : valider (format, taille des pièces)
+  activate R
+  R --> C : données validées
+  deactivate R
+  C -> FS : stocker les pièces hors racine publique
+  activate FS
+  FS --> C : chemins et empreintes
+  deactivate FS
+  C -> S : enregistrerEnlevement(attribution, pieces)
+  activate S
+  S -> DB : BEGIN TRANSACTION
+  S -> DB : UPDATE attributions SET date_destockage
+  S -> DB : INSERT pieces_justificatives
+  S -> DB : UPDATE demandes SET statut = 'servie'
+  S -> DB : COMMIT
+  S --> C : enlèvement enregistré
+  deactivate S
+  C --> V : confirmation
+  deactivate C
+  V --> GS : enlèvement enregistré et horodaté
+end
+deactivate V
+@enduml
+
+
+' ---------------------------------------------------------------------
+' 8. ACTIVITÉ — CHAÎNE D'INTÉGRATION ET DE MISE EN PRODUCTION
+' ---------------------------------------------------------------------
+@startuml fig-pipeline
+skinparam shadowing false
+skinparam defaultFontName Liberation Serif
+skinparam defaultFontSize 12
+title Diagramme d'activité — De la contribution au déploiement en production
+
+|Développeur|
+start
+:Développer sur une branche\nde module;
+:Pousser la branche\nsur le dépôt GitHub;
+
+|Intégration continue|
+:Installer les dépendances\n(composer, npm);
+:Contrôler le style de code\n(Laravel Pint / PSR-12);
+fork
+  :Exécuter les tests unitaires;
+fork again
+  :Exécuter les tests d'intégration\nsur base de test recréée;
+end fork
+:Mesurer la couverture\ndes règles critiques;
+
+if (Tests passés et couverture >= 80 % ?) then (non)
+  :Signaler l'échec\net bloquer la fusion;
+  |Développeur|
+  :Corriger;
+  stop
+else (oui)
+endif
+
+:Autoriser la fusion\nvers la branche principale;
+:Produire l'image applicative\net l'étiqueter (tag de version);
+
+|Recette|
+:Déployer sur l'environnement\nde recette (données anonymisées);
+:Rejouer les scénarios\nd'acceptation avec les agents;
+if (Recette prononcée ?) then (non)
+  |Développeur|
+  :Reprendre les anomalies;
+  stop
+else (oui)
+endif
+
+|Exploitation|
+:Sauvegarder la base\net les pièces justificatives;
+:Passer l'application\nen mode maintenance;
+:Déployer la version étiquetée;
+:Exécuter les migrations\nde base de données;
+:Reconstruire les caches\n(config, routes, vues);
+:Sortir du mode maintenance;
+:Exécuter les tests de fumée;
+
+if (Tests de fumée concluants ?) then (non)
+  :Restaurer la version précédente\net la sauvegarde;
+  stop
+else (oui)
+  :Consigner la mise en production\ndans le journal d'exploitation;
+endif
+stop
+@enduml
+
+
+' ---------------------------------------------------------------------
+' 9. CLASSES NIVEAU CONCEPTION — DU MODÈLE MÉTIER AU CODE
+' ---------------------------------------------------------------------
+@startuml fig-classes-conception
+skinparam shadowing false
+skinparam defaultFontName Liberation Serif
+skinparam defaultFontSize 11
+title Diagramme de classes niveau conception — passage du modèle métier aux classes Laravel
+
+package "Présentation" {
+  class DemandeController <<Controller>> {
+    +index() : View
+    +create() : View
+    +store(EnregistrerDemandeRequest) : RedirectResponse
+    +show(Demande) : View
+    +imprimer(Demande) : Response
+  }
+  class AttributionController <<Controller>> {
+    +store(AttribuerAppuiRequest) : RedirectResponse
+    +rejeter(RejeterDemandeRequest) : RedirectResponse
+    +bon(Attribution) : Response
+  }
+  class EnlevementController <<Controller>> {
+    +create(string $reference) : View
+    +store(EnregistrerEnlevementRequest) : RedirectResponse
+  }
+}
+
+package "Validation et habilitation" {
+  class EnregistrerDemandeRequest <<FormRequest>> {
+    +authorize() : bool
+    +rules() : array
+  }
+  class AttribuerAppuiRequest <<FormRequest>> {
+    +rules() : array
+  }
+  class DemandePolicy <<Policy>> {
+    +view(User, Demande) : bool
+    +instruire(User, Demande) : bool
+  }
+}
+
+package "Services métier" {
+  class DemandeService <<Service>> {
+    +creer(array $donnees) : Demande
+    +attacherPieces(Demande, array) : void
+  }
+  class RoutageService <<Service>> {
+    +router(Demande) : Collection
+  }
+  class AttributionService <<Service>> {
+    +attribuer(Demande, array $lignes) : Attribution
+    +rejeter(Demande, string $motifs) : void
+    +deleguer(Demande, Prestataire) : Prestation
+  }
+  class StockService <<Service>> {
+    +approvisionner(Appui, float) : void
+    +decrementer(Appui, float) : void
+    +etatAuneDate(Carbon) : Collection
+  }
+  class NotificationService <<Service>> {
+    +notifierDecision(Demande) : void
+  }
+}
+
+package "Modèles Eloquent" {
+  class Demande <<Model>> {
+    +reference : string
+    +statut : string
+    +campagne : string
+    +acteur() : BelongsTo
+    +pieces() : HasMany
+    +services() : BelongsToMany
+    +attribution() : HasOne
+  }
+  class Attribution <<Model>> {
+    +reference_bon : string
+    +a_credit : bool
+    +date_echeance : ?Carbon
+    +lignes() : HasMany
+    +demande() : BelongsTo
+  }
+  class LigneAttribution <<Model>> {
+    +quantite : float
+    +cout_attribution : float
+    +appui() : BelongsTo
+  }
+  class Appui <<Model>> {
+    +quantite_stock : float
+    +cout_unitaire : float
+  }
+  class Acteur <<Model>>
+  class PieceJustificative <<Model>>
+  class SessionCommission <<Model>>
+}
+
+DemandeController --> EnregistrerDemandeRequest
+DemandeController --> DemandeService
+DemandeController ..> DemandePolicy
+AttributionController --> AttribuerAppuiRequest
+AttributionController --> AttributionService
+EnlevementController --> StockService
+
+DemandeService --> RoutageService
+DemandeService --> Demande
+AttributionService --> StockService
+AttributionService --> NotificationService
+AttributionService --> Attribution
+StockService --> Appui
+
+Demande "1" --> "0..1" Attribution
+Demande "1" --> "0..*" PieceJustificative
+Demande "0..*" --> "1" Acteur
+Attribution "1" --> "1..*" LigneAttribution
+LigneAttribution "0..*" --> "1" Appui
+SessionCommission "1" --> "0..*" Attribution
+
+note bottom of Demande
+  Chaque classe du diagramme de classes
+  d'analyse (chapitre 2 de la partie 2)
+  devient un modèle Eloquent et une
+  migration de base de données.
+end note
+@enduml

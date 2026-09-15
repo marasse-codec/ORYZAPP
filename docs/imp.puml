@@ -1,0 +1,35 @@
+@startuml Impression
+skinparam classAttributeIconSize 0
+skinparam shadowing false
+skinparam defaultFontName "Segoe UI", sans-serif
+
+hide empty members
+
+' Suppression de tout fond de diagramme (transparent / blanc)
+skinparam backgroundColor #FFFFFF
+
+skinparam class {
+    BackgroundColor #FFFFFF
+    HeaderBackgroundColor #F2F4F4
+    BorderColor #1A1A1A
+    FontColor #000000
+    AttributeFontColor #000000
+    MethodFontColor #000000
+    FontSize 16
+    AttributeFontSize 14
+    MethodFontSize 14
+    BorderThickness 1.5
+}
+
+skinparam arrow {
+    Color #1A1A1A
+    FontColor #000000
+    FontSize 14
+}
+
+
+' Composition (Lien fort)
+Conteneur "1" *-- "1..*" Composant : Composition
+
+
+@enduml

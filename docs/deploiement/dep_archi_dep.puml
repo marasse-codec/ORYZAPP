@@ -1,0 +1,28 @@
+@startuml deployment_diagram
+skinparam shadowing false
+skinparam defaultFontName "Segoe UI", sans-serif
+skinparam backgroundColor #FFFFFF
+
+node "Tier Client" #E3F2FD {
+    node "Poste Utilisateur / Agent" {
+        [Navigateur Web\n(HTML5 / CSS / JS)] as Browser
+    }
+}
+
+node "Tier Applicatif" #FFFDE7 {
+    node "Serveur Web & Applicatif" {
+        [Serveur HTTP Nginx] as WebServer
+        [Moteur d'exécution PHP] as AppEngine
+        WebServer -[hidden]r- AppEngine
+    }
+}
+
+node "Tier Données" #E8F5E9 {
+    node "Serveur SGBD Principal" {
+        database "MySQL Database" as DB
+    }
+}
+
+Browser -up-> WebServer : HTTPS (Port 443)
+AppEngine -right-> DB : TCP / SQL (Port 3306)
+@enduml

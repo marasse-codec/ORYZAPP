@@ -1,0 +1,71 @@
+
+' ---------------------------------------------------------------------
+' 6. SÉQUENCE — INSTRUIRE UNE DEMANDE EN COMMISSION (conception)
+' ---------------------------------------------------------------------
+@startuml fig-sequence-instruction
+skinparam shadowing false
+skinparam defaultFontName Liberation Serif
+skinparam defaultFontSize 12
+title Diagramme de séquence de l'Enregistrer attribution
+
+actor "Agent de commission" as AG
+participant "Vue Blade\ncommission.instruire" as V
+participant "AttributionController" as C
+participant "AttribuerAppuiRequest" as R
+participant "AttributionService" as S
+participant "StockService" as ST
+database "MySQL" as DB
+
+AG -> V : ouvrir la session de commission
+activate V
+V -> C : GET /demandes?statut='En attente'
+activate C
+C -> DB : SELECT demandes en attentes\n+ stocks disponibles
+DB --> C : demandes et disponibilités
+C --> V : liste des demandes à traiter
+deactivate C
+V --> AG : afficher les dossiers et les stocks
+deactivate V
+
+AG -> V : saisir les appuis attribués\net les quantités
+V -> C : POST /attributions
+activate C
+C -> R : valider la saisie
+activate R
+R --> C : données validées
+deactivate R
+
+alt Décision favorable
+  C -> S : attribuer(demande, attributions)
+  activate S
+  S -> DB : BEGIN TRANSACTION
+  S -> DB : INSERT attribution + lignes_attributions
+  S -> ST : modifStockAttribuee(appui, quantite)
+  activate ST
+  ST -> DB : UPDATE appuis SET quantite_attribuee
+  ST --> S : stock mis à jour
+  deactivate ST
+  S -> DB : UPDATE demandes SET statut = 'attribuee'
+  S -> DB : COMMIT
+  S --> C : attribution enregistrée
+  deactivate S
+else Quantité supérieure au stock disponible
+  C -> S : attribuer(demande, lignes)
+  activate S
+  S -> DB : ROLLBACK
+  S --> C : erreur « stock insuffisant »
+  deactivate S
+  C --> V : message d'erreur désignant l'appui en cause
+else Décision défavorable
+  C -> S : rejeter(demande, motifs)
+  activate S
+  S -> DB : UPDATE demandes SET statut = 'rejetee',\nmotifs_rejet, date_rejet
+  S --> C : rejet enregistré
+  deactivate S
+end
+
+
+C --> V : confirmation
+deactivate C
+V --> AG : décision enregistrée
+@enduml

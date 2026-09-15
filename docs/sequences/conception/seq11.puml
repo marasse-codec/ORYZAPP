@@ -1,0 +1,120 @@
+@startuml seq_enregistrer_demande_pur_metier
+title Diagramme de Séquence — Enregistrer / Soumettre une demande d'Appui
+
+skinparam shadowing false
+skinparam defaultFontName "Segoe UI", sans-serif
+skinparam backgroundColor #FFFFFF
+skinparam maxMessageSize 200
+
+skinparam actor {
+    BackgroundColor #FFFFFF
+    BorderColor #1A1A1A
+}
+
+skinparam participant {
+    BackgroundColor #F2F4F4
+    BorderColor #1A1A1A
+    FontColor #000000
+}
+
+skinparam sequence {
+    ArrowColor #1A1A1A
+    LifeLineBorderColor #1A1A1A
+    LifeLineBackgroundColor #F2F4F4
+}
+
+actor "agent : Agent" as Agent
+participant "role : Role" as Role
+
+autonumber
+
+' ============================================================
+' 0. Vérification des permissions AVANT toute création
+' Agent possède plusieurs rôles : on vérifie si au moins un
+' de ses rôles porte la permission requise. La ligne de vie
+' "role : Role" représente ici tour à tour chacun des rôles
+' de la collection agent.roles (motif répété, cf. notes
+' précédentes sur les instances multiples).
+' ============================================================
+loop Pour chaque role de l'agent on cherche jusqu'à trouver la permission de créer une demande
+    Agent -> Role : possede(creerDemande)
+    activate Role
+    Role --> Agent : autorise : booleen
+    deactivate Role
+    break autorise == true
+        note over Agent
+          Permission trouvée, on arrête
+          la recherche
+        end note
+    end
+end
+
+alt Aucun rôle ne porte la permission "creerDemande"
+
+    note over Agent
+      Accès refusé : l'agent n'a pas
+      la permission de créer une demande.
+    end note
+
+else Un rôle porte la permission "creerDemande"
+
+    ' ============================================================
+    ' 1. Création de l'entité racine Demande avec toutes ses données
+    ' ============================================================
+    create participant "demande : Demande" as Demande
+    Agent -> Demande : <b>enregistrerDemande</b>(demandeur, campagne, localite,\n lignesSaisies, systemesSaisis, piecesTeleversés)
+    activate Demande
+
+    ' ============================================================
+    ' 2. Construction interne des lignes de besoin
+    ' ============================================================
+    loop Pour chaque appui contenu dans lignesSaisies
+        create participant "ligne : LigneDemande" as Ligne
+        Demande -> Ligne : <b>enregistrerLigneDemande</b>(refAppui, quantiteDemandee)
+    end
+    note over Ligne
+      Une instance de LigneDemande
+      est créée pour chaque appui
+    end note
+
+    ' ============================================================
+    ' 3. Construction interne des systèmes de production
+    ' ============================================================
+    loop Pour chaque système contenu dans systemesSaisis
+        create participant "sysProd : SystemeProduction" as SysProd
+        Demande -> SysProd : <b>enregistrerSysProd</b>(typeSysProd, superficie)
+    end
+    note over SysProd
+      Une instance de SystemeProduction
+      est créée pour chaque élément
+      de la liste reçue en une fois.
+    end note
+
+    ' ============================================================
+    ' 4. Construction interne des pièces justificatives
+    ' ============================================================
+    loop Pour chaque piece dans piecesSaisies
+        create participant "piece : PieceJustificative" as Piece
+        Demande -> Piece : <b>enregistrerPieces</b>(typePiece, cheminFichier)
+    end
+    note over Piece
+      Une instance de PieceJustificative
+      est créée pour chaque élément
+      de la liste reçue en une fois.
+    end note
+
+    Demande --> Agent : <b>Message</b> = "Demande enregistrée, mais pas encore soumise !"
+
+    deactivate Demande
+
+    ' ============================================================
+    ' 5. Soumission / Finalisation par l'agent (validation finale unique)
+    ' ============================================================
+    Agent -> Demande : soumettre()
+    activate Demande
+    Demande --> Agent : <b>Message</b> = "Demande soumise aux services de traitements"
+    deactivate Demande
+
+end
+
+@enduml

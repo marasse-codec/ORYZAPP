@@ -1,0 +1,24 @@
+@startuml pkg_architecture_logique
+title Diagramme de l'Architecture Logique en 3 Couches
+
+skinparam shadowing false
+skinparam defaultFontName "Segoe UI", sans-serif
+skinparam backgroundColor #FFFFFF
+
+    
+package "Couche Présentation" as Presentation #E3F2FD {
+    [Interfaces IHM & Gestionnaires d'événements]
+}
+
+package "Couche Application\Metier (Domaine)" as Domain #FFFDE7 {
+    [Règles de gestion & Traitements applicatifs]
+}
+
+package "Couche Accès aux Données" as Data #E8F5E9 {
+    [Entités & Repositories / Mappers]
+}
+
+Presentation ..> Domain : <<sollicite>>
+Domain .r.> Data : <<persiste / extrait>>
+
+@enduml

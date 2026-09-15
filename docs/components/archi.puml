@@ -1,0 +1,78 @@
+@startuml
+skinparam componentStyle uml2
+skinparam packageStyle rectangle
+skinparam actorStyle awesome
+
+title Intervention de l'Acteur selon les Modèles d'Architecture
+
+' -------------------------------------------------------------
+' 1. ARCHITECTURE 1-TIER
+' -------------------------------------------------------------
+package "1. Architecture 1-Tier (Tout sur la même machine)" {
+    actor "Utilisateur" as User1
+    node "Poste de travail autonome" {
+        [IHM + Métier + Base de données local] as App1
+    }
+    User1 -> App1 : Interagit directement en local
+}
+
+' -------------------------------------------------------------
+' 2. ARCHITECTURE 2-TIERS
+' -------------------------------------------------------------
+package "2. Architecture 2-Tiers (Client Lourd - Serveur)" {
+    actor "Utilisateur" as User2
+    node "Poste Client (Client Lourd)" {
+        [IHM + Logique Métier] as App2
+    }
+    node "Serveur distant" {
+        database "Base de données SQL" as DB2
+    }
+    User2 -> App2 : Manipule l'application installée sur son PC
+    App2 ..> DB2 : Requêtes SQL directes via le réseau
+}
+
+' -------------------------------------------------------------
+' 3. ARCHITECTURE 3-TIERS (Notre projet)
+' -------------------------------------------------------------
+package "3. Architecture 3-Tiers (Client Léger Web / Application / BDD)" {
+    actor "Agent / Acteur" as User3
+    node "1er Tier : Poste Client" {
+        [Navigateur Web (Vue Blade / Tailwind)] as Front3
+    }
+    node "2e Tier : Serveur d'Application" {
+        [Laravel (Contrôleurs, Services, Traitements)] as App3
+    }
+    node "3e Tier : Serveur de Données" {
+        database "MySQL (Persistance)" as DB3
+    }
+    User3 -> Front3 : Utilise un simple navigateur (Aucune installation)
+    Front3 ..> App3 : Requêtes HTTP / HTTPS
+    App3 ..> DB3 : ORM Eloquent / SQL
+}
+
+' -------------------------------------------------------------
+' 4. ARCHITECTURE N-TIERS
+' -------------------------------------------------------------
+package "4. Architecture N-Tiers (Services Distribués / Cloud)" {
+    actor "Utilisateur Web / Mobile" as User4
+    node "Client" {
+        [App Mobile / Navigateur] as ClientN
+    }
+    node "Passerelle / Middleware" {
+        [API Gateway] as GatewayN
+    }
+    node "Micro-Services" {
+        [Service Auth] as S1
+        [Service Demandes] as S2
+    }
+    node "Stockage" {
+        database "BDD Distribuée" as DBN
+    }
+    User4 -> ClientN : Interacts via App/Web
+    ClientN ..> GatewayN : Requêtes API
+    GatewayN ..> S1
+    GatewayN ..> S2
+    S2 ..> DBN
+}
+
+@enduml

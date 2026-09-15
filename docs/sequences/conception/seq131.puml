@@ -1,0 +1,75 @@
+@startuml seq_approvisionnement_conception
+title Diagramme de Séquence « Enregistrer un Approvisionnement (Entrée Stock) »
+
+skinparam shadowing false
+skinparam defaultFontName "Segoe UI", sans-serif
+skinparam backgroundColor #FFFFFF
+skinparam maxMessageSize 200
+
+skinparam actor {
+  BackgroundColor #FFFFFF
+  BorderColor #1A1A1A
+}
+
+skinparam participant {
+  BackgroundColor #F2F4F4
+  BorderColor #1A1A1A
+  FontColor #000000
+}
+
+skinparam sequence {
+  ArrowColor #1A1A1A
+  LifeLineBorderColor #1A1A1A
+  LifeLineBackgroundColor #F2F4F4
+}
+
+actor "agent : Agent" as Agent
+participant "appro : Approvisionnement" as Appro
+participant "mvt : MouvementStock" as Mvt
+participant "typeMvt : TypeMouvement" as TypeMvt
+participant "refAppui : ReferenceAppui" as Ref
+participant "eq : Equipement" as Eq
+
+autonumber
+
+' 1. Création de l'entité racine Approvisionnement
+create Appro
+Agent -> Appro : new(refCommande, dateAppro, origine)
+
+' 2. Boucle d'ajout des entrées en stock
+loop Pour chaque référence livrée
+  Agent -> Appro : ajouterEntreeStock(agent, refAppui, typeMvt, quantite, motif)
+  activate Appro
+    
+    ' Création du mouvement de stock d'entrée
+    create Mvt
+    Appro -> Mvt : new(agent, refAppui, typeMvt, quantite, motif)
+    
+    ' Mise à jour du stock physique global
+    Appro -> Ref : incrémenterStock(quantite)
+    activate Ref
+      Ref --> Appro : Void
+    deactivate Ref
+
+    ' Cas particulier : Si c'est un matériel/équipement sérialisé
+    alt Si refAppui.estEquipement == Vrai
+      loop Pour i de 1 à quantite
+        create Eq
+        Appro -> Eq : new(matricule, enService = true)
+        Appro -> Ref : ajouterEquipement(eq)
+        activate Ref
+          Ref --> Appro : Void
+        deactivate Ref
+        
+        Mvt -> Eq : associerEquipement(eq)
+        activate Eq
+          Eq --> Mvt : Void
+        deactivate Eq
+      end
+    end
+
+    Appro --> Agent : Void
+  deactivate Appro
+end
+
+@enduml

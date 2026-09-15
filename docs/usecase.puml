@@ -1,0 +1,102 @@
+@startuml Gestion_des_Appuis
+
+left to right direction
+skinparam packageStyle rectangle
+skinparam actorStyle outline
+skinparam Linetype ortho
+skinparam layout engine elk
+
+skinparam UseCaseThickness 3.5   ' Épaisseur du contour des cas d'utilisation
+skinparam ArrowThickness 3.5     ' Épaisseur des flèches
+
+' Pour les cas d'utilisation (UC)
+skinparam UseCaseFontSize 16
+skinparam UseCaseFontStyle bold
+
+' Pour les rectangles
+skinparam RectangleFontSize 18
+skinparam RectangleFontStyle bold
+
+' Pour les acteurs
+skinparam ActorFontSize 16
+skinparam ActorFontStyle bold
+
+' Pour le texte sur les flèches (si vous en avez)
+skinparam ArrowFontSize 14
+
+' ==========================================
+' DÉFINITION DES ACTEURS
+' ==========================================
+actor "Requérant / Acteur\n(Producteur Individuel, Coopérative, etc.)" as Requerant
+actor "Délégué de Pôle (DP)" as DP
+actor "Membre de direction" as MD
+actor "Responsable de Commission" as Comm
+actor "Responsable Centre\nde Conditionnement" as RespCentre
+
+' ==========================================
+' SYSTÈME & CAS D'UTILISATION
+' ==========================================
+rectangle "Système de Gestion des Appuis - ADERIZ" {
+
+    ' --- Authentification & Suivi ---
+    rectangle " " as first #transparent;line:transparent { 
+        usecase "Créer et soumettre une requête d'appui" as UC_CreateReq
+        usecase "Suivre l'état de la requête" as UC_Track
+    }
+
+    ' --- Sollicitation ---
+    rectangle " " as second #transparent;line:transparent { 
+        usecase "Valider la véracité des informations de la requête" as UC_Conf
+    }
+
+    ' --- Avant la commission ---
+    rectangle " " as fird #transparent;line:transparent { 
+        usecase "Voir les requêtes en attente de traitement" as UC_ViewReq
+        usecase "Générer les listes de requêtes conformes" as UC_GenListReqConf
+    }
+
+    ' --- Traitement en Commission ---
+    rectangle " " as fourth #transparent;line:transparent { 
+        usecase "Traiter les requêtes conformes\n(Valider / Rejeter)" as UC_Process
+        usecase "Voir les stocks actuels d'appuis" as UC_VoirStockAppui
+        usecase "Publier les listes des résultats" as UC_Publish
+
+        UC_Publish -[hidden]right-> UC_Process
+        
+    }
+
+    ' --- Retrait ---
+    rectangle " " as fith #transparent;line:transparent { 
+        usecase "Enregistrer pièces de récipiendaire d'intrants" as UC_Enregistrer
+        usecase "Entrer les stocks réels du centre" as UC_Actu
+    }
+
+    fird -[hidden]right-> second
+
+}
+
+' ==========================================
+' RELATIONS ACTEURS <-> CAS D'UTILISATION
+' ==========================================
+
+' Requérant
+Requerant --> UC_CreateReq
+Requerant --> UC_Track
+
+' Délégué de Pôle
+DP -u-> UC_Conf
+
+' Membre de direction
+MD --> UC_ViewReq
+MD --> UC_GenListReqConf
+
+' Commission
+Comm --> UC_Process
+Comm --> UC_VoirStockAppui
+Comm --> UC_Publish
+
+' Responsable du Centre de Conditionnement
+RespCentre -u-> UC_Enregistrer
+RespCentre -u-> UC_Actu
+
+@enduml

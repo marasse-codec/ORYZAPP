@@ -1,0 +1,16 @@
+@startuml classes
+
+class "Appui" as Appui {
+  - idAppui : Long
+  - quantiteStock : Float
+  - coutUnitaire : Float
+}
+
+class "Agent" as Agent {
+  - idAgent : Long
+  - nom : String
+  - prenoms : String
+}
+
+
+@enduml

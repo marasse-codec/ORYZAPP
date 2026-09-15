@@ -1,0 +1,79 @@
+@startuml class_habilitations
+title Diagramme de classes — Agents, habilitations et traçabilité
+
+skinparam shadowing false
+skinparam defaultFontName "Segoe UI", sans-serif
+' Suppression de tout fond de diagramme (transparent / blanc)
+skinparam backgroundColor #FFFFFF
+
+hide empty members
+
+
+skinparam class {
+    BackgroundColor #FFFFFF
+    HeaderBackgroundColor #F2F4F4
+    BorderColor #1A1A1A
+    FontColor #000000
+    AttributeFontColor #000000
+    MethodFontColor #000000
+    FontSize 16
+    AttributeFontSize 14
+    MethodFontSize 14
+    BorderThickness 1.5
+}
+
+skinparam arrow {
+    Color #1A1A1A
+    FontColor #000000
+    FontSize 14
+}
+class Role {
+  - idRole : Long
+  - libelleRole : String
+}
+
+class Permission {
+  - idPermission : Long
+  - libellePermission : String
+}
+
+Role "0..*" -u- "0..*" Permission : accorder >
+
+class Poste {
+  - idPoste : Long
+  - libellePoste : String
+}
+
+class Service {
+  - idService : Long
+  - libelleService : String
+}
+
+class Agent {
+  - idAgent : Long
+  - matriculeAgent : String
+  - nom : String
+  - prenoms : String
+  - telephone : String
+  - email : String
+  - motDePasse : String
+  - actif : Boolean
+}
+
+class JournalAction {
+  - idJournalAction : Long
+  - entiteConcernee : String
+  - idEntite : Long
+  - action : String
+  - dateAction : DateTime
+  - valeurAvant : String
+  - valeurApres : String
+}
+
+
+Service "1" -l- "0..*" Agent : affecter >
+Poste "1" -r- "0..*" Agent : occuper <
+Agent "0..*" -- "1..*" Role : détenir >
+Agent "1" -- "0..*" JournalAction : tracer >
+
+@enduml

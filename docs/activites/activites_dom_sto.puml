@@ -1,0 +1,19 @@
+@startuml
+title Consitution des stocks
+
+skinparam defaultFontName Arial
+skinparam defaultFontSize 12
+
+|Fournisseurs|
+start
+
+:Apporter stocks d'appuis;
+
+|Service des Moyens Généraux|
+:Réceptionner la livraison d'appuis;
+:Contrôler la quantité et la qualité;
+:Enregistrer l'entrée en stock;
+:Mettre à jour le registre d'inventaire;
+stop
+
+@enduml

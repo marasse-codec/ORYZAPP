@@ -1,0 +1,90 @@
+@startuml seq_octroi_demande_revu
+title Diagramme de Séquence Analyse du Traitement et Octroi d'appuis
+
+skinparam shadowing false
+skinparam defaultFontName "Segoe UI", sans-serif
+skinparam backgroundColor #FFFFFF
+skinparam maxMessageSize 200
+
+skinparam ParticipantPadding 400
+
+skinparam actor {
+    BackgroundColor #FFFFFF
+    BorderColor #1A1A1A
+}
+
+skinparam participant {
+    BackgroundColor #F2F4F4
+    BorderColor #1A1A1A
+    FontColor #000000
+}
+
+skinparam sequence {
+    ArrowColor #1A1A1A
+    LifeLineBorderColor #1A1A1A
+    LifeLineBackgroundColor #F2F4F4
+}
+
+autonumber
+
+actor "agent :AgentService" as agt
+participant "Systeme" as sys
+actor "agent :Validateur" as val
+
+activate sys
+
+note over agt
+On suppose que l'agent est un agent de service
+authentifié et connecté
+end note
+
+sys -> sys : <b>Affiche les demandes avec des lignes qui comportent les appuis\n fournis par le service de l'utilisateur<b>
+agt -> sys : <b>selectionneDemandeSoumise</b>(numero demande)
+agt <<-- sys : affichage demande selectionnée
+
+alt ["creer attribution pour la demande"]
+
+agt -> sys : <b>creeAttribution</b>(lignesAttributions,idDemande)
+agt <<-- sys : <b>Message</b> = "Attribution créé, mais pas soumise"
+    
+else ["rejeter la demande"]
+
+agt -> sys : <b>rejeteDemande</b>(idDemande)
+agt <<-- sys : <b>Message</b> = "Demande rejetée"
+
+end
+
+agt -> sys : <b>affiche les attributions créés</b>
+agt <<-- sys : affichage attributions
+agt -> sys : <b>soumetAttribution</b>(idAttribution)
+agt <<-- sys : <b>Messsage</b> = "Attribution soumise en attente de la commission"
+
+note left
+Après soummission,
+l'attribution n'est plus modifiable 
+par le service
+end note
+
+'================== 
+' Validation en commission
+'==================
+
+sys <- val : <b>enregistreSessionCommission</b>(date)
+
+sys -->> val : <b>Message</b> = "Session enregistré, "
+
+sys <- val : <b>Affiche les attributions soumises par les services</b>
+sys -->> val : liste des attributions soumises
+
+alt ["valider l'attribution"]
+
+sys <- val : <b>valideAttribution</b>(idAttribution)
+sys -->> val : <b>Message</b> = "Attribution validée, pas encore publiée !"
+    
+else ["annuler l'attribution"]
+
+sys <- val : <b>annulerAttribution</b>(idAttribution)
+sys -->> val : <b>Message</b> = "Attribution annulée"
+
+end
+@enduml

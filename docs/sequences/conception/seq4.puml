@@ -1,0 +1,123 @@
+@startuml sd_caducite
+title <b>Diagramme de séquence — Alerte de délai et réintégration d'une attribution caduque (UC22, UC18)</b>
+
+skinparam shadowing false
+skinparam defaultFontName "Segoe UI"
+skinparam backgroundColor #FFFFFF
+skinparam sequenceMessageAlign center
+skinparam ParticipantPadding 12
+skinparam BoxPadding 12
+
+skinparam participant {
+  BackgroundColor #F7FAFC
+  BorderColor #1A202C
+  BorderThickness 2
+  FontStyle bold
+  FontSize 12
+}
+skinparam actor {
+  BackgroundColor #EDF2F7
+  BorderColor #2D3748
+  BorderThickness 2
+  FontStyle bold
+}
+skinparam sequence {
+  ArrowColor #2D3748
+  ArrowThickness 2
+  LifeLineBorderColor #718096
+  LifeLineBackgroundColor #EDF2F7
+}
+
+participant "Horloge système" as H <<Planificateur>>
+actor "Gestionnaire de stock" as U
+
+box "Traitement" #FDFDFD
+  participant "srv :\nAlerteService" as A <<Service métier>>
+  participant "srv :\nStockService" as S <<Service métier>>
+  participant "notif :\nMailer" as N <<Notification>>
+end box
+
+box "Données" #FDFDFD
+  participant ":BonAttribution" as BA <<Modèle>>
+  participant ":LigneBonAttribution" as LBA <<Modèle>>
+  participant ":MouvementStock" as MS <<Modèle>>
+  participant ":ReferenceAppui" as RA <<Modèle>>
+  participant ":JournalAction" as JA <<Modèle>>
+  database "MySQL" as BD
+end box
+
+== Détection quotidienne des échéances ==
+
+H -> A : executerAlertes()
+activate A
+
+A -> BA : bonsNonRetires()
+activate BA
+BA -> BD : SELECT bon_attribution\nWHERE dateEnlevementAppuis IS NULL
+BA --> A : bons en attente
+deactivate BA
+
+loop pour chaque bon en attente
+  alt délai de 45 jours proche
+    A -> N : alerterDelaiEnlevement(bon)
+    activate N
+    N --> A : notification envoyée
+    deactivate N
+  else délai de 45 jours dépassé
+    A -> BA : marquerCaduc(bon)
+    activate BA
+    BA -> BD : UPDATE bon_attribution
+    deactivate BA
+  end
+end
+
+A -> LBA : materielsNonRestitues()
+activate LBA
+LBA -> BD : SELECT ligne_bon_attribution\nWHERE dateRestitutionPrevue proche
+LBA --> A : matériels concernés
+deactivate LBA
+
+loop pour chaque matériel concerné
+  A -> N : alerterRetourMateriel(ligne)
+  activate N
+  N --> A : notification envoyée
+  deactivate N
+end
+
+A --> H : traitement terminé
+deactivate A
+
+== Réintégration par le gestionnaire ==
+
+U -> S : reintegrerBonCaduc(idBon)
+activate S
+S -> BD : ouvrir transaction
+
+S -> BA : find(idBon)
+activate BA
+BA -> BD : SELECT bon_attribution, lignes
+BA --> S : bon caduc
+deactivate BA
+
+loop pour chaque ligne du bon
+  S -> MS : create(ligneBon, referenceAppui,\ntypeMouvement "reintegration", quantite)
+  activate MS
+  MS -> BD : INSERT mouvement_stock
+  deactivate MS
+
+  S -> RA : incrementerStock(quantiteAttribuee)
+  activate RA
+  RA -> BD : UPDATE quantiteEnStock
+  deactivate RA
+end
+
+S -> JA : create(agent, "reintegration",\n"BonAttribution", idBon)
+activate JA
+JA -> BD : INSERT journal_action
+deactivate JA
+
+S -> BD : valider la transaction
+S --> U : appuis réintégrés en stock
+deactivate S
+
+@enduml

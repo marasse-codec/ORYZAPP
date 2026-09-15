@@ -1,0 +1,72 @@
+@startuml seq_enlevement_conception
+title Diagramme de séquence de conception de la partie Enlèvement des appuis
+
+skinparam shadowing false
+skinparam defaultFontName "Segoe UI", sans-serif
+skinparam backgroundColor #FFFFFF
+skinparam maxMessageSize 200
+
+skinparam actor {
+    BackgroundColor #FFFFFF
+    BorderColor #1A1A1A
+}
+
+skinparam participant {
+    BackgroundColor #F2F4F4
+    BorderColor #1A1A1A
+    FontColor #000000
+}
+
+skinparam sequence {
+    ArrowColor #1A1A1A
+    LifeLineBorderColor #1A1A1A
+    LifeLineBackgroundColor #F2F4F4
+}
+
+actor "agent : Agent" as Agent
+participant "bon : BonAttribution" as Bon
+participant "ligneAttrib : LigneAttribution" as LigneAttrib
+participant "refAppui : ReferenceAppui" as Ref
+
+autonumber
+
+' ============================================================
+' 1. Joindre les pièces justificatives d'enlèvement
+' Composition BonAttribution *-- PieceEnlevement : c'est Bon
+' qui crée sa propre PieceEnlevement, pas l'agent directement.
+' ============================================================
+loop Pour chaque document d'enlèvement fourni
+    Agent -> Bon : joindrePieceEnlevement(typePieceBon, cheminFichier)
+    activate Bon
+    create participant "piece : PieceEnlevement" as Piece
+    Bon -> Piece : creer(typePieceBon, cheminFichier)
+    Bon --> Agent
+    deactivate Bon
+end
+
+' ============================================================
+' 2. Validation de l'enlèvement et déclenchement des mouvements de sortie
+' ============================================================
+Agent -> Bon : effectuerEnlevement(agent, dateEnlevement, typeMvt)
+activate Bon
+
+loop Pour chaque LigneAttribution
+    Bon -> LigneAttrib : genererMouvementSortie(agent, typeMvt)
+    activate LigneAttrib
+
+    create participant "mvt : MouvementStock" as Mvt
+    LigneAttrib -> Mvt : creer(agent, refAppui, typeMvt, quantiteAttribuee)
+
+    LigneAttrib -> Ref : decrementerStock(quantiteAttribuee)
+    activate Ref
+    Ref --> LigneAttrib
+    deactivate Ref
+
+    LigneAttrib --> Bon : mvt
+    deactivate LigneAttrib
+end
+
+Bon --> Agent
+deactivate Bon
+
+@enduml

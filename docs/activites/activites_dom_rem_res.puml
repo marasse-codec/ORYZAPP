@@ -1,0 +1,52 @@
+@startuml
+title Remise des appuis et restitution des equipements confiés
+
+skinparam defaultFontName Arial
+skinparam defaultFontSize 12
+skinparam activity {
+  BackgroundColor #FFFFFF
+  BorderColor #333333
+  DiamondBackgroundColor #FFFFFF
+  DiamondBorderColor #333333
+}
+
+|Acteur de la filière|
+start
+if (Bénéficiaire présent dans le délai
+de 45 jours ?) then (oui)
+  :Se présenter au centre
+  avec une pièce d'identité
+  ou une procuration;
+else (non)
+|Agent centre de conditionnement|
+  :Annuler l'attribution;
+  :Réintégrer les appuis en stock;
+endif
+
+|Agent centre de conditionnement|
+:Vérifier la pièce d'identité
+ou la procuration 
+(pour un représentant);
+:Remettre les appuis;
+:Enregistrer la sortie de stock;
+
+if (Nature de l'appui ?) then (Intrant)
+  |Acteur de la filière|
+  :Consommer l'intrant
+  au cours de la campagne;
+  stop
+else (equipement)
+  |Agent centre de conditionnement|
+  :Remettre le equipement;
+  |Acteur de la filière|
+  :Utiliser le equipement
+  jusqu'à la date de retour;
+  :Restituer le equipement;
+  |Agent centre de conditionnement|
+  :Constater le retour;
+  :Rendre le equipement
+  de nouveau disponible;
+  stop
+endif
+
+@enduml

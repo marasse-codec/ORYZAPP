@@ -1,0 +1,102 @@
+@startuml
+left to right direction
+
+skinparam linetype ortho
+skinparam componentStyle uml2
+
+actor "Utilisateur" as User
+
+'====================================================
+' Interfaces / contrats
+'====================================================
+
+interface "IGui" as IGui
+interface "IDemandeService" as IDemandeService
+interface "IPersistance" as IPersistance
+
+
+'====================================================
+' Application principale
+'====================================================
+
+component "Application" as App {
+
+    '------------------------------------------------
+    ' Port d'accès à l'interface utilisateur
+    '------------------------------------------------
+
+    portin "Ecran" as Ecran
+
+    '------------------------------------------------
+    ' Frontend
+    '------------------------------------------------
+
+    component "Frontend" as Frontend {
+        portin "GUI" as GuiPort
+    }
+
+    '------------------------------------------------
+    ' Moteur métier
+    '------------------------------------------------
+
+    component "Moteur Métier" as Moteur {
+        portin "Services" as ServicesPort
+    }
+
+    '------------------------------------------------
+    ' Délégation : Ecran → GUI
+    '------------------------------------------------
+
+    GuiPort --> Ecran : <<delegate>>
+
+    '------------------------------------------------
+    ' Délégation : Services → service métier
+    '------------------------------------------------
+
+    ServicesPort --> GuiPort : <<delegate>>
+
+    '------------------------------------------------
+    ' Communication interne
+    '------------------------------------------------
+
+    Frontend ..> Moteur : utilise
+}
+
+
+'====================================================
+' Interface utilisateur
+'====================================================
+
+Ecran - IGui
+
+
+'====================================================
+' Interface des services métier
+'====================================================
+
+ServicesPort - IDemandeService
+
+
+'====================================================
+' Port de persistance
+'====================================================
+
+component "Base de données" as DB {
+
+portin "Persistance" as PersistancePort
+
+PersistancePort - IPersistance
+
+}
+
+Moteur ..> PersistancePort : utilise
+
+
+'====================================================
+' Connexion de l'utilisateur
+'====================================================
+
+User ..> Ecran : utilise
+
+
+@enduml

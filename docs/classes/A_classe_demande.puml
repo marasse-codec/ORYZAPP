@@ -1,0 +1,251 @@
+@startuml elab_demande_architecture_web
+title Diagramme de Classes de Conception (Web / Architecture 3-Tiers) — Élaboration d'une Demande d'Appui
+
+skinparam shadowing false
+skinparam defaultFontName "Segoe UI", sans-serif
+skinparam backgroundColor #FFFFFF
+skinparam Linetype ortho
+
+skinparam package {
+  BorderThickness 2
+  BorderColor #1A1A1A
+  BackgroundColor #FAFAFA
+  FontColor #333333
+  FontSize 14
+  FontStyle bold
+}
+
+skinparam class {
+    BackgroundColor #FFFFFF
+    HeaderBackgroundColor #F2F4F4
+    BorderColor #1A1A1A
+    FontColor #000000
+    AttributeFontColor #000000
+    MethodFontColor #000000
+    FontSize 12
+    AttributeFontSize 11
+    MethodFontSize 11
+    BorderThickness 1.5
+}
+
+skinparam arrow {
+    Color #1A1A1A
+    FontColor #000000
+    FontSize 11
+}
+
+' ============================================================
+' COUCHE CONTROULEUR (REST API)
+' ============================================================
+package "Couche Présentation (REST Controllers)" {
+  class DemandeController {
+    + creerDemande(dto : DemandeRequestDTO) : ResponseEntity<DemandeResponseDTO>
+    + modifierDemande(id : Long, dto : DemandeRequestDTO) : ResponseEntity<DemandeResponseDTO>
+    + soumettreDemande(id : Long) : ResponseEntity<Void>
+    + annulerDemande(id : Long) : ResponseEntity<Void>
+    + consulterDemande(id : Long) : ResponseEntity<DemandeResponseDTO>
+    + listerDemandesParDemandeur(idDemandeur : Long) : ResponseEntity<List<DemandeResponseDTO>>
+  }
+
+  class ReferentielController {
+    + listerTypesDemandeurs() : ResponseEntity<List<TypeDemandeurDTO>>
+    + listerCampagnesActives() : ResponseEntity<List<CampagneDTO>>
+    + listerLocalitesParDepartement(idDept : Long) : ResponseEntity<List<LocaliteDTO>>
+    + listerReferencesAppuis() : ResponseEntity<List<ReferenceAppuiDTO>>
+  }
+}
+
+' ============================================================
+' COUCHE SERVICES (LOGIQUE MÉTIER)
+' ============================================================
+package "Couche Métier (Application Services)" {
+  interface IDemandeService {
+    + creerDemande(dto : DemandeRequestDTO, agentId : Long) : DemandeResponseDTO
+    + ajouterPieceJustificative(idDemande : Long, idTypePiece : Long, fichierPath : String) : void
+    + verifierConformitePieces(idDemande : Long) : Boolean
+    + changerStatutDemande(idDemande : Long, nouveauStatutCode : String, motif : String) : void
+    + validerEligibiliteCampagne(idDemande : Long, idCampagne : Long) : Boolean
+  }
+
+  class DemandeServiceImpl {
+    + creerDemande(dto : DemandeRequestDTO, agentId : Long) : DemandeResponseDTO
+    + ajouterPieceJustificative(idDemande : Long, idTypePiece : Long, fichierPath : String) : void
+    + verifierConformitePieces(idDemande : Long) : Boolean
+    + changerStatutDemande(idDemande : Long, nouveauStatutCode : String, motif : String) : void
+    + validerEligibiliteCampagne(idDemande : Long, idCampagne : Long) : Boolean
+  }
+
+  interface IReferentielService {
+    + verifierDisponibiliteStock(idRefAppui : Long, quantite : Integer) : Boolean
+    + recupererPiecesExigees(idTypeDemandeur : Long) : List<TypePieceDTO>
+  }
+
+  class ReferentielServiceImpl {
+    + verifierDisponibiliteStock(idRefAppui : Long, quantite : Integer) : Boolean
+    + recupererPiecesExigees(idTypeDemandeur : Long) : List<TypePieceDTO>
+  }
+}
+
+' ============================================================
+' COUCHE PERSISTANCE (REPOSITORIES / DAO)
+' ============================================================
+package "Couche Accès aux Données (Repositories / DAO)" {
+  interface DemandeRepository {
+    + findById(id : Long) : Optional<Demande>
+    + findByDemandeurId(idDemandeur : Long) : List<Demande>
+    + findByCampagneIdAndStatut(idCampagne : Long, idStatut : Long) : List<Demande>
+    + save(demande : Demande) : Demande
+  }
+
+  interface DemandeurRepository {
+    + findById(id : Long) : Optional<Demandeur>
+  }
+
+  interface ReferenceAppuiRepository {
+    + findById(id : Long) : Optional<ReferenceAppui>
+  }
+}
+
+' ============================================================
+' COUCHE DOMAINE (ENTITÉS JPA / ORM)
+' ============================================================
+package "Couche Domaine (ORM Entities)" {
+  class TypeDemandeur {
+    - idTypeDemandeur : Long
+    - libelleTypeDemandeur : String
+  }
+
+  class TypePiece {
+    - idTypePiece : Long
+    - libelleTypePiece : String
+  }
+
+  class Demandeur {
+    - idDemandeur : Long
+    - nom : String
+    - telephone : String
+    - email : String
+  }
+
+  class Agent {
+    - idAgent : Long
+    - matriculeAgent : String
+    - nom : String
+    - prenoms : String
+  }
+
+  class Departement {
+    - idDepartement : Long
+    - libelleDepartement : String
+  }
+
+  class Localite {
+    - idLocalite : Long
+    - libelleLocalite : String
+  }
+
+  class Campagne {
+    - idCampagne : Long
+    - libelleCampagne : String
+    - dateDebutCampagne : Date
+    - dateFinCampagne : Date
+  }
+
+  class StatutDemande {
+    - idStatutDemande : Long
+    - libelleStatutDemande : String
+  }
+
+  class Demande {
+    - idDemande : Long
+    - dateDemande : Date
+    - dateDebutMiseEnPlaceSouhaitee : Date
+    - dateFinMiseEnPlaceSouhaitee : Date
+    + calculerSuperficieTotale() : Double
+  }
+
+  class PieceJustificative {
+    - idPieceJustificative : Long
+    - cheminFichier : String
+  }
+
+  class TypeSystemeProduction {
+    - idTypeSystemeProduction : Long
+    - libelleTypeSystemeProduction : String
+  }
+
+  class SystemeProduction {
+    - idSystemeProduction : Long
+    - superficie : Double
+  }
+
+  class LigneDemande {
+    - idLigneDemande : Long
+    - quantiteDemandee : Integer
+  }
+
+  class Service {
+    - idService : Long
+    - libelleService : String
+  }
+
+  class CategorieAppui {
+    - idCategorieAppui : Long
+    - libelleCategorieAppui : String
+  }
+
+  class UniteAppui {
+    - idUniteAppui : Long
+    - libelleUniteAppui : String
+  }
+
+  class ReferenceAppui {
+    - idReferenceAppui : Long
+    - libelleReferenceAppui : String
+    - quantiteEnStock : Integer
+    - coutUnitaire : Double
+  }
+}
+
+' ============================================================
+' RELATIONS ENTRE LES COUCHES (WEB DEPENDENCIES)
+' ============================================================
+DemandeController --> IDemandeService : injecte
+ReferentielController --> IReferentielService : injecte
+
+IDemandeService <|.. DemandeServiceImpl : implémente
+IReferentielService <|.. ReferentielServiceImpl : implémente
+
+DemandeServiceImpl --> DemandeRepository : utilise
+DemandeServiceImpl --> DemandeurRepository : utilise
+DemandeServiceImpl --> ReferenceAppuiRepository : utilise
+
+DemandeRepository ..> Demande : manipule >
+DemandeurRepository ..> Demandeur : manipule >
+ReferenceAppuiRepository ..> ReferenceAppui : manipule >
+
+' ============================================================
+' ASSOCIATIONS DES ENTITÉS
+' ============================================================
+Demandeur "0..*" -- "1" TypeDemandeur
+TypeDemandeur "0..*" -- "0..*" TypePiece
+
+Demandeur "1" -- "0..*" Demande
+Agent "1" -- "0..*" Demande
+Demande "0..*" -- "1" StatutDemande
+Campagne "1" -- "0..*" Demande
+Localite "1" -- "0..*" Demande
+Localite "0..*" -- "1" Departement
+
+Demande "1" *-- "0..*" PieceJustificative
+TypePiece "1" -- "0..*" PieceJustificative
+Demande "1" *-- "1..*" SystemeProduction
+TypeSystemeProduction "1" -- "0..*" SystemeProduction
+Demande "1" *-- "1..*" LigneDemande
+
+LigneDemande "0..*" -- "1" ReferenceAppui
+ReferenceAppui "0..*" -- "1" Service
+ReferenceAppui "0..*" -- "1" CategorieAppui
+ReferenceAppui "0..*" -- "1" UniteAppui
+
+@enduml

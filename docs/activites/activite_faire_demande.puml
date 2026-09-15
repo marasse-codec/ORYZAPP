@@ -1,0 +1,32 @@
+@startuml
+skinparam linestyle ortho
+
+title Processus Automatisé de Gestion des Demandes d'Appuis
+
+|Acteur Émetteur|
+start
+:Saisir et soumettre la demande\n(Via le Portail Web);
+
+|Système (Plateforme)|
+:Enregistrer la demande;
+:Générer le numéro de ticket;
+:Notifier le Secrétariat du DG;
+
+|Secrétariat du DG|
+:Vérifier la recevabilité de la demande;
+:Valider et transférer au DG en 1 clic;
+
+|Système (Plateforme)|
+:Mettre à jour le statut (En attente d'affectation);
+:Alerter le DG;
+
+|Directeur Général (DG)|
+:Consulter la demande en ligne;
+:Sélectionner la direction concernée\ndans le menu déroulant;
+
+|Système (Plateforme)|
+:Afecter automatiquement le ticket\nà la direction sélectionnée;
+:Envoyer une notification à la direction;
+
+stop
+@enduml

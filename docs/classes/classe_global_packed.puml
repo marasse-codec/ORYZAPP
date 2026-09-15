@@ -1,0 +1,316 @@
+@startuml diagramme_complet_appuis_en_packages_v2
+title Diagramme de Classes Global (Mis à jour) — Système ADERIZ
+
+skinparam shadowing false
+skinparam defaultFontName "Segoe UI", sans-serif
+skinparam backgroundColor #FFFFFF
+skinparam Linetype ortho
+
+hide empty members
+
+skinparam package {
+  BorderThickness 2
+  BorderColor #1A1A1A
+  BackgroundColor #FAFAFA
+  FontColor #333333
+  FontSize 14
+  FontStyle bold
+}
+
+skinparam class {
+    BackgroundColor #FFFFFF
+    HeaderBackgroundColor #F2F4F4
+    BorderColor #1A1A1A
+    FontColor #000000
+    AttributeFontColor #000000
+    MethodFontColor #000000
+    FontSize 14
+    AttributeFontSize 12
+    MethodFontSize 12
+    BorderThickness 1.5
+}
+
+skinparam arrow {
+    Color #1A1A1A
+    FontColor #000000
+    FontSize 12
+}
+
+' ============================================================
+' MODULE 1 : AGENTS, HABILITATIONS & TRAÇABILITÉ
+' ============================================================
+package "Habilitations & Traçabilité" {
+  class Role {
+    - idRole : Long
+    - libelleRole : String
+  }
+
+  class Poste {
+    - idPoste : Long
+    - libellePoste : String
+  }
+
+  class Agent {
+    - idAgent : Long
+    - matriculeAgent : String
+    - nom : String
+    - prenoms : String
+    - telephone : String
+    - email : String
+    - motDePasse : String
+    - actif : Boolean
+  }
+
+  class JournalAction {
+    - idJournalAction : Long
+    - entiteConcernee : String
+    - idEntite : Long
+    - action : String
+    - dateAction : DateTime
+    - valeurAvant : String
+    - valeurApres : String
+  }
+}
+
+' ============================================================
+' MODULE 2 : DEMANDEURS & ÉLABORATION DE LA DEMANDE
+' ============================================================
+package "Élaboration des Demandes" {
+  class TypeDemandeur {
+    - idTypeDemandeur : Long
+    - libelleTypeDemandeur : String
+  }
+
+  class TypePiece {
+    - idTypePiece : Long
+    - libelleTypePiece : String
+  }
+
+  class Demandeur {
+    - idDemandeur : Long
+    - nom : String
+    - telephone : String
+    - email : String
+  }
+
+  class Departement {
+    - idDepartement : Long
+    - libelleDepartement : String
+  }
+
+  class Localite {
+    - idLocalite : Long
+    - libelleLocalite : String
+  }
+
+  class Campagne {
+    - idCampagne : Long
+    - libelleCampagne : String
+    - dateDebutCampagne : Date
+    - dateFinCampagne : Date
+  }
+
+  class StatutDemande {
+    - idStatutDemande : Long
+    - libelleStatutDemande : String
+  }
+
+  class Demande {
+    - idDemande : Long
+    - dateDemande : Date
+    - dateDebutMiseEnPlaceSouhaitee : Date
+  }
+
+  class HistoriqueDemande {
+    - idHistorique : Long
+    - dateChangement : DateTime
+    - commentaire : String
+  }
+
+  class PieceJustificative {
+    - idPieceJustificative : Long
+    - cheminFichier : String
+  }
+
+  class TypeSystemeProduction {
+    - idTypeSystemeProduction : Long
+    - libelleTypeSystemeProduction : String
+  }
+
+  class SystemeProduction {
+    - idSystemeProduction : Long
+    - superficie : Double
+  }
+
+  class LigneDemande {
+    - idLigneDemande : Long
+    - quantiteDemandee : Integer
+  }
+}
+
+' ============================================================
+' MODULE 3 : CATALOGUE DES APPUIS & ÉQUIPEMENTS
+' ============================================================
+package "Catalogue & Référentiel Appuis" {
+  class Service {
+    - idService : Long
+    - libelleService : String
+  }
+
+  class TypeAppui {
+    - idTypeAppui : Long
+    - libelleTypeAppui : String
+  }
+
+  class UniteAppui {
+    - idUniteAppui : Long
+    - libelleUniteAppui : String
+    - symboleUnite : String
+  }
+
+  class ReferenceAppui {
+    - idReferenceAppui : Long
+    - libelleReferenceAppui : String
+    - quantiteEnStock : Integer
+    - coutUnitaire : Double
+    - quantiteTarifaire : Double
+  }
+
+  class Equipement {
+    - idEquipement : Long
+    - matriculeEquipement : String
+    - etat : String
+    - remis : Boolean
+    - estEquipement : Boolean
+  }
+}
+
+' ============================================================
+' MODULE 4 : OCTROI ET COMMISSION
+' ============================================================
+package "Octroi & Commission" {
+  class SessionCommission {
+    - idSessionCommission : Long
+    - resume : String
+    - dateSession : Date
+    - datePublication : Date
+  }
+
+  class Attribution {
+    - idAttribution : Long
+    - observation : String
+    - datePublication : Date
+    - dateDestockage : Date
+  }
+
+  class StatutAttribution {
+    - idStatutAttribution : Long
+    - libStatutAttribution : String
+  }
+
+  class HistoriqueAttribution {
+    - idHistorique : Long
+    - dateChangement : DateTime
+    - commentaire : String
+  }
+
+  class LigneAttribution {
+    - idLigneAttribution : Long
+    - quantiteAttribuee : Integer
+    - remise : Double
+    - dateRestitutionPrevue : Date
+  }
+
+  class TypePieceBon {
+    - idTypePiece : Long
+    - libelleTypePiece : String
+  }
+
+  class PieceEnlevement {
+    - idPieceEnlevement : Long
+    - cheminFichier : String
+  }
+}
+
+' ============================================================
+' MODULE 5 : STOCKS ET LOGISTIQUE
+' ============================================================
+package "Gestion des Stocks" {
+  class Approvisionnement {
+    - idApprovisionnement : Long
+    - referenceCommande : String
+    - dateApprovisionnement : Date
+    - origine : String
+  }
+
+  class TypeMouvement {
+    - idTypeMouvement : Long
+    - libelleTypeMouvement : String
+  }
+
+  class MouvementStock {
+    - idMouvementStock : Long
+    - quantite : Integer
+    - dateMouvement : DateTime
+    - motif : String
+  }
+}
+
+' ============================================================
+' ASSOCIATIONS DU SYSTÈME UNIFIÉ
+' ============================================================
+
+' --- Habilitations & Traçabilité ---
+Service "1" -- "0..*" Agent : affecter >
+Poste "1" -- "0..*" Agent : occuper >
+Agent "0..*" -- "1..*" Role : détenir >
+Agent "1" -- "0..*" JournalAction : tracer >
+
+' --- Élaboration de la demande ---
+Demandeur "0..*" -- "1" TypeDemandeur : typer >
+TypeDemandeur "0..*" -- "0..*" TypePiece : exiger >
+Demandeur "1" -- "0..*" Demande : effectuer >
+Agent "1" -- "0..*" Demande : enregistrer >
+Campagne "1" -- "0..*" Demande : viser <
+Localite "1" -- "0..*" Demande : provenir <
+Localite "0..*" -- "1" Departement : situer >
+Demande "1" *-- "0..*" PieceJustificative : joindre >
+TypePiece "1" -- "0..*" PieceJustificative : couvrir >
+Demande "1" *-- "1..*" SystemeProduction : contenir >
+TypeSystemeProduction "1" -- "0..*" SystemeProduction : catégoriser >
+Demande "1" *-- "1..*" LigneDemande : constituer >
+Demande "1" *-- "0..*" HistoriqueDemande : entretenir >
+StatutDemande "1" -- "0..*" HistoriqueDemande : marquer >
+StatutDemande "1" - "1..*" Demande : statuer <
+
+' --- Référentiel Appuis & Équipements ---
+Service "1" -- "0..*" TypeAppui : fournir >
+TypeAppui "1" -- "0..*" ReferenceAppui : classifier <
+UniteAppui "1" -- "0..*" ReferenceAppui : mesurer >
+ReferenceAppui "1" *-- "0..*" Equipement : inventorier >
+LigneDemande "0..*" -- "1" ReferenceAppui : demander >
+
+' --- Octroi & Commission ---
+SessionCommission "1" -- "0..*" Attribution : arbitrer >
+Demande "1" -- "0..*" Attribution : recevoir >
+Agent "1" -- "0..*" Attribution : creer >
+Attribution "1" *-- "0..*" HistoriqueAttribution : posseder >
+StatutAttribution "0..1" -- "0..*" HistoriqueAttribution : qualifier >
+Attribution "0..*" - "1" StatutAttribution : indiquer <
+
+Attribution "1" *-- "1..*" LigneAttribution : comporter >
+LigneAttribution "0..1" -- "1" LigneDemande : servir >
+
+' --- Bon d'Attribution & Enlèvement ---
+Attribution "1" *-- "0..*" PieceEnlevement : autoriser <
+TypePieceBon "1" -- "0..*" PieceEnlevement : typer >
+
+' --- Stock & Logistique ---
+MouvementStock "0..*" -- "1" TypeMouvement : qualifier >
+MouvementStock "0..*" -- "1" ReferenceAppui : impacter >
+MouvementStock "0..*" -- "0..1" Equipement : tracer >
+Approvisionnement "0..1" o-- "0..*" MouvementStock : alimenter >
+LigneAttribution "0..1" -- "0..*" MouvementStock : provoquer >
+Agent "1" -- "0..*" MouvementStock : enregistrer >
+
+@enduml

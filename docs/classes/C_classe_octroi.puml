@@ -1,0 +1,121 @@
+@startuml octroi_demande_uml_conception
+title Diagramme de classes (Conception) — Octroi et Traitement de la Demande
+
+skinparam shadowing false
+skinparam defaultFontName "Segoe UI", sans-serif
+skinparam backgroundColor #FFFFFF
+
+hide empty members
+
+skinparam class {
+    BackgroundColor #FFFFFF
+    HeaderBackgroundColor #F2F4F4
+    BorderColor #1A1A1A
+    FontColor #000000
+    AttributeFontColor #000000
+    MethodFontColor #000000
+    FontSize 14
+    AttributeFontSize 12
+    MethodFontSize 12
+    BorderThickness 1.5
+}
+
+skinparam arrow {
+    Color #1A1A1A
+    FontColor #000000
+    FontSize 12
+}
+
+' ============================================================
+' CLASSES & ENCAPSULATION DES MÉTHODES
+' ============================================================
+
+class ReferenceAppui {
+  - idReferenceAppui : Long
+  - libelleReferenceAppui : String
+  - quantiteEnStock : Integer
+  - coutUnitaire : Double
+  + getQuantiteEnStock() : Integer
+}
+
+class Equipement {
+  - idEquipement : Long
+  - matriculeEquipement : String
+  - etat : String
+  - enService : Boolean
+}
+
+class Demande {
+  - idDemande : Long
+  - dateDemande : Date
+  - dateTraitement : Date
+  - motifRejet : String
+  + validerTraitement(session : SessionCommission, dateTraitement : Date) : Void
+  + rejeter(session : SessionCommission, dateTraitement : Date, motifRejet : String) : Void
+}
+
+class LigneDemande {
+  - idLigneDemande : Long
+  - quantiteDemandee : Integer
+}
+
+class TypeSessionCommission {
+  - idTypeSessionCommission : Long
+  - libelleTypeSessionCommission : String
+}
+
+class SessionCommission {
+  - idSessionCommission : Long
+  - resume : String
+  - dateSession : Date
+  - datePublication : Date
+  + traiterDemande(demande : Demande) : Void
+  + publierResultats(datePublication : Date, resume : String) : Void
+}
+
+class BonAttribution {
+  - idBonAttribution : Long
+  - observation : String
+  - dateEdition : Date
+  - dateSignature : Date
+  + ajouterLigneBon(ligneDemande : LigneDemande, qte : Integer, dateRestitution : Date) : Void
+}
+
+class LigneBonAttribution {
+  - idLigneBonAttribution : Long
+  - quantiteAttribuee : Integer
+  - remise : Double
+  - dateRestitutionPrevue : Date
+  ~ LigneBonAttribution(ligneDemande : LigneDemande, qte : Integer, dateRestitution : Date)
+}
+
+class Agent {
+  - idAgent : Long
+  - matriculeAgent : String
+  - nom : String
+  - prenoms : String
+  - motDePasse : String
+  - actif : Boolean
+}
+
+' ============================================================
+' ASSOCIATIONS ET NAVIGABILITÉ
+' ============================================================
+
+Agent "1" -l-> "0..*" SessionCommission : gerer
+TypeSessionCommission "1" <-- "0..*" SessionCommission : qualifier
+
+SessionCommission "1" --> "0..*" Demande : traiter
+Demande "0..*" --> "0..1" SessionCommission : etre traitee par
+
+Demande "1" *-- "1..*" LigneDemande : constituer
+LigneDemande "0..*" --> "1" ReferenceAppui : porter sur
+ReferenceAppui "1" *-- "0..*" Equipement : inventorier
+
+BonAttribution "0..1" --> "1" Demande : combler
+SessionCommission "1" --> "0..*" BonAttribution : engendrer
+
+BonAttribution "1" *-- "1..*" LigneBonAttribution : comporter
+LigneBonAttribution "0..1" --> "1" LigneDemande : servir
+
+@endl

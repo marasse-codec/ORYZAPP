@@ -1,0 +1,51 @@
+@startuml uc_delegue
+title <b>Cas d'utilisation Délégué de pôle</b>
+
+left to right direction
+skinparam shadowing false
+skinparam defaultFontName "Segoe UI"
+skinparam backgroundColor #FFFFFF
+skinparam linetype ortho
+
+skinparam actor {
+    BackgroundColor #EDF2F7
+    BorderColor #2D3748
+    BorderThickness 2
+    FontStyle bold
+}
+
+skinparam usecase {
+    BackgroundColor #F7FAFC
+    BorderColor #1A202C
+    BorderThickness 2
+    FontStyle bold
+}
+
+skinparam rectangle {
+    BackgroundColor #FFFFFF
+    BorderColor #2B6CB0
+    BorderThickness 2
+    FontStyle bold
+    FontColor #2B6CB0
+}
+
+actor "Agent" as Agent
+actor "Délégué de pôle" as Delegue
+
+Delegue --|> Agent
+
+rectangle "<b>Plateforme de gestion des appuis</b>" {
+  usecase "<b>UC02</b>\nS'authentifier" as UC02
+  usecase "<b>UC03</b>\nEnregistrer une demande d'appui" as UC03
+  usecase "<b>UC04</b>\nSuivre ses demandes déposées" as UC04
+  usecase "<b>UC05</b>\nConsulter les décisions publiées" as UC05
+  usecase "<b>UCa</b>\nImprimer une demande" as UCa
+}
+
+Agent --> UC02
+Delegue --> UC03
+Delegue --> UC04
+Delegue --> UC05
+
+UCa ..> UC03 : <<extend>>
+@enduml

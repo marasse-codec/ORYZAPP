@@ -1,0 +1,140 @@
+@startuml sd_enregistrer_demande
+title <b>Diagramme de séquence — Enregistrer une demande d'appui (UC03)</b>
+
+skinparam shadowing false
+skinparam defaultFontName "Segoe UI"
+skinparam backgroundColor #FFFFFF
+skinparam sequenceMessageAlign center
+skinparam ParticipantPadding 12
+skinparam BoxPadding 12
+
+skinparam participant {
+  BackgroundColor #F7FAFC
+  BorderColor #1A202C
+  BorderThickness 2
+  FontStyle bold
+  FontSize 12
+}
+skinparam actor {
+  BackgroundColor #EDF2F7
+  BorderColor #2D3748
+  BorderThickness 2
+  FontStyle bold
+}
+skinparam sequence {
+  ArrowColor #2D3748
+  ArrowThickness 2
+  LifeLineBorderColor #718096
+  LifeLineBackgroundColor #EDF2F7
+}
+
+actor "Délégué de pôle" as U
+
+box "Présentation" #FDFDFD
+  participant "vue :\nFormulaireDemande" as V <<Vue Blade>>
+end box
+
+box "Traitement" #FDFDFD
+  participant "ctrl :\nDemandeController" as C <<Contrôleur>>
+  participant "srv :\nDemandeService" as S <<Service métier>>
+  participant "stk :\nStorage" as F <<Stockage fichiers>>
+end box
+
+box "Données" #FDFDFD
+  participant ":Demande" as D <<Modèle>>
+  participant ":SystemeProduction" as SP <<Modèle>>
+  participant ":LigneDemande" as LD <<Modèle>>
+  participant ":PieceJustificative" as PJ <<Modèle>>
+  participant ":JournalAction" as JA <<Modèle>>
+  database "MySQL" as BD
+end box
+
+U -> V : ouvrir le formulaire
+activate V
+V -> C : GET /demandes/creer
+activate C
+C -> S : chargerReferentiels()
+activate S
+S -> BD : lire TypeDemandeur, TypePiece,\nReferenceAppui, Campagne, Localite
+BD --> S : référentiels
+S --> C : référentiels
+deactivate S
+C --> V : vue + référentiels
+deactivate C
+V --> U : formulaire affiché
+deactivate V
+
+U -> V : choisir le type de demandeur
+activate V
+V -> V : adapter les champs et\nles pièces exigées (SF04)
+V --> U : formulaire adapté
+deactivate V
+
+U -> V : saisir la demande et\ndéposer les pièces
+activate V
+V -> C : POST /demandes
+activate C
+C -> C : valider(requete)
+
+alt données invalides
+  C --> V : erreurs de validation
+  V --> U : messages d'erreur
+else données valides
+  C -> S : enregistrerDemande(donnees, fichiers)
+  activate S
+  S -> BD : ouvrir transaction
+
+  S -> D : create(demandeur, campagne,\nlocalite, dates)
+  activate D
+  D -> BD : INSERT demande
+  BD --> D : idDemande
+  D --> S : demande
+  deactivate D
+
+  loop pour chaque système de production
+    S -> SP : create(demande, type, superficie)
+    activate SP
+    SP -> BD : INSERT systeme_production
+    deactivate SP
+  end
+
+  loop pour chaque appui sollicité
+    S -> LD : create(demande, referenceAppui,\nquantiteDemandee)
+    activate LD
+    LD -> BD : INSERT ligne_demande
+    deactivate LD
+  end
+
+  loop pour chaque pièce déposée
+    S -> F : stocker(fichier)
+    activate F
+    F --> S : cheminFichier
+    deactivate F
+    S -> PJ : create(demande, typePiece, cheminFichier)
+    activate PJ
+    PJ -> BD : INSERT piece_justificative
+    deactivate PJ
+  end
+
+  note over S
+    Aiguillage automatique (SF06) :
+    le service instructeur est déduit
+    du service rattaché à chaque
+    ReferenceAppui sollicitée.
+  end note
+
+  S -> JA : create(agent, "creation", "Demande", idDemande)
+  activate JA
+  JA -> BD : INSERT journal_action
+  deactivate JA
+
+  S -> BD : valider la transaction
+  S --> C : demande enregistrée
+  deactivate S
+  C --> V : redirection + confirmation
+  V --> U : accusé de dépôt
+end
+deactivate C
+deactivate V
+
+@enduml

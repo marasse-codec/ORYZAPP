@@ -1,0 +1,72 @@
+@startuml seq_enlevement_conception
+title Diagramme de Séquence « Traiter l'Enlèvement d'un Bon (Sortie Stock) »
+
+skinparam shadowing false
+skinparam defaultFontName "Segoe UI", sans-serif
+skinparam backgroundColor #FFFFFF
+skinparam maxMessageSize 200
+
+skinparam actor {
+  BackgroundColor #FFFFFF
+  BorderColor #1A1A1A
+}
+
+skinparam participant {
+  BackgroundColor #F2F4F4
+  BorderColor #1A1A1A
+  FontColor #000000
+}
+
+skinparam sequence {
+  ArrowColor #1A1A1A
+  LifeLineBorderColor #1A1A1A
+  LifeLineBackgroundColor #F2F4F4
+}
+
+actor "agent : Agent" as Agent
+participant "bon : BonAttribution" as Bon
+participant "piece : PieceEnlevement" as Piece
+participant "ligneBon : LigneBonAttribution" as LigneBon
+participant "refAppui : ReferenceAppui" as Ref
+participant "mvt : MouvementStock" as Mvt
+participant "typeMvt : TypeMouvement" as TypeMvt
+
+autonumber
+
+' 1. Joindre les pièces justificatives d'enlèvement (ex: Décharge, pièce d'identité)
+loop Pour chaque document d'enlèvement fourni
+  create Piece
+  Agent -> Piece : new(typePieceBon, cheminFichier)
+  
+  Agent -> Bon : joindrePieceEnlevement(piece)
+  activate Bon
+    Bon --> Agent : Void
+  deactivate Bon
+end
+
+' 2. Validation de l'enlèvement et déclenchement des mouvements de sortie
+Agent -> Bon : effectuerEnlevement(agent, dateEnlevement, typeMvt)
+activate Bon
+  
+  loop Pour chaque LigneBonAttribution
+    Bon -> LigneBon : genererMouvementSortie(agent, typeMvt)
+    activate LigneBon
+      
+      ' Création du Mouvement de stock de sortie
+      create Mvt
+      LigneBon -> Mvt : new(agent, refAppui, typeMvt, quantiteAttribuee)
+      
+      ' Décrémentation du stock sur la référence d'appui
+      LigneBon -> Ref : decrementerStock(quantiteAttribuee)
+      activate Ref
+        Ref --> LigneBon : Void
+      deactivate Ref
+
+      LigneBon --> Bon : mvt
+    deactivate LigneBon
+  end
+
+  Bon --> Agent : Void
+deactivate Bon
+
+@endl

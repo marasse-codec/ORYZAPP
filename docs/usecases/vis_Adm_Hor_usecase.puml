@@ -1,0 +1,116 @@
+@startuml uc_plateforme_filtre
+title <b>Diagramme de cas d'utilisation Administrateur, Visiteur et Horloge</b>
+
+skinparam shadowing false
+skinparam defaultFontName "Segoe UI"
+skinparam defaultFontSize 12
+skinparam backgroundColor #FFFFFF
+skinparam Linetype ortho
+skinparam packageStyle rectangle
+skinparam nodesep 25
+skinparam ranksep 80
+
+skinparam title {
+    FontSize 18
+    FontStyle bold
+    FontColor #1A202C
+}
+
+skinparam actor {
+    BackgroundColor #EDF2F7
+    BorderColor #2D3748
+    BorderThickness 2
+    FontStyle bold
+    FontSize 12
+}
+
+skinparam usecase {
+    BackgroundColor #F7FAFC
+    BorderColor #1A202C
+    BorderThickness 2
+    FontStyle bold
+    FontSize 11
+}
+
+skinparam rectangle {
+    BackgroundColor #FFFFFF
+    BorderColor #2B6CB0
+    BorderThickness 3
+    FontStyle bold
+    FontSize 14
+    FontColor #2B6CB0
+}
+
+skinparam arrow {
+    Color #2D3748
+    Thickness 2
+    FontSize 10
+    FontStyle bold
+}
+
+' ==========================================
+' ACTEURS À GAUCHE
+' ==========================================
+actor "Visiteur" as Visiteur
+rectangle "Horloge système" as Horloge
+
+' ==========================================
+' RECTANGLE SYSTÈME (2 COLONNES DE CAS D'UTILISATION)
+' ==========================================
+rectangle "<b>Plateforme de gestion des appuis</b>" {
+
+  ' --- COLONNE GAUCHE (Visiteur / Horloge) ---
+  usecase "<b>UC01</b>\nConsulter les conditions de dépôt" as UC01
+  usecase "<b>UC22</b>\nÉmettre les alertes de délai" as UC22
+
+  ' --- COLONNE DROITE (Agent / Administrateur) ---
+  usecase "<b>UC02</b>\nS'authentifier" as UC02
+  usecase "<b>UC19</b>\nConsulter le journal des actions" as UC19
+  usecase "<b>UC20</b>\nGérer le système" as UC20
+  usecase "<b>UC21</b>\nConsulter les synthèses d'appuis" as UC21
+  usecase "<b>UCb</b>\nExporter au format tableur" as UCb
+
+  ' Alignement vertical colonne gauche
+  UC01 -[hidden]down- UC22
+
+  ' Alignement vertical colonne droite
+  UC02 -[hidden]down- UC19
+  UC19 -[hidden]down- UC20
+  UC20 -[hidden]down- UC21
+  UC21 -[hidden]down- UCb
+
+  ' Separation horizontale entre les deux colonnes de Use Cases
+  UC01 -[hidden]right- UC02
+  UC22 -[hidden]right- UC20
+}
+
+' ==========================================
+' ACTEURS À DROITE
+' ==========================================
+actor "Agent" as Agent
+actor "Administrateur" as Admin
+
+' Héritage à droite
+Agent <|-- Admin
+
+' ==========================================
+' RELATIONS - ACTEURS À GAUCHE
+' ==========================================
+Visiteur --> UC01
+Horloge --> UC22
+
+' ==========================================
+' RELATIONS - ACTEURS À DROITE (Flèches inversées <-- pour orientation propre)
+' ==========================================
+UC02 <-- Agent
+
+UC19 <-- Admin
+UC20 <-- Admin
+UC21 <-- Admin
+
+' ==========================================
+' RELATIONS EXTEND
+' ==========================================
+UCb ..> UC21 : <<extend>>
+
+@enduml

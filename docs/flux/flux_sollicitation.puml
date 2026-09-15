@@ -1,0 +1,23 @@
+@startuml
+skinparam conditionStyle inside
+skinparam TitleFontSize 16
+skinparam DefaultFontSize 12
+
+title Diagramme des flux - Gestion des demandes d'appuis\npartie sollicitation d'appuis
+
+start
+
+partition "1. Sollicitation des appuis" {
+    :Émission de la demande par l'acteur\n(Producteur, Transformateur ou Distributeur);
+    
+    if (Mode de transmission ?) then (Email)
+        :Envoi électronique de la demande\n(Par le DP, l'acteur ou le centre);
+    else (Dépôt physique)
+        :Dépôt physique de la demande\n(Par le DP, l'acteur ou le centre);
+    endif
+    :Réception du courrier par le Secrétariat du DG;
+    :Transmission du courrier au DG;
+    :Affectation de la demande par le DG\nà la direction concernée;
+}
+
+@enduml

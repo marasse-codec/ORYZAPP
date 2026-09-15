@@ -1,0 +1,64 @@
+@startuml
+title Diagramme de séquence — Instruction et octroi d'un appui
+
+skinparam shadowing false
+skinparam sequence {
+    LifeLineBorderColor #888888
+    ParticipantBorderThickness 1.5
+    ArrowColor #333333
+    ActorBorderColor #333333
+    ActorBackgroundColor #F9F9F9
+}
+
+autonumber
+
+' ============================================================
+' PARTICIPANTS
+' ============================================================
+
+actor "Agent de service" as AgentService
+
+participant "Application Web" as Web #EBF3F9
+participant "Service Demandes\n(API)" as API #E2F0D9
+participant "Base de données" as BDD #FCE4D6
+participant "Stockage fichiers" as Stockage #FFF2CC
+
+' ============================================================
+' ÉCHANGES
+' ============================================================
+
+AgentService -> Web : Ouvrir la demande imputée au service
+Web -> API : GET /demandes/{id}
+API -> BDD : SELECT demande + chemin stockage pièces
+BDD --> API : Détail de la demande
+API -> Stockage : Pieces justificatives ( chemin stockage pièces )
+Stockage --> API : pieces
+
+API --> Web : Affichage du dossier
+
+Web -> API : GET /catalogue-appuis (appuis du services) \n et liste des prestataires
+API -> BDD : SELECT appuis et prestataires disponibles
+BDD --> API : Liste appuis / prestataires
+API --> Web : Liste appuis / prestataires
+
+
+alt#Transparent #3f2b9633 ["Déléguer prestataire"]
+autonumber 10.1
+    AgentService -> Web : Sélectionner prestataire dans la liste
+    AgentService -> Web : Confirmer décision
+    Web -> API : POST /delegations/{idDemande}
+    API -> BDD : UPDATE delegations
+else ["Octroyer les appuis"]
+autonumber 10.1
+    AgentService -> Web : Sélectionner les appuis à octroyer
+    AgentService -> Web : Confirmer décision
+    Web -> API : PATCH /attributions/{idDemande}
+    API -> BDD : UPDATE attributions
+end
+autonumber 11
+
+BDD --> API : OK
+API --> Web : Décision enregistrée
+Web --> AgentService : Confirmation enregistrement
+
+@enduml

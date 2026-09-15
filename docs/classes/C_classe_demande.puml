@@ -1,0 +1,155 @@
+@startuml elab_demande_poo_domain
+title Diagramme de Classes Domaine - Élaboration d'une Demande d'Appui
+
+skinparam shadowing false
+skinparam defaultFontName "Segoe UI", sans-serif
+skinparam backgroundColor #FFFFFF
+
+skinparam class {
+    BackgroundColor #FFFFFF
+    HeaderBackgroundColor #F2F4F4
+    BorderColor #1A1A1A
+    FontColor #000000
+    AttributeFontColor #000000
+    MethodFontColor #000000
+    FontSize 14
+    AttributeFontSize 12
+    MethodFontSize 12
+    BorderThickness 1.5
+}
+
+skinparam arrow {
+    Color #1A1A1A
+    FontColor #000000
+    FontSize 12
+}
+
+' ============================================================
+' ENTITÉS (PÉRIMÈTRE ÉLABORATION DE DEMANDE)
+' ============================================================
+
+class TypeDemandeur {
+  - idTypeDemandeur : Long
+  - libelleTypeDemandeur : String
+}
+
+class TypePiece {
+  - idTypePiece : Long
+  - libelleTypePiece : String
+}
+
+class Demandeur {
+  - idDemandeur : Long
+  - nom : String
+  - telephone : String
+  - email : String
+}
+
+class Agent {
+  - idAgent : Long
+  - matriculeAgent : String
+  - nom : String
+  - prenoms : String
+}
+
+class Departement {
+  - idDepartement : Long
+  - libelleDepartement : String
+}
+
+class Localite {
+  - idLocalite : Long
+  - libelleLocalite : String
+}
+
+class Campagne {
+  - idCampagne : Long
+  - libelleCampagne : String
+  - dateDebutCampagne : Date
+  - dateFinCampagne : Date
+}
+
+class StatutDemande {
+  - idStatutDemande : Long
+  - libelleStatutDemande : String
+}
+
+class Demande {
+  - idDemande : Long
+  - dateDemande : Date
+  - dateDebutMiseEnPlaceSouhaitee : Date
+  - dateFinMiseEnPlaceSouhaitee : Date
+  + ajouterLigneDemande(refAppui : ReferenceAppui, quantite : Integer) : LigneDemande
+  + ajouterSystemeProduction(typeSysProd : TypeSystemeProduction, superficie : Double) : SystemeProduction
+  + joindrePiece(piece : PieceJustificative) : Void
+  + soumettre() : Void
+}
+
+class PieceJustificative {
+  - idPieceJustificative : Long
+  - cheminFichier : String
+}
+
+class TypeSystemeProduction {
+  - idTypeSystemeProduction : Long
+  - libelleTypeSystemeProduction : String
+}
+
+class SystemeProduction {
+  - idSystemeProduction : Long
+  - superficie : Double
+}
+
+class LigneDemande {
+  - idLigneDemande : Long
+  - quantiteDemandee : Integer
+}
+
+class Service {
+  - idService : Long
+  - libelleService : String
+}
+
+class CategorieAppui {
+  - idCategorieAppui : Long
+  - libelleCategorieAppui : String
+}
+
+class UniteAppui {
+  - idUniteAppui : Long
+  - libelleUniteAppui : String
+}
+
+class ReferenceAppui {
+  - idReferenceAppui : Long
+  - libelleReferenceAppui : String
+  - quantiteEnStock : Integer
+  - coutUnitaire : Double
+}
+
+' ============================================================
+' ASSOCIATIONS
+' ============================================================
+
+Demandeur "0..*" -- "1" TypeDemandeur : typer >
+TypeDemandeur "0..*" -- "0..*" TypePiece : exiger >
+
+Demandeur "1" -- "0..*" Demande : effectuer >
+Agent "1" -- "0..*" Demande : enregistrer >
+Demande "0..*" -u- "1" StatutDemande : statuer >
+Campagne "1" -- "0..*" Demande : viser >
+Localite "1" -u- "0..*" Demande : provenir >
+Localite "0..*" -- "1" Departement : situer >
+
+Demande "1" *-- "0..*" PieceJustificative : joindre >
+TypePiece "1" -- "0..*" PieceJustificative : couvrir >
+Demande "1" *-- "1..*" SystemeProduction : contenir >
+TypeSystemeProduction "1" -u- "0..*" SystemeProduction : catégoriser >
+Demande "1" *-l- "1..*" LigneDemande : constituer >
+
+LigneDemande "0..*" -d- "1" ReferenceAppui : porter sur >
+ReferenceAppui "0..*" -d- "1" Service : instruire >
+ReferenceAppui "0..*" -d- "1" CategorieAppui : classifier >
+ReferenceAppui "0..*" -r- "1" UniteAppui : mesurer >
+
+@enduml

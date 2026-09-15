@@ -1,0 +1,24 @@
+@startuml data_architecture
+skinparam shadowing false
+skinparam defaultFontName "Segoe UI", sans-serif
+skinparam backgroundColor #FFFFFF
+
+package "Couche Métier" #FFFDE7 {
+    [Entités du Domaine] as Entities
+}
+
+package "Couche Accès aux Données (Persistance)" #E8F5E9 {
+    [Repositories / Query Builders] as Repos
+    [ORM / Couche d'Abstraction] as ORM
+}
+
+database "Tiers Données" #E3F2FD {
+    storage "SGBDR MySQL" as MySQL {
+        [Tables & Contraintes (FK, Indexes)]
+    }
+}
+
+Entities --> Repos : 1. Manipule
+Repos --> ORM : 2. Sollicite l'abstraction
+ORM --> MySQL : 3. Exécute requêtes préparées (SQL / TCP 3306)
+@enduml

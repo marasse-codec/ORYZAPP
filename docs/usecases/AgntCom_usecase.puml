@@ -1,0 +1,62 @@
+@startuml uc_commission
+title <b>Cas d'utilisation Agent de commission</b>
+
+left to right direction
+skinparam shadowing false
+skinparam defaultFontName "Segoe UI"
+skinparam backgroundColor #FFFFFF
+skinparam linetype ortho
+skinparam actor {
+    BackgroundColor #EDF2F7
+    BorderColor #2D3748
+    BorderThickness 2
+    FontStyle bold
+}
+
+skinparam usecase {
+    BackgroundColor #F7FAFC
+    BorderColor #1A202C
+    BorderThickness 2
+    FontStyle bold
+}
+
+skinparam rectangle {
+    BackgroundColor #FFFFFF
+    BorderColor #2B6CB0
+    BorderThickness 2
+    FontStyle bold
+    FontColor #2B6CB0
+}
+
+actor "Agent" as Agent
+actor "Agent de commission" as AgentCom
+
+AgentCom --|> Agent
+
+rectangle "<b>Plateforme de gestion des appuis</b>" {
+  usecase "<b>UC02</b>\nS'authentifier" as UC02
+  usecase "<b>UC06</b>\nEnregistrer une session de commission" as UC06
+  usecase "<b>UC07</b>\nImprimer le formulaire de commission" as UC07
+  usecase "<b>UC08</b>\nImprimer l'état des stocks" as UC08
+  usecase "<b>UC09</b>\nSimuler des attributions" as UC09
+  usecase "<b>UC10</b>\nEnregistrer le résultat de délibération" as UC10
+  usecase "<b>UC11</b>\nPublier les décisions de la commission" as UC11
+  usecase "<b>UC12</b>\nImprimer les listes de résultats" as UC12
+  usecase "<b>UC13</b>\nImprimer un bon d'attribution" as UC13
+  usecase "<b>UCb</b>\nExporter au format tableur" as UCb
+}
+
+Agent --> UC02
+
+AgentCom --> UC06
+AgentCom --> UC07
+AgentCom --> UC08
+AgentCom --> UC09
+AgentCom --> UC10
+AgentCom --> UC11
+AgentCom --> UC12
+AgentCom --> UC13
+
+UC09 ..> UC10 : <<extend>>
+UCb ..> UC12 : <<extend>>
+@enduml

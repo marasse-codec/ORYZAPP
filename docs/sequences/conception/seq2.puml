@@ -1,0 +1,142 @@
+@startuml sd_deliberation
+title <b>Diagramme de séquence — Enregistrer le résultat de délibération (UC10)</b>
+
+skinparam shadowing false
+skinparam defaultFontName "Segoe UI"
+skinparam backgroundColor #FFFFFF
+skinparam sequenceMessageAlign center
+skinparam ParticipantPadding 12
+skinparam BoxPadding 12
+
+skinparam participant {
+  BackgroundColor #F7FAFC
+  BorderColor #1A202C
+  BorderThickness 2
+  FontStyle bold
+  FontSize 12
+}
+skinparam actor {
+  BackgroundColor #EDF2F7
+  BorderColor #2D3748
+  BorderThickness 2
+  FontStyle bold
+}
+skinparam sequence {
+  ArrowColor #2D3748
+  ArrowThickness 2
+  LifeLineBorderColor #718096
+  LifeLineBackgroundColor #EDF2F7
+}
+
+actor "Agent de commission" as U
+
+box "Présentation" #FDFDFD
+  participant "vue :\nEcranDeliberation" as V <<Vue Blade>>
+end box
+
+box "Traitement" #FDFDFD
+  participant "ctrl :\nCommissionController" as C <<Contrôleur>>
+  participant "srv :\nAttributionService" as S <<Service métier>>
+end box
+
+box "Données" #FDFDFD
+  participant ":SessionCommission" as SC <<Modèle>>
+  participant ":Demande" as D <<Modèle>>
+  participant ":ReferenceAppui" as RA <<Modèle>>
+  participant ":BonAttribution" as BA <<Modèle>>
+  participant ":LigneBonAttribution" as LBA <<Modèle>>
+  participant ":JournalAction" as JA <<Modèle>>
+  database "MySQL" as BD
+end box
+
+U -> V : ouvrir la session de commission
+activate V
+V -> C : GET /sessions/{id}/deliberation
+activate C
+C -> S : preparerSeance(idSession)
+activate S
+S -> SC : find(idSession)
+activate SC
+SC -> BD : SELECT session_commission
+SC --> S : session
+deactivate SC
+S -> D : demandesRattachees(session)
+activate D
+D -> BD : SELECT demande, ligne_demande
+D --> S : demandes en instance
+deactivate D
+S -> RA : etatDesStocks()
+activate RA
+RA -> BD : SELECT quantiteEnStock
+RA --> S : stocks disponibles (SF08)
+deactivate RA
+S --> C : dossier de séance
+deactivate S
+C --> V : écran de délibération
+deactivate C
+V --> U : demandes + stocks
+deactivate V
+
+U -> V : simuler des attributions (UC09)
+activate V
+V -> C : POST /deliberation/simuler
+activate C
+C -> S : simuler(propositions)
+activate S
+S -> S : verifierDisponibilite(propositions)
+note right of S
+  La simulation n'engage aucune
+  écriture : aucun mouvement de
+  stock n'est créé à ce stade.
+end note
+S --> C : écarts et disponibilités
+deactivate S
+C --> V : résultat de simulation
+deactivate C
+V --> U : aperçu des attributions
+deactivate V
+
+U -> V : valider la délibération
+activate V
+V -> C : POST /deliberation/enregistrer
+activate C
+C -> S : enregistrerDeliberation(idSession, decisions)
+activate S
+S -> BD : ouvrir transaction
+
+loop pour chaque demande délibérée
+  alt demande retenue
+    S -> BA : create(session, demande, agent,\ndateEditionBon)
+    activate BA
+    BA -> BD : INSERT bon_attribution
+    BA --> S : bon
+    deactivate BA
+
+    loop pour chaque appui attribué
+      S -> LBA : create(bon, referenceAppui,\nquantiteAttribuee, dateRestitutionPrevue)
+      activate LBA
+      LBA -> BD : INSERT ligne_bon_attribution
+      deactivate LBA
+    end
+  else demande rejetée
+    S -> D : enregistrerRejet(motifRejet)
+    activate D
+    D -> BD : UPDATE demande
+    deactivate D
+  end
+end
+
+S -> JA : create(agent, "deliberation",\n"SessionCommission", idSession)
+activate JA
+JA -> BD : INSERT journal_action
+deactivate JA
+
+S -> BD : valider la transaction
+S --> C : délibération enregistrée
+deactivate S
+C --> V : confirmation
+V --> U : session délibérée
+deactivate C
+deactivate V
+
+@enduml

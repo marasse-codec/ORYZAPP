@@ -1,0 +1,61 @@
+@startuml
+title Diagramme de séquence — Soumission d'une demande d'appui
+
+skinparam shadowing false
+skinparam sequence {
+    LifeLineBorderColor #888888
+    ParticipantBorderThickness 1.5
+    ArrowColor #333333
+    ActorBorderColor #333333
+    ActorBackgroundColor #F9F9F9
+}
+
+autonumber
+
+' ============================================================
+' PARTICIPANTS
+' ============================================================
+
+actor "Acteur de la\nfilière" as Acteur
+
+participant "Application Web" as Web #EBF3F9
+participant "Service Demandes\n(API)" as API #E2F0D9
+participant "Stockage fichiers" as Stockage #FFF2CC
+participant "Base de données" as BDD #FCE4D6
+
+' ============================================================
+' ÉCHANGES
+' ============================================================
+
+Acteur -> Web : Soumettre une demande (Producteur) 
+Web -> API : GET /appuis
+API -> BDD : SELECT appuis
+BDD --> API : Liste des appuis
+API --> Web : Liste des appuis
+
+Acteur -> Web : Renseigner la parcelle (superficie, type de riziculture, localité, campagne)
+Acteur -> Web : Sélectionner son profil de demandeur
+
+
+alt#Transparent #3f2b9633 [Producteur individuel] Infos générales suffisent
+    autonumber 8.1
+    Acteur -> Web : Renseigner infos générales uniquement
+else [Groupement / Coopérative / Entreprise-ONG] Champs complémentaires
+    autonumber 8.1
+    Acteur -> Web : Ajouter liste bénéficaires, statut juridique, appuis souhaités
+    Acteur -> Web : Joindre les pièces justificatives (photos, documents)
+end
+
+autonumber 9
+
+Acteur -> Web : Valider et soumettre la demande
+Web -> Stockage : Téléverser les fichiers
+Stockage --> Web : Références des fichiers stockés
+
+Web -> API : POST /demandes
+API -> BDD : INSERT demande + pièces
+BDD --> API : OK
+API --> Web : Demande enregistrée
+Web --> Acteur : Confirmation
+
+@enduml

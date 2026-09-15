@@ -1,0 +1,171 @@
+@startuml
+title **Diagramme d'activité du Cycle de vie d'une demande d'appui**
+
+skinparam shadowing false
+skinparam defaultFontName "Segoe UI"
+skinparam defaultFontSize 12
+skinparam roundcorner 10
+skinparam linetype ortho
+
+' ============================================================
+' CHARTE GRAPHIQUE ADERIZ
+' ============================================================
+
+skinparam Activity {
+    BackgroundColor #FFFFFF
+    BorderColor #1B5E20
+    BorderThickness 1.5
+    FontColor #2C3E50
+    ArrowColor #1B5E20
+}
+
+skinparam Diamond {
+    BackgroundColor #FFF8E1
+    BorderColor #FFA000
+    FontColor #E65100
+}
+
+skinparam Swimlane {
+    BorderColor #1B5E20
+    BorderThickness 1.5
+    TitleFontColor #1B5E20
+    TitleFontSize 13
+    TitleFontStyle bold
+}
+
+
+' ============================================================
+' ACTEUR DE LA FILIÈRE
+' ============================================================
+
+|#F1F8E9|Délégué de pôle|
+
+start
+
+#FFE0B2:Saisir une demande d'appui;
+
+
+' ============================================================
+' SYSTÈME
+' ============================================================
+
+|#F9FBE7|Système|
+
+#FFE0B2:Enregistrer la demande;
+
+#FFE0B2:Router la demande vers\nle ou les services concernés;
+
+
+' ============================================================
+' AGENT DE COMMISSION
+' ============================================================
+
+|#FFF3E0|Agent de commission|
+
+
+#FFE0B2:Imprimer fiches de délibération;
+
+' ============================================================
+' DÉCISION COLLECTIVE DE LA COMMISSION
+' ============================================================
+'
+' La commission est une instance collective.
+' Elle n'est pas représentée comme un acteur/swimlane.
+' La décision est une activité collective du processus.
+'
+
+#F8BBD0:Examination par la commission;
+
+if (Demande approuvée ?) then (Oui)
+
+ #F8BBD0: Renseigner la fiche de délibération\ndes appuis à attribuer et leurs conditions;
+
+else (Non)
+
+ #F8BBD0: Renseigner la fiche de délibération\ndes motifs du rejet;
+
+endif
+
+ #FFE0B2: Créer une session de commission;
+
+
+|#F9FBE7|Système|
+
+ #FFE0B2: Enregistrer une session de commission;
+
+|#FFF3E0|Agent de commission|
+
+ #FFE0B2: Saisir les résultats\n de la délibérations de la commission;
+
+' ============================================================
+' SYSTÈME
+' ============================================================
+
+|#F9FBE7|Système|
+
+#FFE0B2:Enregistrer les résultats\nde la délibération;
+
+
+|#FFF3E0|Agent de commission|
+
+#FFE0B2:Publier les résultats de la session;
+
+|#F9FBE7|Système|
+
+#FFE0B2:Notifier le Délégué de pôle\nde la décision;
+
+if (Demande assouvie ?) then (Non)
+    stop
+else (Oui)
+
+    #FFE0B2:Générer bon d'attribution \n(résultat de délibération);
+
+endif
+
+
+|#E8F5E9|Gestionnaire de stock|
+
+#FFE0B2:Rechercher le bon\n avec informations du demandeur;
+
+'--switch
+
+|#F9FBE7|Système|
+
+if (Attribution à récupérer pour le demandeur ?) then (Non)
+
+    #FFE0B2:Retourner aucun résultat;
+
+else (Oui)
+
+    #FFE0B2:Retourner bon d'attribution;
+
+endif
+
+'--switch
+
+|#E8F5E9|Gestionnaire de stock|
+
+#FFE0B2: Téléverser les pièces pour enlèvement;
+
+
+' ====================================================
+' SYSTÈME
+' ====================================================
+
+|#F9FBE7|Système|
+
+#FFE0B2:Enregistrer les pièces;
+
+#FFE0B2:Enregistrer enlèvement d'appuis;
+
+' ====================================================
+' GESTIONNAIRE DE STOCK
+' ====================================================
+
+|#E8F5E9|Gestionnaire de stock|
+
+#FFE0B2:Servir les appuis;
+
+stop
+
+@enduml

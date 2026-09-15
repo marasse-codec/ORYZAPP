@@ -1,0 +1,31 @@
+@startuml
+skinparam shadowing false
+skinparam defaultFontName "Segoe UI"
+skinparam defaultFontSize 12
+skinparam packageStyle rectangle
+
+title <b>Organisation Fonctionnelle de l'ADERIZ</b>
+
+skinparam rectangle {
+    BackgroundColor #F7FAFC
+    BorderColor #2B6CB0
+    BorderThickness 2
+    FontStyle bold
+    FontSize 12
+    FontColor #1A202C
+}
+
+' Niveau 1 : Direction
+rectangle "<b>1. PILOTAGE STRATÉGIQUE</b>\nDirection Générale & Direction Générale Adjointe\n<i>Orientations nationales, décisions majeures et coordination générale</i>" as N1 #EBF8FF
+
+' Niveau 2 : Services Autonomes
+rectangle "<b>2. FONCTIONS TRANSVERSALES & CONTRÔLE</b>\nServices Autonomes\n<i>Contrôle interne, conseil, gestion administrative et financière</i>" as N2 #EDF2F7
+
+' Niveau 3 : Operational
+rectangle "<b>3. EXÉCUTION OPÉRATIONNELLE</b>\nDirections Opérationnelles & Services Métiers\n<i>Mise en œuvre des activités et réponse aux besoins de la filière</i>" as N3 #F7FAFC
+
+' Relations hiérarchiques
+N1 -down-> N2 : " Transmet les directives "
+N2 -down-> N3 : " Appui, contrôle et conformité "
+
+@enduml

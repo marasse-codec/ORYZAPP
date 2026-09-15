@@ -1,0 +1,137 @@
+@startuml sd_enlevement
+title <b>Diagramme de séquence — Enregistrer l'enlèvement d'appuis (UC15)</b>
+
+skinparam shadowing false
+skinparam defaultFontName "Segoe UI"
+skinparam backgroundColor #FFFFFF
+skinparam sequenceMessageAlign center
+skinparam ParticipantPadding 12
+skinparam BoxPadding 12
+
+skinparam participant {
+  BackgroundColor #F7FAFC
+  BorderColor #1A202C
+  BorderThickness 2
+  FontStyle bold
+  FontSize 12
+}
+skinparam actor {
+  BackgroundColor #EDF2F7
+  BorderColor #2D3748
+  BorderThickness 2
+  FontStyle bold
+}
+skinparam sequence {
+  ArrowColor #2D3748
+  ArrowThickness 2
+  LifeLineBorderColor #718096
+  LifeLineBackgroundColor #EDF2F7
+}
+
+actor "Gestionnaire de stock" as U
+
+box "Présentation" #FDFDFD
+  participant "vue :\nEcranEnlevement" as V <<Vue Blade>>
+end box
+
+box "Traitement" #FDFDFD
+  participant "ctrl :\nEnlevementController" as C <<Contrôleur>>
+  participant "srv :\nStockService" as S <<Service métier>>
+  participant "stk :\nStorage" as F <<Stockage fichiers>>
+end box
+
+box "Données" #FDFDFD
+  participant ":BonAttribution" as BA <<Modèle>>
+  participant ":LigneBonAttribution" as LBA <<Modèle>>
+  participant ":PieceEnlevement" as PE <<Modèle>>
+  participant ":MouvementStock" as MS <<Modèle>>
+  participant ":ReferenceAppui" as RA <<Modèle>>
+  participant ":Equipement" as EQ <<Modèle>>
+  participant ":JournalAction" as JA <<Modèle>>
+  database "MySQL" as BD
+end box
+
+U -> V : saisir le numéro du bon
+activate V
+V -> C : GET /enlevements/{idBon}
+activate C
+C -> S : chargerBon(idBon)
+activate S
+S -> BA : find(idBon)
+activate BA
+BA -> BD : SELECT bon_attribution,\nligne_bon_attribution
+BA --> S : bon et lignes
+deactivate BA
+S -> S : verifierValidite(bon)
+
+alt bon caduc ou déjà servi
+  S --> C : refus + motif
+  C --> V : message de refus
+  V --> U : enlèvement impossible
+else bon valide
+  S --> C : bon et pièces exigées
+  deactivate S
+  C --> V : écran d'enlèvement
+  V --> U : lignes à servir
+
+  U -> V : déposer les pièces\net confirmer l'enlèvement
+  V -> C : POST /enlevements
+  activate S
+  C -> S : enregistrerEnlevement(idBon, fichiers)
+  S -> BD : ouvrir transaction
+
+  loop pour chaque pièce exigée
+    S -> F : stocker(fichier)
+    activate F
+    F --> S : cheminFichier
+    deactivate F
+    S -> PE : create(bon, typePieceBon,\ncheminFichier, dateRecuperation)
+    activate PE
+    PE -> BD : INSERT piece_enlevement
+    deactivate PE
+  end
+
+  loop pour chaque ligne du bon
+    S -> MS : create(ligneBon, referenceAppui,\ntypeMouvement "sortie", quantite)
+    activate MS
+    MS -> BD : INSERT mouvement_stock
+    deactivate MS
+
+    S -> RA : decrementerStock(quantiteAttribuee)
+    activate RA
+    RA -> BD : UPDATE quantiteEnStock
+    deactivate RA
+
+    alt appui non consommable (matériel)
+      S -> EQ : affecter(matriculeEquipement,\nenService = faux)
+      activate EQ
+      EQ -> BD : UPDATE equipement
+      deactivate EQ
+      note right of EQ
+        Le matériel confié est suivi
+        individuellement jusqu'à sa
+        restitution (SF17, SF18).
+      end note
+    end
+  end
+
+  S -> BA : enregistrerEnlevement(dateEnlevementAppuis)
+  activate BA
+  BA -> BD : UPDATE bon_attribution
+  deactivate BA
+
+  S -> JA : create(agent, "enlevement",\n"BonAttribution", idBon)
+  activate JA
+  JA -> BD : INSERT journal_action
+  deactivate JA
+
+  S -> BD : valider la transaction
+  S --> C : enlèvement enregistré
+  deactivate S
+  C --> V : confirmation
+  V --> U : accusé d'enlèvement
+end
+deactivate C
+deactivate V
+
+@enduml

@@ -1,0 +1,82 @@
+@startuml seq_octroi_demande_revu
+title Diagramme de Séquence — Octroi & Traitement (Conforme aux règles Métier POO)
+
+skinparam shadowing false
+skinparam defaultFontName "Segoe UI", sans-serif
+skinparam backgroundColor #FFFFFF
+skinparam maxMessageSize 200
+
+skinparam actor {
+    BackgroundColor #FFFFFF
+    BorderColor #1A1A1A
+}
+
+skinparam participant {
+    BackgroundColor #F2F4F4
+    BorderColor #1A1A1A
+    FontColor #000000
+}
+
+skinparam sequence {
+    ArrowColor #1A1A1A
+    LifeLineBorderColor #1A1A1A
+    LifeLineBackgroundColor #F2F4F4
+}
+
+actor "agent : Agent" as Agent
+participant "demande : Demande" as Demande
+participant "refAppui : ReferenceAppui" as Ref
+
+autonumber
+
+' ============================================================
+' 1. Création de la session par l'Agent
+' ============================================================
+create participant "session : SessionCommission" as Session
+Agent -> Session : creer(dateSession, typeSession)
+
+' ============================================================
+' 2. Examen de la demande
+' ============================================================
+Agent -> Session : traiterDemande(demande)
+activate Session
+
+alt En cas d'ACCORD (Octroi)
+
+    create participant "bon : BonAttribution" as Bon
+    Session -> Bon : creer(demande, dateEdition, observation)
+
+    loop Pour chaque LigneDemande retenue
+        Session -> Bon : ajouterLigneBon(ligneDemande, quantiteAttribuee, dateRestitutionPrevue)
+        activate Bon
+        create participant "ligneAttrib : LigneAttribution" as LigneAttrib
+        Bon -> LigneAttrib : creer(ligneDemande, quantiteAttribuee, dateRestitutionPrevue)
+        Bon --> Session
+        deactivate Bon
+    end
+
+    Session -> Demande : validerTraitement(session, dateTraitement)
+    activate Demande
+    Demande --> Session
+    deactivate Demande
+
+else En cas de REJET
+
+    Session -> Demande : rejeter(session, dateTraitement, motifRejet)
+    activate Demande
+    Demande --> Session
+    deactivate Demande
+
+end
+
+deactivate Session
+
+' ============================================================
+' 3. Clôture de la session
+' ============================================================
+Agent -> Session : publierResultats(datePublication, resume)
+activate Session
+Session --> Agent
+deactivate Session
+
+@enduml

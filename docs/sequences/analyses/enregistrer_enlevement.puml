@@ -1,0 +1,54 @@
+@startuml
+title Diagramme de séquence d'analyse - « Enregistrer enlèvement d'appuis »
+
+skinparam shadowing false
+skinparam sequence {
+    LifeLineBorderColor #888888
+    ParticipantBorderThickness 1.5
+    ArrowColor #333333
+    ActorBorderColor #333333
+    ActorBackgroundColor #F9F9F9
+}
+
+autonumber
+
+' ============================================================
+' PARTICIPANTS (Système Boîte Noire)
+' ============================================================
+
+actor "Gestionnaire de stock" as Gestionnaire
+participant "Système" as Systeme #EBF3F9
+
+' ============================================================
+' ÉCHANGES CONCEPTUELS
+' ============================================================
+
+Gestionnaire -> Systeme : Demander la liste des attributions d'appuis à servir
+
+Systeme --> Gestionnaire : Afficher les attributions validées;
+
+Gestionnaire -> Systeme : Rechercher une attribution spécifique (id)
+
+alt#Transparent #3f2b9633 ["Bon d'attribution inexistant"]
+
+autonumber 4
+
+Systeme --> Gestionnaire : Afficher bon introuvable
+
+else ["Bon d'attribution existant"]
+
+autonumber 4
+
+Systeme --> Gestionnaire : Retourner le bon d'attribution
+
+Gestionnaire -> Systeme : Demander formulaire de confirmation d'enlèvement
+
+Systeme --> Gestionnaire : Retourner formulaire et informations nécessaires\n(pièces justificatives)
+
+Gestionnaire -> Systeme : Enregistrer formulaire de confirmation d'enlèvement
+
+Systeme --> Gestionnaire : Confirmer enregistrement
+
+end
+
+@enduml

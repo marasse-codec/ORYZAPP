@@ -1,0 +1,51 @@
+@startuml uc_stock
+title <b>Cas d'utilisation Gestionnaire de stock</b>
+
+left to right direction
+skinparam shadowing false
+skinparam defaultFontName "Segoe UI"
+skinparam backgroundColor #FFFFFF
+
+skinparam actor {
+    BackgroundColor #EDF2F7
+    BorderColor #2D3748
+    BorderThickness 2
+    FontStyle bold
+}
+
+skinparam usecase {
+    BackgroundColor #F7FAFC
+    BorderColor #1A202C
+    BorderThickness 2
+    FontStyle bold
+}
+
+skinparam rectangle {
+    BackgroundColor #FFFFFF
+    BorderColor #2B6CB0
+    BorderThickness 2
+    FontStyle bold
+    FontColor #2B6CB0
+}
+
+actor "Agent" as Agent
+actor "Gestionnaire de stock" as Gestionnaire
+
+Gestionnaire --|> Agent
+
+rectangle "<b>Plateforme de gestion des appuis</b>" {
+  usecase "<b>UC02</b>\nS'authentifier" as UC02
+  usecase "<b>UC14</b>\nEnregistrer un approvisionnement d'appuis" as UC14
+  usecase "<b>UC15</b>\nEnregistrer l'enlèvement d'appuis" as UC15
+  usecase "<b>UC16</b>\nConsulter les matériels confiés en cours" as UC16
+  usecase "<b>UC17</b>\nEnregistrer la restitution d'un matériel" as UC17
+  usecase "<b>UC18</b>\nRéintégrer les appuis d'une attribution caduque" as UC18
+}
+
+Gestionnaire --> UC02
+Gestionnaire --> UC14
+Gestionnaire --> UC15
+Gestionnaire --> UC16
+Gestionnaire --> UC17
+Gestionnaire --> UC18
+@enduml

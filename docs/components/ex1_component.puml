@@ -1,0 +1,42 @@
+@startuml
+skinparam Ranksep 10
+skinparam Nodesep 10
+left to right direction
+package "Système de Gestion" {
+
+  ' Définition des interfaces
+    interface "IAuthService" as IAuth
+    interface "IPaymentService" as IPay
+
+  ' Composant 1 : Application Web
+  component "WebApp" as WebApp {
+    portout pClient
+    portout pPayment
+  }
+
+  ' Composant 2 : Service d'Authentification
+  component "AuthService" as Auth {
+    portin pAuth
+  }
+
+  ' Composant 3 : Passerelle de Paiement
+  component "PaymentGateway" as Payment {
+    portin pPay
+  }
+}
+
+' Liaison des interfaces aux ports (Fournies / Requises)
+
+' Auth fournit l'interface IAuth sur son port pAuth
+IAuth -- pAuth
+
+' WebApp requiert l'interface IAuth via son port pClient
+pClient --( IAuth
+
+' Payment fournit l'interface IPay sur son port pPay
+IPay -- pPay
+
+' WebApp requiert l'interface IPay via son port pPayment
+pPayment --( IPay
+
+@enduml

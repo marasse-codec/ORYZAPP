@@ -1,0 +1,47 @@
+@startuml
+skinparam style strictuml
+skinparam monochrome true
+skinparam shadowing false
+
+title **Symboles et Notations du Diagramme de Séquences (UML 2.5)**
+
+' 1. ACTEURS ET LIGNES DE VIE (LIFELINES)
+actor "Acteur (Agent)" as Agent
+participant "Contrôleur (Laravel)" as Controller
+database "Base de données" as DB
+boundary "Service Tiers (SMS)" as SMS
+
+' 2. MESSAGES SYNCHRONES ET ACTIVATION
+Agent -> Controller : 1. Demande d'attribution (Message synchrone)
+activate Controller
+
+Controller -> DB : 2. Recharger le stock
+activate DB
+
+' 3. MESSAGE DE RETOUR (RETURN)
+DB --> Controller : 3. Confirmation mise à jour (Message de retour)
+deactivate DB
+
+' 4. FRAGMENT COMBINÉ ALT (IF / ELSE)
+alt Stock disponible
+    Controller -> DB : 4a. Valider l'attribution
+    activate DB
+    DB --> Controller : OK
+    deactivate DB
+    
+    ' 5. MESSAGE ASYNCHRONE
+    Controller ->> SMS : 4b. Notification d'envoi (Message asynchrone)
+    
+    Controller --> Agent : 5. Succès : Attribution validée
+else Stock insuffisant
+    Controller --> Agent : 5. Erreur : Stock disponible insuffisant
+end
+
+' 6. FRAGMENT COMBINÉ LOOP (BOUCLE)
+loop Pour chaque équipement sélectionné
+    Controller -> Controller : Vérifier la conformité de la ligne
+end
+
+deactivate Controller
+
+@enduml

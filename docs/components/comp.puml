@@ -1,0 +1,120 @@
+@startuml fig-composants-uml2
+title Diagramme de composants — Plateforme de gestion des appuis
+
+skinparam componentStyle uml2
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 11
+skinparam packageStyle rectangle
+skinparam Linetype ortho
+
+' Espacements globaux
+skinparam nodesep 50
+skinparam ranksep 40
+
+' Charte graphique
+skinparam component {
+    BackgroundColor #FFFFFF
+    BorderColor #333333
+}
+skinparam interface {
+    BackgroundColor #FFFFFF
+    BorderColor #333333
+}
+skinparam database {
+    BackgroundColor #FFFFFF
+    BorderColor #333333
+}
+
+rectangle "Plateforme de gestion des appuis" as SYSTEME {
+
+    ' --------------------------------------------------------
+    ' INTERFACES INTERNES ET EXTERNES
+    ' --------------------------------------------------------
+    () "HTTP / HTTPS" as I_HTTP
+    () "Services Métier" as I_SERVICES
+    () "Contrôle d'accès & Validation" as I_SECURITY
+    () "Gestionnaire de Stockage" as I_STORAGE
+    () "Service de Restitution" as I_RESTITUTION
+    () "Service de Notification" as I_NOTIF
+    () "Accès aux Données (ORM)" as I_DATA
+
+    ' --------------------------------------------------------
+    ' COMPOSANTS DE LA COUCHE PRÉSENTATION
+    ' --------------------------------------------------------
+    package "Couche Présentation" {
+        component "Interface Utilisateur\n(Vues Blade, Tailwind, JS)" as COMP_UI
+    }
+
+    ' --------------------------------------------------------
+    ' COMPOSANTS DE LA COUCHE MÉTIER
+    ' --------------------------------------------------------
+    package "Couche Métier & Contrôle" {
+        component "Contrôleurs Laravel" as COMP_CTRL
+        component "Sécurité & Validation\n(FormRequests, Policies, Spatie)" as COMP_SEC
+        
+        component "Service Demande\net Routage" as COMP_SDEM
+        component "Service Commission\net Attribution" as COMP_SATT
+        component "Service Stock\net Échéances" as COMP_SSTK
+        component "Service Restitution\n(PDF & Excel)" as COMP_SRES
+        component "Service Notification" as COMP_SNOTIF
+    }
+
+    ' --------------------------------------------------------
+    ' COMPOSANTS DE LA COUCHE DONNÉES
+    ' --------------------------------------------------------
+    package "Couche Données & Stockage" {
+        component "Modèles Eloquent" as COMP_ELO
+        component "Gestionnaire Fichiers\n(Storage Disk)" as COMP_FS
+    }
+
+    ' --------------------------------------------------------
+    ' ASSEMBLAGES ET RELATIONS (UML2)
+    ' --------------------------------------------------------
+    
+    ' Entrée I_HTTP
+    COMP_UI --( I_HTTP
+    I_HTTP - COMP_CTRL
+
+    ' Sécurité et Validation
+    COMP_CTRL --( I_SECURITY
+    I_SECURITY - COMP_SEC
+
+    ' Contrôleurs vers Services Métier
+    COMP_CTRL --( I_SERVICES
+    I_SERVICES - COMP_SDEM
+    I_SERVICES - COMP_SATT
+    I_SERVICES - COMP_SSTK
+
+    ' Services Métier vers Restitution
+    COMP_CTRL --( I_RESTITUTION
+    I_RESTITUTION - COMP_SRES
+
+    ' Interaction inter-services (Commission -> Stock & Notification)
+    COMP_SATT --( I_NOTIF
+    I_NOTIF - COMP_SNOTIF
+
+    ' Métier vers Stockage de Fichiers (Pièces justificatives)
+    COMP_SDEM --( I_STORAGE
+    I_STORAGE - COMP_FS
+
+    ' Services vers ORM (Accès données)
+    COMP_SDEM --( I_DATA
+    COMP_SATT --( I_DATA
+    COMP_SSTK --( I_DATA
+    COMP_SRES --( I_DATA
+    I_DATA - COMP_ELO
+}
+
+' --------------------------------------------------------
+' INFRASTRUCTURE EXTERNE
+' --------------------------------------------------------
+database "MySQL 8" as DB
+folder "Volume Stockage\n(Pièces numérisées)" as VOL
+cloud "Service Mail\n(SMTP)" as SMTP
+
+COMP_ELO -down-> DB : SQL
+COMP_FS -down-> VOL : Système de fichiers
+COMP_SNOTIF -down-> SMTP : Envoi d'alertes
+
+@enduml

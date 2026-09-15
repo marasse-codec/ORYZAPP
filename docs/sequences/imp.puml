@@ -1,0 +1,19 @@
+@startuml
+skinparam style strictuml
+skinparam monochrome true
+skinparam shadowing false
+
+
+    Service -> DB : Enregistrer une demande
+
+alt Stock disponible
+
+    activate DB
+    DB --> Service : OK
+    deactivate DB
+
+else Stock insuffisant
+    DB --> Service : Erreur : Stock disponible insuffisant
+end
+
+@enduml

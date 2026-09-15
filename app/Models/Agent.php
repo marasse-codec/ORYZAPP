@@ -1,0 +1,24 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\Table;
+use Illuminate\Database\Eloquent\Model;
+
+#[Fillable('id_agent', 'nom', 'matricule_agent', 'actif', 'user_id')]
+#[Table('agents')]
+class Agent extends Model
+{
+    //
+
+    public function mouvementsStocks()
+    {
+        return $this->hasMany(MouvementStock::class, 'id_agent', 'id_agent');
+    }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'user_id', 'id');
+    }
+}

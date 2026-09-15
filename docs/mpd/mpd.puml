@@ -1,0 +1,221 @@
+@startuml MPD_Gestion_Appuis
+title Modèle Physique des Données (MPD) - Types SQL & Contraintes
+
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam Linetype ortho
+skinparam nodesep 100
+skinparam ranksep 70
+skinparam class {
+    BackgroundColor #FFFFFF
+    BorderColor #333333
+    HeaderBackgroundColor #E8F5E9
+    FontColor #333333
+}
+
+entity "departement" as t_departement {
+  id_departement : BIGINT [PK, AUTO]
+  --
+  libelle_departement : VARCHAR(100)
+}
+
+entity "localite" as t_localite {
+  id_localite : BIGINT [PK, AUTO]
+  --
+  libelle_localite : VARCHAR(100)
+  id_departement : BIGINT [FK]
+}
+
+entity "type_demandeur" as t_type_demandeur {
+  id_type_demandeur : BIGINT [PK, AUTO]
+  --
+  libelle_type_demandeur : VARCHAR(100)
+}
+
+entity "demandeur" as t_demandeur {
+  id_demandeur : BIGINT [PK, AUTO]
+  --
+  nom : VARCHAR(150)
+  numero : VARCHAR(30)
+  email : VARCHAR(150)
+  id_type_demandeur : BIGINT [FK]
+}
+
+entity "type_piece" as t_type_piece {
+  id_type_piece : BIGINT [PK, AUTO]
+  --
+  libelle_type_piece : VARCHAR(150)
+}
+
+entity "type_demandeur_piece" as t_type_demandeur_piece {
+  id_type_demandeur : BIGINT [PK, FK]
+  id_type_piece : BIGINT [PK, FK]
+}
+
+entity "service" as t_service {
+  id_service : BIGINT [PK, AUTO]
+  --
+  libelle_service : VARCHAR(100)
+}
+
+entity "agent" as t_agent {
+  id_agent : BIGINT [PK, AUTO]
+  --
+  nom : VARCHAR(100)
+  id_service : BIGINT [FK]
+}
+
+entity "statut_demande" as t_statut_demande {
+  id_statut : BIGINT [PK, AUTO]
+  --
+  lib_statut : VARCHAR(12)
+}
+
+
+entity "demande" as t_demande {
+  id_demande : BIGINT [PK, AUTO]
+  --
+  date_demande : TIMESTAMP
+  date_debut_appuis : DATE
+  statut : VARCHAR(30) = 'EN_ATTENTE'
+  motif_rejet : TEXT
+  date_decision : TIMESTAMP
+  id_demandeur : BIGINT [FK]
+  id_agent : BIGINT [FK]
+  id_localite : BIGINT [FK]
+  id_statut : BIGINT [FK]
+}
+
+entity "piece_justificative" as t_piece_justificative {
+  id_piece : BIGINT [PK, AUTO]
+  --
+  chemin_fichier : VARCHAR(255)
+  id_demande : BIGINT [FK]
+  id_type_piece : BIGINT [FK]
+}
+
+entity "type_systeme_prod" as t_type_systeme_prod {
+  id_type_systeme_prod : BIGINT [PK, AUTO]
+  --
+  libelle_type_systeme_prod : VARCHAR(100)
+}
+
+entity "systeme_production" as t_systeme_production {
+  id_systeme_production : BIGINT [PK, AUTO]
+  --
+  superficie : NUMERIC(10,2)
+  id_demande : BIGINT [FK]
+  id_type_systeme_prod : BIGINT [FK]
+}
+
+entity "type_appui" as t_type_appui {
+  id_type_appui : BIGINT [PK, AUTO]
+  --
+  libelle_type_appui : VARCHAR(100)
+  est_intrant : BOOLEAN
+  est_stockable : BOOLEAN
+  id_service : BIGINT [FK]
+}
+
+entity "appui" as t_appui {
+  id_appui : BIGINT [PK, AUTO]
+  --
+  quantite_en_stock : INT = 0
+  cout_unitaire : NUMERIC(12,2) = 0.00
+  id_type_appui : BIGINT [FK]
+}
+
+entity "ligne_demande" as t_ligne_demande {
+  id_ligne_demande : BIGINT [PK, AUTO]
+  --
+  quantite_demandee : INT
+  date_debut_location : DATE
+  date_fin_location : DATE
+  id_demande : BIGINT [FK]
+  id_appui : BIGINT [FK]
+}
+
+entity "session_commission" as t_session_commission {
+  id_session : BIGINT [PK, AUTO]
+  --
+  resume : TEXT
+  date_debut_session : TIMESTAMP
+  date_fin_session : TIMESTAMP
+}
+
+entity "rapport" as t_rapport {
+  id_rapport : BIGINT [PK, AUTO]
+  --
+  commentaire : TEXT
+  date_rapport : TIMESTAMP
+  id_demande : BIGINT [FK]
+  id_service : BIGINT [FK]
+}
+
+entity "attribution" as t_attribution {
+  id_attribution : BIGINT [PK, AUTO]
+  --
+  date_destockage : TIMESTAMP
+  commentaires : TEXT
+  remise : NUMERIC(5,2) = 0.00
+  id_demande : BIGINT [FK]
+  id_session : BIGINT [FK]
+}
+
+entity "ligne_attribution" as t_ligne_attribution {
+  id_ligne_attribution : BIGINT [PK, AUTO]
+  --
+  quantite_attribuee : INT
+  cout_attribution : NUMERIC(12,2)
+  remise : NUMERIC(5,2) = 0.00
+  date_debut_location : DATE
+  date_fin_location : DATE
+  id_attribution : BIGINT [FK]
+  id_appui : BIGINT [FK]
+}
+
+entity "doc_enlevement" as t_doc_enlevement {
+  id_doc_enlevement : BIGINT [PK, AUTO]
+  --
+  type_doc : VARCHAR(50)
+  chemin_fichier : VARCHAR(255)
+  date_recuperation : TIMESTAMP
+  id_attribution : BIGINT [FK]
+}
+
+entity "approvisionnement" as t_approvisionnement {
+  id_approvisionnement : BIGINT [PK, AUTO]
+  --
+  quantite_avant : INT
+  quantite_ajoutee : INT
+  date_appro : TIMESTAMP
+  id_appui : BIGINT [FK]
+}
+
+t_departement ||--o{ t_localite
+t_type_demandeur ||--o{ t_demandeur
+t_demandeur ||--o{ t_demande
+t_localite ||--o{ t_demande
+t_agent ||--o{ t_demande
+t_demande ||--o{ t_piece_justificative
+t_type_piece ||--o{ t_piece_justificative
+t_type_demandeur ||--o{ t_type_demandeur_piece
+t_type_piece ||--o{ t_type_demandeur_piece
+t_demande ||--o{ t_systeme_production
+t_type_systeme_prod ||--o{ t_systeme_production
+t_service ||--o{ t_type_appui
+t_type_appui ||--o{ t_appui
+t_demande ||--o{ t_ligne_demande
+t_appui ||--o{ t_ligne_demande
+t_service ||--o{ t_agent
+t_demande ||--o{ t_rapport
+t_service ||--o{ t_rapport
+t_session_commission ||--o{ t_attribution
+t_demande ||--o| t_attribution
+t_attribution ||--o{ t_ligne_attribution
+t_appui ||--o{ t_ligne_attribution
+t_attribution ||--o{ t_doc_enlevement
+t_appui ||--o{ t_approvisionnement
+t_statut_demande ||--o{ t_demande
+
+@enduml

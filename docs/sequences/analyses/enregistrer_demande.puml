@@ -1,0 +1,33 @@
+@startuml
+title Diagramme de séquence d'analyse « Enregistrer une demande d'appuis »
+
+skinparam shadowing false
+skinparam sequence {
+    LifeLineBorderColor #888888
+    ParticipantBorderThickness 1.5
+    ArrowColor #333333
+    ActorBorderColor #333333
+    ActorBackgroundColor #F9F9F9
+}
+
+autonumber
+
+' ============================================================
+' PARTICIPANTS (Système Boîte Noire)
+' ============================================================
+
+actor "Délégué de pôle" as Acteur
+participant "Système" as Systeme #EBF3F9
+
+' ============================================================
+' ÉCHANGES CONCEPTUELS
+' ============================================================
+
+Acteur -> Systeme : Demander le formulaire de soumission de demande
+Systeme --> Acteur : Retourner le formulaire et les informations à sélectionner \n(types d'acteurs, types de pièces, appuis)
+Acteur -> Systeme : Envoyer les informations
+Systeme -> Systeme : Vérifier \nles informations \net Enregister \nla nouvelle demande
+Systeme -> Acteur : Confirmer l'enregistrement
+
+
+@enduml

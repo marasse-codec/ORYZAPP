@@ -1,0 +1,38 @@
+@startuml uc_visiteur
+title <b>Cas d'utilisation — Visiteur</b>
+
+left to right direction
+skinparam shadowing false
+skinparam defaultFontName "Segoe UI"
+skinparam backgroundColor #FFFFFF
+
+skinparam actor {
+    BackgroundColor #EDF2F7
+    BorderColor #2D3748
+    BorderThickness 2
+    FontStyle bold
+}
+
+skinparam usecase {
+    BackgroundColor #F7FAFC
+    BorderColor #1A202C
+    BorderThickness 2
+    FontStyle bold
+}
+
+skinparam rectangle {
+    BackgroundColor #FFFFFF
+    BorderColor #2B6CB0
+    BorderThickness 2
+    FontStyle bold
+    FontColor #2B6CB0
+}
+
+actor "Visiteur" as Visiteur
+
+rectangle "<b>Plateforme de gestion des appuis</b>" {
+  usecase "<b>UC01</b>\nConsulter les conditions de dépôt" as UC01
+}
+
+Visiteur --> UC01
+@enduml

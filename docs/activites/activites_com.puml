@@ -1,0 +1,61 @@
+@startuml
+title Attribution des appuis par service et validation en session de commission C2A
+
+skinparam defaultFontName Arial
+skinparam defaultFontSize 12
+skinparam activity {
+  BackgroundColor #FFFFFF
+  BorderColor #333333
+  DiamondBackgroundColor #FFFFFF
+  DiamondBorderColor #333333
+}
+
+|Service|
+start
+:Enregistrer la demande
+dans le fichier Excel du service;
+:Examiner la conformité
+et la complétude du dossier;
+if (Dossier est conforme ?) then (non)
+  :Rejeter le dossier et annuler l'attribution
+  (incomplet ou non conforme);
+else (oui)
+    :Formuler une attribution 
+    pour la demande;
+endif
+
+:Préparer le dossier
+pour la commission;
+:Attendre l'ouverture de la session;
+
+|C2A|
+:Ouvrir la session ordinaire (Janvier/Juin)
+ ou extraordinaire;
+
+:Vérifier les dossiers
+et les attributions des services;
+if (Dossier recevable ?) then (non)
+  :Rejeter le dossier et annuler l'attribution
+  (incomplet ou non conforme);
+  stop
+else (oui)
+    if ()
+    :Valider l'attribution de départ;
+    else ()
+    :Revoir les quantités 
+    de l'attribution de départ;
+endif
+
+|Service|
+:Reporter les décisions
+dans le fichier Excel;
+:Produire la liste des demandeurs
+acceptés et rejetés;
+
+|Délégué de pôle|
+:Recevoir les résultats;
+:Informer les demandeurs
+(motif communiqué en cas de rejet);
+stop
+
+@enduml

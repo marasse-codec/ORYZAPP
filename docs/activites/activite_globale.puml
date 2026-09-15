@@ -1,0 +1,86 @@
+@startuml
+title **Diagramme d'activité — Vue globale du cycle de vie d'une demande**
+
+skinparam shadowing false
+skinparam defaultFontName "Segoe UI"
+skinparam defaultFontSize 12
+skinparam roundcorner 10
+skinparam linetype ortho
+
+skinparam Activity {
+    BackgroundColor #FFFFFF
+    BorderColor #1B5E20
+    BorderThickness 1.5
+    FontColor #2C3E50
+    ArrowColor #1B5E20
+}
+
+skinparam Diamond {
+    BackgroundColor #FFF8E1
+    BorderColor #FFA000
+    FontColor #E65100
+}
+
+skinparam Swimlane {
+    BorderColor #1B5E20
+    BorderThickness 1.5
+    TitleFontColor #1B5E20
+    TitleFontSize 13
+    TitleFontStyle bold
+
+}
+
+
+|#F1F8E9|Délégué de pôle|
+
+start
+
+:Soumettre\ndemande d'appui\net documents\njustificatifs de\nl'acteur;
+
+|#F1F8E9|Agent de service|
+
+:Receptionner\ndemande service;
+:Instruire\ndemande;
+
+if (demande conforme) then (Non)
+
+:rejeter la demande;
+
+stop
+
+else (Oui)
+
+|#F1F8E9|Agent de commission|
+
+:Réceptionner demande;
+:Créer session de\ncommission;
+
+if (demande acceptée) then (Non)
+
+: Commenter rejet;
+
+else (Oui)
+
+:Créer attribution;
+
+endif
+
+:Diffuser les résultats;
+
+|#F1F8E9|Délégué de pôle|
+
+:Informer les acteurs \ndes résultats et\n distribuer les \nrapports de commission;
+
+|#F1F8E9|Acteur de la filière|
+
+:Se rendre au \ncentre de \nconditionnement;
+
+|#F1F8E9|Gestionnaire de stock|
+
+:Rechercher\nrapport d'attribution;
+:Marquer sortie de stock;
+
+
+stop
+
+@enduml

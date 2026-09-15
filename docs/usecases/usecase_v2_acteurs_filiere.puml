@@ -1,0 +1,67 @@
+@startuml
+title Diagramme de cas d'utilisation — Acteurs de la filière
+
+left to right direction
+
+skinparam packageStyle rectangle
+skinparam shadowing false
+skinparam linetype ortho
+skinparam usecase {
+    BackgroundColor #F9F9F9
+    BorderColor #333333
+    ArrowColor #555555
+}
+
+' ============================================================
+' ACTEURS
+' ============================================================
+
+actor "Acteur de la filière" as Filiere
+actor "Producteur" as Producteur
+actor "Transformateur" as Transformateur
+actor "Distributeur" as Distributeur
+
+' ============================================================
+' GÉNÉRALISATION DES ACTEURS DE LA FILIÈRE
+' ============================================================
+
+Producteur --|> Filiere
+Transformateur --|> Filiere
+Distributeur --|> Filiere
+
+' ============================================================
+' SYSTÈME
+' ============================================================
+
+rectangle "Plateforme de gestion des appuis" {
+
+    ' Authentification
+    usecase "S'inscrire /\ns'authentifier" as UC_Auth
+
+    ' Suivi
+    usecase "Réceptionner résultat \nde commission" as UC_Suivre
+
+    ' Soumission principale
+    usecase "Soumettre une\ndemande d'appui" as UC_Soumettre
+
+    ' Sous-opérations de la soumission (inclusions)
+    usecase "Lister les bénéficiaires\n(ONG / Groupements)" as UC_Beneficiaires
+    usecase "Déposer les pièces\njustificatives" as UC_Pieces
+}
+
+' ============================================================
+' RELATIONS DE CAS D'UTILISATION
+' ============================================================
+
+UC_Soumettre .> UC_Beneficiaires : <<include>>
+UC_Soumettre .> UC_Pieces : <<include>>
+
+' ============================================================
+' ASSOCIATIONS ACTEUR <-> CAS D'UTILISATION
+' ============================================================
+
+Filiere --> UC_Auth
+Filiere --> UC_Soumettre
+Filiere --> UC_Suivre
+
+@enduml

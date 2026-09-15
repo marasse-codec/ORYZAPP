@@ -1,0 +1,138 @@
+@startuml mcd
+
+skinparam Linetype ortho
+skinparam nodesep 100
+skinparam ranksep 70
+
+
+' --- 1. TABLE TECHNIQUE D'AUTHENTIFICATION UNIQUE ---
+
+entity "users_roles" as usrol {
+    '(ACT,DPL,MCM,RCC,DGE,SGE)
+}
+
+entity "users" as users {
+    id_user (PK)
+    login
+    password
+    role
+}
+
+usrol "0..*" -- "1..*" users : "avoir"
+
+entity "types_agents" {
+    id_type_agent
+    lib_type_agent
+}
+
+' --- 2. UTILISATEURS INTERNES (Agents) ---
+entity "agents" as agents {
+    id_agent (PK)
+    nom
+    prenoms
+    service
+    id_type_agent
+}
+
+users "1" -- "1..*" agents: "correspondre"
+types_agents "0..*" -- "1" agents : "occuper"
+
+' --- 3. UTILISATEURS EXTERNES (Acteurs du terrain) ---
+entity "types_acteurs" as typact {
+    id_type_acteur
+    lib_type_acteur
+}
+
+entity "categories_acteurs" as catacts {
+    id_catacs (PK)
+    lib_catacts
+}
+'
+
+entity "acteurs" as acts {
+    id_acteur (PK)
+    nom
+    numero
+    adresse
+}
+
+users "1" -- "1..*" acts : "profiler"
+typact "0..*" - "1" acts: "être"
+catacts "0..*" - "1" acts: "appartenir"
+
+' --- 4. GESTION DES MEMBRES (Auto-référence) ---
+entity "appartenances_acteurs" as app {
+    date_adhesion
+    statut 
+}
+
+acts "0..N" -- "0..N" app : "est membre de" >
+app "0..N" -- "1" acts : "regroupe" >
+
+' --- 5. PIÈCES JUSTIFICATIVES ---
+entity "type_piece" as typieco {
+    id_type_piece (PK)
+    libelle_type 
+}
+
+entity "piece_cooperatives" as pieco {
+    id_piece (PK)
+    numero_piece
+    date_delivrance
+}
+
+typieco "0..N" -- "1" pieco : "concerne"  
+pieco "1" -- "0..1" acts : "possède" 
+
+entity "types_cultures" as typcul {
+    id_type_culture (PK)
+    lib_type_culture
+    '(bas-fond, plateau, irriguée)
+}
+
+entity "demandes" as dmds {
+
+}
+
+acts "0..*" -- "1" dmds : "effectuer"
+
+typcul "0..*" - "0..*" dmds : "rattacher"
+
+entity "unites_types_appuis" as untyaps {
+    id_unite_appui (PK)
+    lib_unite_appui
+}
+
+entity "types_appuis" as typapps {
+    id_type_appui
+    lib_type_appui
+    dose_predefini_ha
+    '(semences, fongicide, herbicide, engrais)
+}
+
+catacts "0..*" -- "0..*" typapps : "acceder" 
+untyaps "0..*" -- "1" typapps : > "mesurer"
+
+entity "appuis" as apps {
+  *id_appui : PK
+  --
+  libelle: varchar(100)
+}
+
+entity "appuis_materiels" as appmats {
+  *idappmat : PK
+  --
+  #id_appui
+  dose_ha
+  cout_unitaire : decimal(10,2)
+  est_louable: boolean
+  quantite: entier
+}
+
+appmats "1" -- "0..1" apps : < "representer"
+
+typapps "0..*" -- "1" apps : "relier"
+dmds "0..*" -- "0..*" apps : "composer"
+
+
+@enduml

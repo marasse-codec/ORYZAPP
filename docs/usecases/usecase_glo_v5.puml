@@ -1,0 +1,124 @@
+@startuml uc_plateforme
+title Diagramme de cas d'utilisation — Plateforme de gestion des appuis
+
+skinparam shadowing false
+skinparam defaultFontName Segoe UI
+skinparam roundcorner 8
+skinparam Linetype ortho
+
+' ============================================================
+' STYLE ET TAILLES DE POLICE (LISIBILITÉ OPTIMISÉE)
+' ============================================================
+skinparam backgroundColor #FFFFFF
+
+skinparam title {
+  FontSize 24
+  FontColor #000000
+}
+
+skinparam actor {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+  FontColor #000000
+  FontSize 18
+  BorderThickness 2
+}
+
+skinparam usecase {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+  FontColor #000000
+  FontSize 18
+  BorderThickness 2
+}
+
+skinparam rectangle {
+  BorderColor #000000
+  FontColor #000000
+  FontSize 20
+  BorderThickness 2
+}
+
+skinparam arrow {
+  Color #000000
+  FontColor #000000
+  FontSize 14
+  Thickness 2
+}
+
+left to right direction
+
+actor "Visiteur" as Visiteur
+actor "Délégué de pôle" as Delegue
+actor "Agent de commission" as AgentCom
+actor "Gestionnaire de stock" as Gestionnaire
+actor "Administrateur" as Admin
+
+rectangle "Plateforme de gestion des appuis" {
+
+  usecase "Consulter les conditions de dépôt" as UC01
+  usecase "S'authentifier" as UC02
+
+  usecase "Enregistrer une demande d'appui" as UC03
+  usecase "Imprimer une demande" as UC04
+  usecase "Consulter les décisions publiées" as UC05
+
+  usecase "Enregistrer une session de commission" as UC06
+  usecase "Imprimer le formulaire de commission" as UC07
+  usecase "Imprimer l'état des stocks" as UC08
+  usecase "Simuler des attributions" as UC09
+  usecase "Enregistrer le résultat de délibération" as UC10
+  usecase "Publier les décisions de la commission" as UC11
+  usecase "Imprimer les listes de résultats" as UC12
+  usecase "Imprimer un bon d'attribution" as UC13
+  usecase "Exporter au format tableur" as UC14
+
+  usecase "Enregistrer un approvisionnement" as UC15
+  usecase "Enregistrer l'enlèvement d'appuis" as UC16
+  usecase "Consulter les matériels confiés" as UC17
+  usecase "Enregistrer la restitution d'un matériel" as UC18
+  usecase "Réintégrer les appuis d'un bon caduc" as UC19
+
+  usecase "Consulter le journal des actions" as UC20
+  usecase "Gérer le système" as UC21
+}
+
+Visiteur --> UC01
+
+Delegue --> UC03
+Delegue --> UC05
+
+AgentCom --> UC06
+AgentCom --> UC07
+AgentCom --> UC08
+AgentCom --> UC10
+AgentCom --> UC11
+AgentCom --> UC12
+AgentCom --> UC13
+
+Gestionnaire --> UC15
+Gestionnaire --> UC16
+Gestionnaire --> UC17
+Gestionnaire --> UC18
+Gestionnaire --> UC19
+
+Admin --> UC20
+Admin --> UC21
+
+UC03 ..> UC02 : <<include>>
+UC05 ..> UC02 : <<include>>
+UC06 ..> UC02 : <<include>>
+UC10 ..> UC02 : <<include>>
+UC15 ..> UC02 : <<include>>
+UC16 ..> UC02 : <<include>>
+UC20 ..> UC02 : <<include>>
+UC21 ..> UC02 : <<include>>
+
+UC04 ..> UC03 : <<extend>>
+UC09 ..> UC10 : <<extend>>
+UC14 ..> UC12 : <<extend>>
+
+UC13 ..> UC11 : <<include>>
+UC19 ..> UC16 : <<extend>>
+
+@enduml

@@ -1,0 +1,128 @@
+@startuml
+title Diagramme de cas d'utilisation - Plateforme de gestion des appuis
+
+left to right direction
+
+skinparam packageStyle rectangle
+skinparam shadowing false
+skinparam linetype ortho
+
+skinparam usecase {
+    BackgroundColor #F9F9F9
+    BorderColor #333333
+    ArrowColor #555555
+}
+
+' ============================================================
+' ACTEURS
+' ============================================================
+
+' ----------------------------
+' Acteurs de la filière
+' ----------------------------
+
+actor "Délégué de pôle" as DP
+
+' ----------------------------
+' Acteurs internes
+' ----------------------------
+
+actor "Agent de commission" as AgentCommission
+actor "Gestionnaire de stock" as GestionnaireStock
+actor "Administrateur" as Administrateur
+actor "Visiteur" as Visiteur
+
+' ============================================================
+' GÉNÉRALISATION DES ACTEURS DE LA FILIÈRE
+' ============================================================
+
+
+' ============================================================
+' SYSTÈME
+' ============================================================
+
+rectangle "Plateforme de gestion des appuis" {
+
+    usecase "Consulter les conditions de dépôt de demande" as UC_Consulter
+
+    ' ========================================================
+    ' GESTION DES DEMANDES
+    ' ========================================================
+
+    usecase "Enregistrer / Soumettre demande d'appui" as UC_Soumettre
+
+    usecase "Consulter / suivre\nune demande" as UC_Suivre
+
+    usecase "Imprimer état des stocks" as UC_TelechargerES
+
+    ' ========================================================
+    ' COMMISSIONS
+    ' ========================================================
+
+    usecase "Imprimer formulaire de commission" as UC_TelechargerFC
+
+    usecase "Simuler attributions" as UC_SimulerA
+
+    usecase "Enregistrer resultat de délibération" as UC_EnregistrerR
+
+    ' ========================================================
+    ' ATTRIBUTIONS
+    ' ========================================================
+
+    usecase "Imprimer bon d'attribution" as UC_TelechargerFA
+
+    ' ========================================================
+    ' ADMINISTRATION
+    ' ========================================================
+
+    usecase "Gérer le système" as UC_Systeme
+
+
+    ' ========================================================
+    ' GESTION DES STOCKS
+    ' ========================================================
+
+    usecase "Telecharger d'appuis" as UC_EnregistrerS
+
+    usecase "Enregistrer enlèvement d'appuis" as UC_EnregistrerS
+
+    usecase "Enregistrer approvisionnements d'appuis" as UC_Entree
+}
+
+Visiteur -u-> UC_Consulter
+
+' ============================================================
+' ASSOCIATIONS — ACTEURS DE LA FILIÈRE
+' ============================================================
+
+DP -u-> UC_Soumettre
+DP -u-> UC_Suivre
+
+' ============================================================
+' ASSOCIATIONS — AGENT DE SERVICE
+' ============================================================
+
+AgentCommission --> UC_TelechargerFC
+AgentCommission --> UC_TelechargerES
+AgentCommission --> UC_Suivre
+
+' ============================================================
+' ASSOCIATIONS — AGENT DE COMMISSION
+' ============================================================
+
+AgentCommission --> UC_EnregistrerR
+AgentCommission --> UC_SimulerA
+' ============================================================
+' ASSOCIATIONS — GESTIONNAIRE DE STOCK
+' ============================================================
+
+GestionnaireStock --> UC_EnregistrerS
+GestionnaireStock --> UC_Entree
+GestionnaireStock --> UC_TelechargerFA
+' ============================================================
+' ASSOCIATIONS — ADMINISTRATEUR
+' ============================================================
+
+Administrateur --> UC_Systeme
+
+@enduml

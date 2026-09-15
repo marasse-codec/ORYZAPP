@@ -1,0 +1,108 @@
+@startuml
+skinparam classAttributeIconSize 0
+skinparam shadowing false
+skinparam defaultFontName "Segoe UI", sans-serif
+
+hide empty members
+
+' Suppression de tout fond de diagramme (transparent / blanc)
+skinparam backgroundColor #FFFFFF
+skinparam NodeSep 40
+
+skinparam class {
+    BackgroundColor #FFFFFF
+    HeaderBackgroundColor #F2F4F4
+    BorderColor #1A1A1A
+    FontColor #000000
+    AttributeFontColor #000000
+    MethodFontColor #000000
+    FontSize 16
+    AttributeFontSize 14
+    MethodFontSize 14
+    BorderThickness 1.5
+}
+
+skinparam arrow {
+    Color #1A1A1A
+    FontColor #000000
+    FontSize 14
+}
+' ==========================================
+' 1. CLASSES ET VISIBILITÉ
+' ==========================================
+package "1. Structure d'une Classe & Visibilités" {
+    class ClasseExemple {
+        + attributPublic : String
+        - attributPrive : int
+        # attributProtege : Date
+        ~ attributPackage : boolean
+        
+        + methodePublique() : void
+        - methodePrivee(param : int) : boolean
+    }
+
+    interface "IInterface" as IInterface {
+        + methodeAbstraite() : void
+    }
+
+    enum StatutEnum <<enumeration>> {
+        VALIDE
+        EN_ATTENTE
+        REJETE
+    }
+}
+
+' ==========================================
+' 2. RELATIONS ET CONNECTEURS
+' ==========================================
+package "2. Types de Relations" {
+    class ClassA
+    class ClassB
+    class ClassC
+    class ClassD
+    class Parent
+    class Enfant
+    class Conteneur
+    class Composant
+    class Ensemble
+    class Element
+    class Client
+    class Service
+
+    ' Association simple
+    ClassA "1" -- "0..*" ClassB : Association >
+
+    ' Navigabilité (Association dirigée)
+    ClassC "1" --> "1..*" ClassD : Navigabilité >
+
+    ' Héritage / Généralisation
+    Parent <|-- Enfant : Héritage
+
+    ' Composition (Lien fort)
+    Conteneur "1" *-- "1..*" Composant : Composition
+
+    ' Agrégation (Lien faible)
+    Ensemble "1" o-- "0..*" Element : Agrégation
+
+    ' Dépendance
+    Client ..> Service : Dépendance
+
+    ' Implémentation d'interface
+    IInterface <|.. ClassA : Realisation
+}
+
+' ==========================================
+' 3. CLASSE D'ASSOCIATION
+' ==========================================
+package "3. Classe d'Association" {
+    class Etudiant
+    class Cours
+    class Inscription {
+        - dateInscription : Date
+        - note : float
+    }
+
+    (Etudiant, Cours) .. Inscription
+}
+
+@enduml
