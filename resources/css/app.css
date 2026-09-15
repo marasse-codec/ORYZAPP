@@ -1,3 +1,34 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+:root {
+  --color-primary: #1B4D3E;
+  --color-secondary: #D97706;
+  --color-tertiary: #673831;
+  --color-neutral: #0F172A;
+  --color-accent: #FF6B6B;
+  --color-background: #F0F0F0;
+  --color-text-primary: #333333;
+  --color-text-secondary: #666666;
+
+  --text-heading: 1.5rem;
+  --text-body: 1rem;
+}
+
+/* Les blocs pilotés par Alpine restent masqués tant qu'il n'a pas démarré,
+   sans quoi ils apparaissent tous en vrac au premier rendu. */
+[x-cloak] {
+  display: none !important;
+}
+
+/* Écran projeté en séance de commission. L'élément mis en plein écran sort du
+   flux : il ne récupère ni le fond de la page ni sa largeur, et le backdrop du
+   navigateur est noir par défaut. Il doit donc porter les siens.
+   La double classe l'emporte sur les utilitaires Tailwind de l'élément. */
+.plein-ecran.plein-ecran:fullscreen {
+  max-width: none;
+  overflow-y: auto;
+  padding: 2rem;
+  background-color: var(--color-background);
+}

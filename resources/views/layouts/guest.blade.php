@@ -1,30 +1,98 @@
+{{--
+    Gabarit des écrans hors session : connexion, inscription, réinitialisation
+    de mot de passe. Deux colonnes sur grand écran — un panneau institutionnel
+    à gauche, le formulaire à droite — et une seule colonne sur mobile.
+--}}
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+<html lang="fr" class="h-full">
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="csrf-token" content="{{ csrf_token() }}">
 
-        <title>{{ config('app.name', 'Laravel') }}</title>
+        <title>{{ config('app.name', 'ADERIZ') }}</title>
 
-        <!-- Fonts -->
-        <link rel="preconnect" href="https://fonts.bunny.net">
-        <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
 
-        <!-- Scripts -->
         @vite(['resources/css/app.css', 'resources/js/app.js'])
     </head>
-    <body class="font-sans text-gray-900 antialiased">
-        <div class="min-h-screen flex flex-col sm:justify-center items-center pt-6 sm:pt-0 bg-gray-100">
-            <div>
-                <a href="/">
-                    <x-application-logo class="w-20 h-20 fill-current text-gray-500" />
-                </a>
-            </div>
+    <body class="h-full bg-white font-sans text-slate-800 antialiased">
+        <div class="flex min-h-full">
 
-            <div class="w-full sm:max-w-md mt-6 px-6 py-4 bg-white shadow-md overflow-hidden sm:rounded-lg">
-                {{ $slot }}
-            </div>
+            {{-- ─────────── Panneau institutionnel (grand écran) ─────────── --}}
+            <aside class="relative hidden w-1/2 overflow-hidden bg-[--color-primary] lg:flex lg:flex-col lg:justify-between">
+                {{-- Halos décoratifs : de la profondeur sans image à charger. --}}
+                <div class="pointer-events-none absolute -right-24 -top-24 h-80 w-80 rounded-full bg-emerald-400/20 blur-3xl"></div>
+                <div class="pointer-events-none absolute -bottom-32 -left-20 h-80 w-80 rounded-full bg-lime-300/10 blur-3xl"></div>
+
+                <div class="relative p-12">
+                    <a href="{{ route('vitrine') }}" class="flex items-center gap-3">
+                        <span class="flex h-10 w-10 items-center justify-center rounded-lg bg-white text-base font-bold text-[--color-primary]">A</span>
+                        <span class="leading-tight">
+                            <span class="block text-sm font-bold text-white">ADERIZ</span>
+                            <span class="block text-[11px] text-emerald-100">Filière Riz</span>
+                        </span>
+                    </a>
+                </div>
+
+                <div class="relative px-12">
+                    <h1 class="text-4xl font-bold leading-tight tracking-tight text-white">
+                        Plateforme de<br>
+                        <span class="text-lime-300">gestion des appuis</span>
+                    </h1>
+                    <p class="mt-5 max-w-md leading-relaxed text-emerald-50/90">
+                        Du dépôt de la demande à la remise des appuis au magasin : instruction par
+                        les services, arbitrage en commission et suivi des stocks, au même endroit.
+                    </p>
+
+                    <ul class="mt-10 space-y-4">
+                        @foreach ([
+                            ['description', 'Enregistrer et suivre les demandes'],
+                            ['fact_check', 'Instruire les dossiers par service'],
+                            ['gavel', 'Arbitrer en commission'],
+                            ['inventory', 'Servir les bons et tenir les stocks'],
+                        ] as [$icone, $libelle])
+                            <li class="flex items-center gap-3 text-sm text-emerald-50">
+                                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/10 ring-1 ring-inset ring-white/15">
+                                    <span class="material-symbols-outlined text-base text-lime-300">{{ $icone }}</span>
+                                </span>
+                                {{ $libelle }}
+                            </li>
+                        @endforeach
+                    </ul>
+                </div>
+
+                <p class="relative p-12 text-xs text-emerald-100/70">
+                    &copy; {{ now()->year }} ADERIZ — Agence pour le Développement de la Filière Riz
+                </p>
+            </aside>
+
+            {{-- ────────────────────── Formulaire ────────────────────── --}}
+            <main class="flex w-full flex-col lg:w-1/2">
+
+                {{-- En-tête compact, visible seulement sur mobile --}}
+                <div class="flex items-center gap-3 border-b border-slate-200 px-6 py-4 lg:hidden">
+                    <a href="{{ route('vitrine') }}" class="flex items-center gap-2.5">
+                        <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-[--color-primary] text-sm font-bold text-white">A</span>
+                        <span class="leading-tight">
+                            <span class="block text-sm font-bold text-slate-900">ADERIZ</span>
+                            <span class="block text-[11px] text-slate-500">Gestion des appuis</span>
+                        </span>
+                    </a>
+                </div>
+
+                <div class="flex flex-1 items-center justify-center px-6 py-12">
+                    <div class="w-full max-w-md">
+                        {{ $slot }}
+                    </div>
+                </div>
+
+                <p class="px-6 pb-6 text-center text-xs text-slate-400 lg:hidden">
+                    &copy; {{ now()->year }} ADERIZ — Tous droits réservés
+                </p>
+            </main>
         </div>
     </body>
 </html>

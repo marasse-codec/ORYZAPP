@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Auth;
 
+use App\Enums\RoleEnum;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Auth\Events\Registered;
@@ -15,16 +16,15 @@ use Illuminate\View\View;
 
 class RegisteredUserController extends Controller
 {
-    /**
-     * Display the registration view.
-     */
     public function create(): View
     {
         return view('auth.register');
     }
 
     /**
-     * Handle an incoming registration request.
+     * L'inscription ne crée qu'un compte. Le demandeur (Acteur) naît du
+     * formulaire de demande, où il est rapproché par son téléphone : le créer
+     * ici en dupliquerait un sur deux.
      *
      * @throws ValidationException
      */
@@ -41,6 +41,8 @@ class RegisteredUserController extends Controller
             'email' => $request->email,
             'password' => Hash::make($request->password),
         ]);
+
+        $user->assignRole(RoleEnum::acteur->value);
 
         event(new Registered($user));
 
