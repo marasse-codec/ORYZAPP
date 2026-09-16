@@ -1,7 +1,7 @@
 <?php
 
 use Livewire\Component;
-use App\Models\LigneDemande;
+use App\Models\LigneAttribution;
 use App\Models\Demande;
 use Illuminate\Support\Facades\DB;
 
@@ -12,11 +12,11 @@ new class extends Component
 
     public function with(): array
     {
-        $query = LigneDemande::query()
-            ->when($this->campagneId, fn ($q) => $q->whereHas('demande', fn ($d) => $d->where('id_campagne', $this->campagneId)))
-            ->when($this->referenceAppuiId, fn ($q) => $q->where('id_reference_appui', $this->referenceAppuiId));
+        $query = Appui::query()
+            ->when($this->campagneId, fn ($q) => $q->whereHas('attribution.demande', fn ($d) => $d->where('id_campagne', $this->campagneId)))
+            ->when($this->referenceAppuiId, fn ($q) => $q->where('id_appui', $this->referenceAppuiId));
 
-        $totalDemande = (int) $query->sum('quantite_demandee');
+        $totalDemande = (int) $query->sum('quantite_attribuee');
 
         $totalAttribue = (int) DB::table('lignes_attributions')
             ->join('attributions', 'lignes_attributions.id_attribution', '=', 'attributions.id_attribution')

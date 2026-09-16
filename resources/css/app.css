@@ -12,6 +12,10 @@
   --color-text-primary: #333333;
   --color-text-secondary: #666666;
 
+  --color-brouillon: #ef4444;
+  --color-soumise: #22c55e;
+
+
   --text-heading: 1.5rem;
   --text-body: 1rem;
 }

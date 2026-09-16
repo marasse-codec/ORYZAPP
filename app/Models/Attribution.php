@@ -52,6 +52,10 @@ class Attribution extends Model
         return $this->hasMany(LigneAttribution::class, 'id_attribution', 'id_attribution');
     }
 
+    public function traitement() {
+        return $this->belongsTo(Traitement::class, 'id_traitement','id_traitement');
+    }
+
     // ------------------------------------------------------------------ Métier
 
     public function estDestockable(): bool

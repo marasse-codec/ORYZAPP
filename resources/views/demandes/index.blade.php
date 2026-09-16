@@ -114,7 +114,10 @@
             </section>
         @endcan
 
-        {{-- Tous --}}
+
+
+
+        {{-- Tous acteurs --}}
         {{-- La liste complète --}}
         @if ($demandes->isEmpty())
             <div class="rounded-xl border border-dashed border-slate-300 bg-white px-6 py-12 text-center">
@@ -151,8 +154,8 @@
                                 <td class="px-4 py-3 text-slate-600">{{ $demande->localite?->lib_localite }}</td>
                                 <td class="px-4 py-3 text-center text-slate-600">{{ $demande->lignes->count() }}</td>
                                 <td class="px-4 py-3">
-                                    <span class="inline-block rounded-full px-2.5 py-1 text-xs font-semibold {{ $demande->id_statut_demande->couleur() }}">
-                                        {{ $demande->id_statut_demande->libelle() }}
+                                    <span class="inline-block rounded-full px-2.5 py-1 text-xs font-semibold {{ $demande->soumise ? "bg-[--color-brouillon]" : "bg[--color-soumise]" }}">
+                                        {{ $demande->soumise ? "Demande soumise" : "Demande en brouillon" }}
                                     </span>
                                     @if ($demande->motifs_rejet)
                                         <span class="mt-1 block text-xs text-red-700">{{ $demande->motifs_rejet }}</span>
@@ -177,7 +180,7 @@
 
                                         @can(PermissionEnum::creerDemande->value)
 
-                                            @if($demande->estModifiable())
+                                            @if(!$demande->soumise)
 
                                                 <a href="{{ route('demandes.edit', $demande->id_demande) }}"
                                                 class="text-sm font-medium text-yellow-700 hover:underline">

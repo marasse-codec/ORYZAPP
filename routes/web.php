@@ -11,6 +11,7 @@ use App\Http\Controllers\Demande\DemandeController;
 use App\Http\Controllers\EquipementController;
 use App\Http\Controllers\EquipementRetourController;
 use App\Http\Controllers\InstructionController;
+use App\Http\Controllers\Mouvement\MouvementStockController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RecuperationController;
 use App\Http\Controllers\SimulationSortieController;
@@ -44,6 +45,9 @@ Route::middleware('auth')->group(function () {
     // Route pour supprimer la demande
     Route::delete('/demandes/{demande}', [DemandeController::class, 'destroy'])->name('demandes.destroy');
 
+    Route::get('/mouvements-stocks', [MouvementStockController::class, 'index'])->name('mouvements-stocks.index');
+    Route::get('/mouvements-stocks/{id}', [MouvementStockController::class, 'show'])->name('mouvements-stocks.show');
+    
     // PROFIL
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');

@@ -19,6 +19,8 @@ return new class extends Migration
 
             $table->dateTime('date_fin_traitement')->nullable();
 
+            $table->string('motifs_rejet')->nullable();
+
             $table->foreignId('id_demande')
                 ->constrained('demandes', 'id_demande')
                 ->cascadeOnDelete();

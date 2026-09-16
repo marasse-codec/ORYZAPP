@@ -7,12 +7,16 @@ use Illuminate\Database\Eloquent\Attributes\Table;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Support\Collection;
 
 #[Fillable(
     'date_fin_traitement',
     'observation_interne',
+    'motifs_rejet',
     'id_service',
-    'id_demande'
+    'id_demande',
+    'id_traitement'
 )]
 #[Table('traitements')]
 class Traitement extends Model
@@ -20,7 +24,6 @@ class Traitement extends Model
     protected $primaryKey = 'id_traitement';
 
     protected $casts = [
-        'date_prise_en_charge' => 'datetime',
         'date_fin_traitement' => 'datetime',
     ];
 
@@ -42,6 +45,29 @@ class Traitement extends Model
         );
     }
 
+    public function attribution(): HasOne {
+        return $this->hasOne(Attribution::class,'id_traitement','id_traitement');
+    }
+
+    /** METIER */
+
+    /**
+     * Crée les traitements pour une demande et une liste de services.
+     *
+     * @param int $idDemande
+     * @param Collection<int, Service> $services
+     * @return void
+     */
+    public static function creerTraitements(int $idDemande, Collection $services): void
+    {
+        foreach ($services as $service) {
+            Traitement::firstOrCreate([
+                'id_demande' => $idDemande,
+                'id_service' => $service->id_service,
+            ]);
+        }
+    }
+
     public function demandesCorrections(): HasMany
     {
         return $this->hasMany(
@@ -55,4 +81,5 @@ class Traitement extends Model
     {
         return Traitement::where('id_demande', $idDemande)->whereNotNull('date_fin_traitement')->get();
     }
+
 }

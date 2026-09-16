@@ -59,8 +59,6 @@
                     <tr class="border-b border-slate-300 text-left text-xs uppercase text-slate-500">
                         <th class="w-8 pb-1">N°</th>
                         <th class="pb-1">Pièce</th>
-                        <th class="pb-1">Fichier</th>
-                        <th class="pb-1 text-right">Reproduction</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100">
@@ -68,10 +66,6 @@
                         <tr>
                             <td class="py-1.5 text-slate-500">{{ $rang + 1 }}</td>
                             <td class="py-1.5 text-slate-800">{{ $piece->typePiece?->lib_type_piece }}</td>
-                            <td class="py-1.5 text-slate-600">{{ $piece->nomFichier() }}</td>
-                            <td class="py-1.5 text-right text-slate-600">
-                                {{ $piece->estImage() ? 'Pages suivantes' : 'À tirer depuis le fichier' }}
-                            </td>
                         </tr>
                     @endforeach
                 </tbody>

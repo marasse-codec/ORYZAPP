@@ -46,8 +46,7 @@ class SimulationSortieService
      */
     public function etat(?SessionCommission $seance): Collection
     {
-        $appuis = Appui::quantifiables()
-            ->with('uniteAppui', 'typeAppui.service')
+        $appuis = Appui::with('typeAppui.service')
             ->orderBy('libelle')
             ->get();
 

@@ -33,8 +33,12 @@ class CreationDemandeService
                 'id_type_acteur' => $donnees['id_type_acteur'],
                 'id_localite' => $donnees['id_localite'],
                 'date_demande' => now()->toDateString(),
-                'debut_periode_mise_en_place' => $donnees['debut_periode_mise_en_place'],
-                'id_statut_demande' => StatutDemandeE::brouillon,
+
+                'periode_debut_mise_en_place' => $donnees['periode_debut_mise_en_place'],
+                'periode_fin_mise_en_place' => $donnees['periode_fin_mise_en_place'],
+
+                'soumise' => false, // Par défaut à false en bd
+
                 'id_user' => Auth::user()->id,
                 'id_campagne' => $donnees['id_campagne']
             ]);
@@ -85,22 +89,24 @@ class CreationDemandeService
         foreach ($lignes as $ligne) {
             $ligneD = LigneDemande::create([
                 'id_demande' => $demande->id_demande,
-                'id_appui' => $ligne['id_appui'],
+                'id_type_appui' => $ligne['id_type_appui'],
                 'quantite_demandee' => $ligne['quantite_demandee'],
             ]);
 
-            $ligneD->load('appui.typeAppui.service');
+            // Préchargement de la relation
+            $ligneD->load('typeAppui.service');
 
-            if ($ligneD->appui && $ligneD->appui->typeAppui && $ligneD->appui->typeAppui->service) {
-                $service = $ligneD->appui->typeAppui->service;
-
-                // On indexe par l'ID du service pour éviter naturellement les doublons d'objets
+            // Récupération des services concernnées
+            if ($ligneD->typeAppui && $ligneD->typeAppui->service) {
+                $service = $ligneD->typeAppui->service;
                 $servicesCites[$service->id_service] = $service;
             }
         }
 
+        // Unifications des services
         $servicesUniques = array_values($servicesCites);
 
+        // Création de traitement pour chaque service (imputation)
         foreach ($servicesUniques as $service) {
             Traitement::create([
                 'id_demande' => $demande->id_demande,

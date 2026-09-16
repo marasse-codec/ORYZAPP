@@ -1,5 +1,11 @@
 @extends($layout ?? 'layouts.aderiz')
 
+@php
+
+    use Illuminate\Support\Carbon;
+
+    Carbon::setLocale('fr');
+@endphp
 @section('content')
 <div class="min-h-screen bg-[--color-background] px-6 py-8">
     <div class="max-w-5xl mx-auto space-y-6">
@@ -32,13 +38,13 @@
                     Consulter
                 </a>
                 {{-- Boutons d'action conditionnels pour les commissions (Valider / Annuler) --}}
-                @if(auth()->user()->can(\App\Enums\PermissionEnum::gererCommission->value) && $attribution->id_statut_attribution === \App\Enums\StatutAttributionEnum::soumise)
+                @if(auth()->user()->can(\App\Enums\PermissionEnum::gererCommission->value) && $sessionOuverte)
                     <form action="{{ route('attributions.valider') }}" method="POST" class="inline">
                         @csrf
                         <input type="hidden" name="id_attribution" value="{{ $attribution->id_attribution }}">
                         <button type="submit" 
                                 class="inline-flex items-center gap-1 rounded-md border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-700 hover:bg-emerald-100 shadow-sm"
-                                onclick="return confirm('Voulez-vous confirmer la validation de cette attribution, Elle sera traitée au nom de la séance de la commission du {{$sessionOuverte->date_debut_session}} ?')">
+                                onclick="return confirm('Voulez-vous confirmer la validation de cette attribution, Elle sera traitée au nom de la séance de la commission du {{Carbon::parse($sessionOuverte->date_debut_session)->translatedFormat('l d m Y')}} ?')">
                             Valider
                         </button>
                     </form>
@@ -48,7 +54,7 @@
                         <input type="hidden" name="id_attribution" value="{{ $attribution->id_attribution }}">
                         <button type="submit" 
                                 class="inline-flex items-center gap-1 rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-100 shadow-sm"
-                                 onclick="return confirm('Voulez-vous confirmer l\'annulation de cette attribution, Elle sera traitée au nom de la séance de la commission du {{$sessionOuverte->date_debut_session}} ?')">
+                                 onclick="return confirm('Voulez-vous confirmer l\'annulation de cette attribution, Elle sera traitée au nom de la séance de la commission du {{Carbon::parse($sessionOuverte->date_debut_session)->translatedFormat('l d m Y')}} ?')">
                             Annuler
                         </button>
                     </form>

@@ -13,6 +13,7 @@
     $catalogueIndex = $catalogue->mapWithKeys(fn ($appui) => [
         $appui->id_appui => [
             'libelle' => $appui->libelle,
+            'cout_unitaire' => $appui->cout_unitaire,
             'stock' => $appui->quantite_en_stock,
             'unite' => $appui->typeAppui?->uniteTypeAppui?->lib_unite_type_appui ?? 'unité',
         ],
@@ -30,25 +31,27 @@
             </h1>
             <p class="text-sm text-slate-500">
                 {{ $demande->typeActeur?->lib_type_acteur }} · {{ $demande->localite?->lib_localite }} ·
-                {{ number_format($demande->systemesProduction->sum('superficie'), 2, ',', ' ') }} ha
+                {{ number_format($demande->systemesProductions->sum('superficie'), 2, ',', ' ') }} ha
             </p>
         </div>
 
         @include('partials.flash')
 
+        
         {{-- Synthèse : demandé / en stock / déjà engagé, appui par appui --}}
         <div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
             <h2 class="mb-4 text-base font-semibold text-[--color-primary]">Synthèse des quantités pour ce dossier</h2>
+            @foreach ($demande->lignes as $ligne)
+                    <div class="flex justify-between">
+                        <dt class="font-semibold">{{$ligne->typeAppui->lib_type_appui}} demandés : {{ $ligne->quantite_demandee }}</dt>
+                    </div>
+                @endforeach
             <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 @foreach ($synthese as $ligne)
                     @php $disponible = $ligne['stock'] - $ligne['engagee']; @endphp
                     <div class="rounded-lg border border-slate-200 p-4">
                         <p class="text-sm font-semibold text-slate-800">{{ $ligne['libelle'] }}</p>
                         <dl class="mt-2 space-y-1 text-xs text-slate-600">
-                            <div class="flex justify-between">
-                                <dt>Demandé</dt>
-                                <dd class="font-medium">{{ $ligne['demandee'] }} {{ $ligne['unite'] }}</dd>
-                            </div>
                             <div class="flex justify-between">
                                 <dt>En stock</dt>
                                 <dd class="font-medium">{{ $ligne['stock'] }} {{ $ligne['unite'] }}</dd>
@@ -71,27 +74,54 @@
 
 
 
+
+
             <form action="{{ route('attributions.store', $demande->id_demande) }}" method="POST"
                   x-data="{
-                      lignes: {{ Illuminate\Support\Js::from(array_values($lignesInitiales)) }},
-                      catalogue: {{ Illuminate\Support\Js::from($catalogueIndex) }},
+                        // Reçoit le pré-remplissage du contrôleur (lignes demandées à l'origine)
+                        lignes: {{ Illuminate\Support\Js::from(array_values($lignesInitiales)) }},
+                        
+                        // Index JSON du catalogue [id_appui => { libelle, stock, unite, cout_unitaire }]
+                        catalogue: {{ Illuminate\Support\Js::from($catalogueIndex) }},
 
-                      infos(id) { return this.catalogue[id] ?? null; },
+                        // Retourne les infos d'un appui à partir de son ID
+                        infos(id) { return this.catalogue[id] ?? null; },
 
-                      montant(ligne) {
-                          const q = Number(ligne.quantite_attribuee) || 0;
-                          const c = Number(ligne.cout_attribution) || 0;
-                          const r = Number(ligne.remise) || 0;
-                          return q * c * (1 - r / 100);
-                      },
+                        // Empêche la sélection d'un même appui dans deux lignes différentes
+                        estSelectionne(idAppui, currentIndex) {
+                            if (!idAppui) return false;
+                            return this.lignes.some((ligne, idx) => idx !== currentIndex && String(ligne.id_appui) === String(idAppui));
+                        },
 
-                      get total() {
-                          return this.lignes.reduce((somme, l) => somme + this.montant(l), 0);
-                      },
+                        // Remplit automatiquement le coût unitaire dès qu'on choisit un appui
+                        onAppuiChange(index) {
+                            const id = this.lignes[index].id_appui;
+                            if (id && this.catalogue[id]) {
+                                this.lignes[index].cout_attribution = this.catalogue[id].cout_unitaire ?? 0;
+                            }
+                        },
 
-                      ajouter() { this.lignes.push({ id_appui: '', quantite_attribuee: 1, cout_attribution: '', remise: 0 }); },
-                      retirer(i) { if (this.lignes.length > 1) this.lignes.splice(i, 1); },
-                  }"
+                        // Calcule le sous-total de la ligne (Quantité * Coût * (1 - Remise %))
+                        montant(ligne) {
+                            const q = Number(ligne.quantite_attribuee) || 0;
+                            const c = Number(ligne.cout_attribution) || 0;
+                            const r = Number(ligne.remise) || 0;
+                            return q * c * (1 - r / 100);
+                        },
+
+                        // Calcul du montant global de la commande
+                        get total() {
+                            return this.lignes.reduce((somme, l) => somme + this.montant(l), 0);
+                        },
+
+                        // Actions d'ajout et suppression de lignes
+                        ajouter() { 
+                            this.lignes.push({ id_appui: '', quantite_attribuee: 1, cout_attribution: 0, remise: 0 }); 
+                        },
+                        retirer(i) { 
+                            if (this.lignes.length > 1) this.lignes.splice(i, 1); 
+                        },
+                    }"
                   class="space-y-6">
                 @csrf
 
@@ -100,19 +130,22 @@
                     <div class="space-y-3">
                         <template x-for="(ligne, index) in lignes" :key="index">
                             <div class="grid gap-3 sm:grid-cols-12 items-end rounded-lg border border-slate-200 p-3">
-                                <div class="sm:col-span-4">
+                                <div class="sm:col-span-3">
                                     <label class="block text-xs font-medium text-slate-600">Appui</label>
-                                    <select :name="`lignes[${index}][id_appui]`" x-model="ligne.id_appui" required
-                                            class="mt-1 block w-full text-sm border-gray-300 focus:border-[--color-primary] focus:ring-[--color-primary] rounded-md">
-                                        <option value="">— Sélectionner —</option>
+                                    <select :name="`lignes[${index}][id_appui]`" 
+                                            x-model="ligne.id_appui" 
+                                            @change="onAppuiChange(index)"
+                                            required
+                                            class="mt-1 block w-full text-sm border-gray-300 bg-slate-50 focus:border-[--color-primary] focus:ring-[--color-primary] rounded-md font-semibold text-slate-800"">
+                                        <option value="">— Sélectionner un appui —</option>
                                         @foreach ($catalogue as $appui)
-                                            <option value="{{ $appui->id_appui }}">{{ $appui->libelle }}</option>
+                                            <!-- Le bouton est désactivé si l'appui est déjà choisi ailleurs -->
+                                            <option value="{{ $appui->id_appui }}" 
+                                                    :disabled="estSelectionne({{ $appui->id_appui }}, index)">
+                                                {{ $appui->libelle }}
+                                            </option>
                                         @endforeach
                                     </select>
-                                    <p class="mt-1 text-xs text-slate-500" x-show="infos(ligne.id_appui)" x-cloak>
-                                        Stock : <span x-text="infos(ligne.id_appui)?.stock"></span>
-                                        <span x-text="infos(ligne.id_appui)?.unite"></span>
-                                    </p>
                                 </div>
 
                                 <div class="sm:col-span-2">
@@ -129,17 +162,18 @@
                                            class="mt-1 block w-full text-sm border-gray-300 focus:border-[--color-primary] focus:ring-[--color-primary] rounded-md">
                                 </div>
 
-                                <div class="sm:col-span-1">
+                                <div class="sm:col-span-2">
                                     <label class="block text-xs font-medium text-slate-600">Remise %</label>
                                     <input type="number" min="0" max="100" step="0.01" :name="`lignes[${index}][remise]`"
                                            x-model="ligne.remise"
                                            class="mt-1 block w-full text-sm border-gray-300 focus:border-[--color-primary] focus:ring-[--color-primary] rounded-md">
                                 </div>
-
+                                
                                 <div class="sm:col-span-2">
                                     <label class="block text-xs font-medium text-slate-600">Montant</label>
-                                    <p class="mt-2 text-sm font-semibold text-slate-800"
-                                       x-text="montant(ligne).toLocaleString('fr-FR', { maximumFractionDigits: 0 }) + ' F'"></p>
+                                    <input type="text" readonly
+                                        class="mt-1 block w-full text-sm border-gray-300 bg-slate-50 focus:border-[--color-primary] focus:ring-[--color-primary] rounded-md font-semibold text-slate-800"
+                                        :value="montant(ligne).toLocaleString('fr-FR', { maximumFractionDigits: 0 }) + ' F'">
                                 </div>
 
                                 <div class="sm:col-span-1">

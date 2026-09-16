@@ -39,8 +39,7 @@ class AppuiSeeder extends Seeder
                 'libelle' => $libelle,
                 'id_type_appui' => $idTypeAppui,
                 'quantite_en_stock' => $stock,
-                'cout_unitaire' => $cout,
-                'id_unite_appui' => $idUnite,
+                'cout_unitaire' => $cout
             ]);
 
             if (in_array($idTypeAppui, [4, 5, 6])) {

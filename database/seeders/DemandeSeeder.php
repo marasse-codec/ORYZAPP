@@ -22,8 +22,9 @@ class DemandeSeeder extends Seeder
             'id_type_acteur' => 3, // Coopérative
             'id_localite' => 1,
             'date_demande' => now()->toDateString(),
-            'debut_periode_mise_en_place' => now()->addMonth()->toDateString(),
-            'id_statut_demande' => StatutDemandeE::brouillon,
+            'periode_debut_mise_en_place' => '2026-10-30',
+            'periode_fin_mise_en_place' => '2027-01-30', // 3 mois
+            'soumise' => false,
             'id_user' => 2,
             'id_campagne' => Campagne::first()->id_campagne
         ]);
@@ -39,11 +40,11 @@ class DemandeSeeder extends Seeder
 
         // Appuis sollicités : deux services distincts, pour que l'instruction
         // ait plus d'un destinataire.
-        foreach ([1 => 130, 3 => 20, 8 => 1] as $idAppui => $quantite) {
+        foreach ([1 => 130, 4 => 20] as $idTypeAppui => $quantite) {
 
             LigneDemande::create([
                 'id_demande' => $demande->id_demande,
-                'id_appui' => $idAppui,
+                'id_type_appui' => $idTypeAppui,
                 'quantite_demandee' => $quantite,
             ]);
         }
@@ -56,7 +57,6 @@ class DemandeSeeder extends Seeder
         Traitement::create([
             'id_service' => 2,
             'id_demande' => $demande->id_demande,
-
         ]);
     }
 }

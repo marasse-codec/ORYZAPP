@@ -22,24 +22,22 @@ class Demande extends Model
         'id_type_acteur',
         'id_localite',
         'date_demande',
-        'debut_periode_mise_en_place',
-        'date_prise_en_charge',
-        'en_cours_de_correction',
-        'motifs_rejet',
-        'date_rejet',
-        'date_attribution',
-        'id_statut_demande',
+
+        'periode_debut_mise_en_place',
+        'periode_fin_mise_en_place',
+
+        'soumise',
+
         'id_user',
         'id_campagne'
     ];
 
     protected $casts = [
         'date_demande' => 'date',
-        'debut_periode_mise_en_place' => 'date',
-        'date_prise_en_charge' => 'datetime',
-        'date_rejet' => 'date',
-        'date_attribution' => 'date',
-        'id_statut_demande' => StatutDemandeE::class,
+
+        'periode_debut_mise_en_place' => 'date',
+        'periode_fin_mise_en_place' => 'date',
+
     ];
 
     // ---------------------------------------------------------------- Relations
@@ -63,7 +61,7 @@ class Demande extends Model
     }
 
     /** Les superficies déclarées, ventilées par système de production. */
-    public function systemesProduction(): HasMany
+    public function systemesProductions(): HasMany
     {
         return $this->hasMany(SystemeProduction::class, 'id_demande', 'id_demande');
     }
@@ -84,24 +82,15 @@ class Demande extends Model
         return $this->hasMany(Rapport::class, 'id_demande', 'id_demande');
     }
 
-    public function attribution(): HasOne
+    public function attribution(): HasMany
     {
-        return $this->hasOne(Attribution::class, 'id_demande', 'id_demande');
+        return $this->hasMany(Attribution::class, 'id_demande', 'id_demande');
     }
 
     public function user(): BelongsTo
     {
 
         return $this->belongsTo(User::class, 'id_user', 'id');
-    }
-
-    public function demandesCorrections(): HasMany
-    {
-        return $this->hasMany(
-            DemandeCorrection::class,
-            'id_demande',
-            'id_demande'
-        );
     }
 
     public function traitements()
@@ -120,21 +109,39 @@ class Demande extends Model
      */
     public function servicesConcernes(): Collection
     {
-        $this->loadMissing('lignes.appui.typeAppui.service');
+        $this->loadMissing('lignes.typeAppui.service');
 
         return $this->lignes
-            ->map(fn (LigneDemande $ligne) => $ligne->appui?->typeAppui?->service)
+            ->map(fn (LigneDemande $ligne) => $ligne->typeAppui?->service)
             ->filter()
             ->unique('id_service')
             ->values();
     }
+
+/**
+     * Les types d'appuis contenus dans la demande
+     * 
+     * @return Collection<int, TypeAppui>
+     */
+    public function typesAppuis(): Collection
+    {
+        $this->loadMissing('lignes.typeAppui');
+
+        return $this->lignes
+            ->pluck('typeAppui')
+            ->filter()
+            ->unique('id_type_appui')
+            ->values();
+    }
+
+
 
     /**
      * Retourne les lignes d'un service donné
      */
     public function lignesService($idService)
     {
-        return $this->lignes()->appui()->typeAppui()->service()
+        return $this->lignes()->typeAppui()->service()
             ->where('id_service', $idService);
     }
 
@@ -146,6 +153,11 @@ class Demande extends Model
     public function estSoumise(): bool
     {
         return $this->id_statut_demande === StatutDemandeE::soumise;
+    }
+
+    public function soumettre(){
+        $this->soumise = true;
+        $this->save();
     }
 
     public function estACorriger(): bool
@@ -160,7 +172,7 @@ class Demande extends Model
 
 
         $lignesConcernees = $this->lignes() // Adaptez le nom de la relation si nécessaire (ex: 'lignes')
-                ->whereHas('appui.typeAppui', function ($query) use ($services) {
+                ->whereHas('typeAppui', function ($query) use ($services) {
                     $query->whereIn('id_service', $services); 
                 })
                 ->get();
@@ -209,16 +221,23 @@ class Demande extends Model
 
     // ------------------------------------------------------------------ Scopes
 
+    /**
+     * 
+     * @param User $user
+     * @return void
+     */
     public function scopePourUtilisateur($query, $user)
     {
         if ($user->hasRole(RoleEnum::acteur->value)) {
             return $query->whereHas('acteur', fn ($q) => $q->where('user_id', $user->id));
-        } else if($user->hasRole(RoleEnum::agentService->value)){
-            return $query->whereHas('lignes.appui.typeAppui.service', function ($q) use ($user) {
-                $q->where('id_service',$user->id_service);
+        } else if($user->hasRole([RoleEnum::agentService->value])){
+            return $query->whereHas('lignes.typeAppui.service', function ($q) use ($user) {
+                $q->where('id_service',$user->id_service)->where('soumise',true);
             });
         } else if($user->hasRole(RoleEnum::agentCommission->value)){
-            return $query->where('id_statut_demande',StatutDemandeE::soumise);
+            return $query->whereHas('lignes.typeAppui.service', function ($q) use ($user) {
+                $q->where('soumise',true);
+            });
         }
         // Agents internes et administrateurs voient l'ensemble des dossiers.
         return $query;
@@ -226,14 +245,7 @@ class Demande extends Model
 
     public function estModifiable(): bool
     {
-        return in_array(
-            $this->id_statut_demande,
-            [
-                StatutDemandeE::brouillon,
-                StatutDemandeE::a_corriger,
-            ],
-            true
-        );
+        return !$this->soumise;
     }
 
     /**
@@ -243,12 +255,12 @@ class Demande extends Model
     public function getServices(): Collection
     {
         // 1. On charge toutes les relations d'un coup (Eager Loading)
-        $this->load('lignes.appui.typeAppui.service');
+        $this->load('lignes.typeAppui.service');
 
         // 2. On utilise la puissance des Collections Laravel pour extraire les services uniques
         return $this->lignes
             ->map(function ($ligne) {
-                return $ligne->appui?->typeAppui?->service;
+                return $ligne->typeAppui?->service;
             })
             ->filter()    // Élimine les valeurs nulles si une relation est cassée
             ->unique('id_service') // Supprime les doublons basés sur l'ID du service

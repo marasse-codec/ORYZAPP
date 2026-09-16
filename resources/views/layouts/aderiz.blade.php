@@ -65,10 +65,12 @@
 
         {{-- Ressources --}}
 
+            <x-menu-groupe titre="Équipement">
+                <a href="{{ route('equipements.retour.create') }}" class="block p-2 text-sm text-gray-300 hover:text-white">Retour d'équipement</a>
+            </x-menu-groupe>
             <x-menu-groupe titre="Ressources">
-                <a href="{{ route('equipements.retour.create') }}" class="block p-2 text-sm text-gray-300 hover:text-white">Catalogue des appuis</a>
-              </x-menu-groupe>
-
+                <a href="{{ route('mouvements-stocks.index') }}" class="block p-2 text-sm text-gray-300 hover:text-white">Mouvements</a>
+            </x-menu-groupe>
         <div class="mt-auto w-full p-4 border-t border-slate-700">
             <form action="{{ route('logout') }}" method="POST">
                 @csrf

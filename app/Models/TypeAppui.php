@@ -15,7 +15,7 @@ class TypeAppui extends Model
 
     protected $primaryKey = 'id_type_appui';
 
-    protected $fillable = ['libelle', 'est_intrant', 'est_stockable', 'id_service'];
+    protected $fillable = ['lib_type_appui', 'est_intrant', 'est_stockable', 'id_service'];
 
     protected $casts = [
         'est_intrant' => 'boolean',
@@ -25,6 +25,11 @@ class TypeAppui extends Model
     public function appuis(): HasMany
     {
         return $this->hasMany(Appui::class, 'id_type_appui', 'id_type_appui');
+    }
+
+    public function lignesDemandes(): HasMany
+    {
+        return $this->hasMany(LigneDemande::class, 'id_type_appui', 'id_type_appui');
     }
 
     public function service(): BelongsTo

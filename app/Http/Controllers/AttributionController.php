@@ -15,6 +15,7 @@ use App\Models\Service;
 use App\Models\SessionCommission;
 use App\Models\Traitement;
 use App\Models\TypeMouvementStock;
+use App\Services\SyntheseAttributionService;
 use App\Services\SyntheseCommissionService;
 use App\Utils\Helper;
 use Illuminate\Http\Request;
@@ -76,20 +77,19 @@ class AttributionController extends Controller
     }
 
     /** Formulaire d'attribution pour une demande donnée. */
-    public function create(string $idDemande, SyntheseCommissionService $synthese)
+    public function create(string $idDemande, SyntheseAttributionService $synthese)
     {
         $service = Service::where('id_service', Auth::user()->id_service)->firstOrFail();
         $demande = Demande::with([
             'acteur',
             'typeActeur',
             'localite',
-            'systemesProduction.typeSystemeProduction',
+            'systemesProductions.typeSystemeProduction',
             'lignes' => function ($query) use ($service) {
                 $query
-                    ->whereHas('appui.typeAppui.service', function ($query) use ($service) {
+                    ->whereHas('typeAppui.service', function ($query) use ($service) {
                         $query->where('id_service', $service->id_service);
-                    })
-                    ->with('appui.uniteAppui');
+                    });
             },
             'attribution.lignesAttributions.appui',
         ])->whereHas('traitements', function ($query) use ($service) {
@@ -99,10 +99,15 @@ class AttributionController extends Controller
         })
             ->findOrFail($idDemande);
 
+        // Extraction des IDs des types d'appui de la demande
+        $idsTypesAppuis = $demande->typesAppuis()->pluck('id_type_appui');
+
         return view('attributions.create', [
             'demande' => $demande,
-            'catalogue' => Appui::quantifiables()->with('uniteAppui')->orderBy('libelle')->get(),
-            'sessionOuverte' => SessionCommission::whereNull('date_fin_session')->first(),
+            'catalogue' => Appui::pourUtilisateur()
+                    ->whereIn('id_type_appui', $idsTypesAppuis)
+                    ->orderBy('libelle')
+                    ->get(),            'sessionOuverte' => SessionCommission::whereNull('date_fin_session')->first(),
             'synthese' => $synthese->confrontationPourDemande($demande),
             'layout' => Helper::layout(),
         ]);
@@ -140,9 +145,26 @@ class AttributionController extends Controller
 
         DB::transaction(function () use ($demande, $service, $valide) {
 
-            $attribution = Attribution::findOrFail(
-                ['id_demande' => $demande->id_demande], // Critère unique de recherche
-                ['id_statut_attribution' => StatutAttributionEnum::brouillon->value] // Valeur par défaut uniquement à la création
+            // 1. Récupérer l'ID du traitement actif pour cette demande et ce service
+            $idTraitement = $demande->traitements()
+                ->where('id_service', $service->id_service)
+                ->whereNull('date_fin_traitement')
+                ->value('id_traitement');
+
+            // Sécurité : vérifier qu'un traitement actif existe bien
+            if (! $idTraitement) {
+                return back()->with('error', 'Aucun traitement actif trouvé pour ce service.');
+            }
+
+            // 2. Créer ou récupérer l'attribution rattachée à ce traitement
+            $attribution = Attribution::firstOrCreate(
+                [
+                    'id_demande' => $demande->id_demande,
+                    'id_traitement' => $idTraitement,
+                ],
+                [
+                    'id_statut_attribution' => StatutAttributionEnum::brouillon->value,
+                ]
             );
 
             foreach ($valide['lignes'] as $ligne) {

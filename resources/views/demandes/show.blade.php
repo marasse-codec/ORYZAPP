@@ -23,8 +23,8 @@
                         Mise en place souhaitée le {{ $demande->debut_periode_mise_en_place?->format('d/m/Y') }}
                     </p>
                 </div>
-                <span class="inline-block rounded-full px-3 py-1.5 text-xs font-semibold {{ $demande->id_statut_demande->couleur() }}">
-                    {{ $demande->id_statut_demande->libelle() }}
+                <span class="inline-block rounded-full px-3 py-1.5 text-xs font-semibold {{ $demande->soumise ? "bg-green-500" : "bg-red-500" }}">
+                    {{ $demande->soumise ? "Demande soumise" : "Demande en brouillon" }}
                 </span>
 
                 <a href="{{ route('demandes.pdf', $demande->id_demande) }}" 
@@ -77,7 +77,7 @@
         {{-- Superficies --}}
         <div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
             <h2 class="mb-4 text-base font-semibold text-[--color-primary]">Systèmes de production</h2>
-            @if ($demande->systemesProduction->isEmpty())
+            @if ($demande->systemesProductions->isEmpty())
                 <p class="text-sm text-slate-500">Aucune superficie déclarée.</p>
             @else
                 <table class="min-w-full divide-y divide-slate-200 text-sm">
@@ -88,7 +88,7 @@
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100">
-                        @foreach ($demande->systemesProduction as $systeme)
+                        @foreach ($demande->systemesProductions as $systeme)
                             <tr>
                                 <td class="py-2 text-slate-800">{{ $systeme->typeSystemeProduction?->lib_type_systeme_production }}</td>
                                 <td class="py-2 text-right text-slate-800">{{ number_format($systeme->superficie, 2, ',', ' ') }}</td>
@@ -99,7 +99,7 @@
                         <tr class="border-t border-slate-200 font-semibold">
                             <td class="pt-2 text-slate-700">Total</td>
                             <td class="pt-2 text-right text-slate-800">
-                                {{ number_format($demande->systemesProduction->sum('superficie'), 2, ',', ' ') }}
+                                {{ number_format($demande->systemesProductions->sum('superficie'), 2, ',', ' ') }}
                             </td>
                         </tr>
                     </tfoot>
@@ -107,13 +107,17 @@
             @endif
         </div>
 
+
+
+
+
         {{-- Appuis --}}
         <div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-            <h2 class="mb-4 text-base font-semibold text-[--color-primary]">Appuis sollicités</h2>
+            <h2 class="mb-4 text-base font-semibold text-[--color-primary]">Types d'appuis sollicités</h2>
             <table class="min-w-full divide-y divide-slate-200 text-sm">
                 <thead class="text-left text-xs uppercase tracking-wide text-slate-500">
                     <tr>
-                        <th class="pb-2">Appui</th>
+                        <th class="pb-2">Type d'appui</th>
                         <th class="pb-2">Service</th>
                         <th class="pb-2 text-right">Quantité</th>
                     </tr>
@@ -122,13 +126,12 @@
                     @foreach ($demande->lignes as $ligne)
                         <tr>
                             <td class="py-2 text-slate-800">
-                                {{ $ligne->appui?->libelle }}
-                                <span class="block text-xs text-slate-500">{{ $ligne->appui?->typeAppui?->libelle }}</span>
+                                {{ $ligne->type_appui?->lib_type_appui }}
+                                <span class="block text-xs text-slate-500">{{ $ligne->typeAppui?->lib_type_appui }}</span>
                             </td>
-                            <td class="py-2 text-slate-600">{{ $ligne->appui?->typeAppui?->service?->lib_service }}</td>
+                            <td class="py-2 text-slate-600">{{ $ligne->typeAppui?->service?->lib_service }}</td>
                             <td class="py-2 text-right text-slate-800">
                                 {{ $ligne->quantite_demandee }}
-                                <span class="text-slate-500">{{ $ligne->appui?->typeAppui?->uniteTypeAppui?->lib_unite_type_appui }}</span>
                             </td>
                         </tr>
                     @endforeach
@@ -162,8 +165,14 @@
             @endif
         </div>
 
+
+
+
+
+
+
         {{-- Attribution --}}
-        @if ($demande->attribution)
+        @if ($demande->attributions)
             <div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
                 <div class="mb-4 flex items-center justify-between">
                     <h2 class="text-base font-semibold text-[--color-primary]">Attribution</h2>

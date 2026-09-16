@@ -24,6 +24,10 @@ return new class extends Migration
             $table->foreignId('id_statut_attribution')->constrained('statuts_attributions', 'id_statut_attribution');
             $table->dateTime('date_publication')->nullable();
 
+            $table->foreignId('id_traitement')->nullable()
+                ->constrained('traitements', 'id_traitement')
+                ->cascadeOnDelete();
+
             $table->timestamps();
         });
     }

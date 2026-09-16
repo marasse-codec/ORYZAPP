@@ -25,10 +25,9 @@ class TypeAppuiSeeder extends Seeder
         foreach ($types as [$id, $libelle, $idService, $estIntrant, $estStockable]) {
             TypeAppui::create([
                 'id_type_appui' => $id,
-                'libelle' => $libelle,
+                'lib_type_appui' => $libelle,
                 'id_service' => $idService,
                 'est_intrant' => $estIntrant,
-                'est_stockable' => $estStockable,
             ]);
         }
     }

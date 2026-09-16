@@ -13,7 +13,7 @@ class DashboardController extends Controller
     {
         $demandes = Demande::query()
             ->pourUtilisateur(Auth::user())
-            ->with(['attribution', 'rapports', 'lignes.appui.typeAppui.service'])
+            ->with(['attribution', 'rapports', 'lignes.typeAppui.service'])
             ->get();
 
         $repartition = collect(StatutDemandeE::cases())

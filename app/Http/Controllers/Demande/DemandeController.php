@@ -13,12 +13,14 @@ use App\Models\JournalAction;
 use App\Models\Localite;
 use App\Models\Traitement;
 use App\Models\TypeActeur;
+use App\Models\TypeAppui;
 use App\Models\TypeSystemeProduction;
 use App\Services\CreationDemandeService;
 use App\Services\SyntheseCommissionService;
 use App\Utils\Helper;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
@@ -37,8 +39,8 @@ class DemandeController extends Controller
                 'localite',
                 'attribution',
                 'rapports',
-                'lignes.appui.typeAppui.service',
-                'lignes.appui.uniteAppui',
+                'lignes.typeAppui.service',
+                'lignes',
                 'traitements',
             ])
             ->latest('id_demande')
@@ -73,9 +75,8 @@ class DemandeController extends Controller
             'acteur',
             'typeActeur',
             'localite.departement',
-            'systemesProduction.typeSystemeProduction',
-            'lignes.appui.typeAppui.service',
-            'lignes.appui.uniteAppui',
+            'systemesProductions.typeSystemeProduction',
+            'lignes.typeAppui.service',
             'attribution.lignesAttributions.appui',
             'rapports.service',
         ])->findOrFail($id);
@@ -93,12 +94,12 @@ class DemandeController extends Controller
             'typesActeurs' => TypeActeur::with('typesPieces')->orderBy('lib_type_acteur')->get(),
             'localites' => Localite::with('departement')->orderBy('lib_localite')->get(),
             'campagnes' => Campagne::orderByDesc('date_debut_campagne')->limit(2)->get(),
-            'typesSystemesProduction' => TypeSystemeProduction::orderBy('lib_type_systeme_production')->get(),
+            'typesSystemesProductions' => TypeSystemeProduction::orderBy('lib_type_systeme_production')->get(),
             // Seuls les appuis quantifiables se demandent : une prestation
             // immatérielle n'a ni stock ni quantité à attribuer.
-            'appuis' => Appui::quantifiables()->with('uniteAppui')->orderBy('libelle')->get(),
-            'layout' => Helper::layout(),
 
+            'typesAppuis' => TypeAppui::orderBy('lib_type_appui')->get(),
+            'layout' => Helper::layout(),
         ]);
     }
 
@@ -116,7 +117,7 @@ class DemandeController extends Controller
         $demande = Demande::findOrFail($id);
 
         // Une demande déjà soumise ne peut pas être soumise à nouveau
-        if (! $demande->estModifiable()) {
+        if (!$demande->estModifiable()) {
             return redirect()
                 ->route('demandes.index')
                 ->with('error', 'Cette demande ne peut plus être soumise.');
@@ -131,18 +132,12 @@ class DemandeController extends Controller
 
         DB::transaction(function () use ($demande) {
 
-            $demande->update([
-                'id_statut_demande' => StatutDemandeE::soumise,
-            ]);
+            $demande->soumettre();
 
+            /** @var Collection $services */
             $services = $demande->getServices();
-
-            foreach ($services as $value) {
-                Traitement::firstOrCreate([
-                    'id_demande' => $demande->id_demande,
-                    'id_service' => $value->id_service,
-                ]);
-            }
+            
+            Traitement::creerTraitements($demande->id_demande, $services);
 
         });
 
@@ -157,44 +152,29 @@ class DemandeController extends Controller
             'acteur',
             'typeActeur',
             'localite.departement',
-            'systemesProduction.typeSystemeProduction',
-            'lignes.appui.uniteAppui',
+            'systemesProductions.typeSystemeProduction',
+            'lignes.typeAppui',
             'piecesDemandes.typePiece',
-            'demandesCorrections',
+            'campagne'
         ])->findOrFail($id);
 
         return view('demandes.edit', [
             'demande' => $demande,
             'typesActeurs' => TypeActeur::with('typesPieces')->orderBy('lib_type_acteur')->get(),
             'localites' => Localite::with('departement')->orderBy('lib_localite')->get(),
-            'typesSystemesProduction' => TypeSystemeProduction::orderBy('lib_type_systeme_production')->get(),
-            // Seuls les appuis quantifiables se demandent : une prestation
-            // immatérielle n'a ni stock ni quantité à attribuer.
-            'appuis' => Appui::quantifiables()->with('uniteAppui')->orderBy('libelle')->get(),
+            'typesSystemesProductions' => TypeSystemeProduction::orderBy('lib_type_systeme_production')->get(),
+            'campagnes' => Campagne::orderByDesc('date_debut_campagne')->limit(2)->get(),
+            'typesAppuis' => TypeAppui::orderBy('lib_type_appui')->get(),
             'layout' => Helper::layout(),
         ]);
     }
 
-    public function update(Request $request, string $id)
+    public function update(StoreDemandeRequest $request, string $id)
     {
         // 1. Validation de l'ensemble des données envoyées par le formulaire
-        $validated = $request->validate([
-            'id_type_acteur' => 'required|exists:types_acteurs,id_type_acteur',
-            'nom' => 'required|string|max:255',
-            'telephone' => 'required|string|max:50',
-            'email' => 'nullable|email|max:255',
-            'id_localite' => 'required|exists:localites,id_localite',
-            'debut_periode_mise_en_place' => 'required|date',
-            'superficies' => 'nullable|array',
-            'superficies.*' => 'nullable|numeric|min:0',
-            'lignes' => 'required|array|min:1',
-            'lignes.*.id_appui' => 'required|exists:appuis,id_appui',
-            'lignes.*.quantite_demandee' => 'required|integer|min:1',
-            'pieces' => 'nullable|array',
-            'pieces.*' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
-        ]);
+        $validated = $request;
 
-        $demande = Demande::with(['acteur', 'lignes', 'systemesProduction'])->findOrFail($id);
+        $demande = Demande::with(['acteur', 'lignes', 'systemesProductions'])->findOrFail($id);
 
         // Règle de garde : Si la demande a déjà été prise en charge, on bloque la modification
         if (! $demande->estModifiable()) {
@@ -220,19 +200,19 @@ class DemandeController extends Controller
                 'id_type_acteur' => $validated['id_type_acteur'],
                 'id_localite' => $validated['id_localite'],
                 'debut_periode_mise_en_place' => $validated['debut_periode_mise_en_place'],
-                // Remise à zéro du motif de rejet si la demande est modifiée après un renvoi
+                'id_campagne' => $validated['id_campagne'],
                 'motifs_rejet' => null,
                 'date_rejet' => null,
             ]);
 
             // 4. Mettre à jour les superficies (Gestion de la relation HasMany vers SystemeProduction)
-            $demande->systemesProduction()->delete();
-            if (! empty($validated['superficies'])) {
+            $demande->systemesProductions()->delete();
+            if (!empty($validated['superficies'])) {
                 foreach ($validated['superficies'] as $typeSystemeId => $superficie) {
-                    if (! is_null($superficie) && $superficie !== '') {
-                        $demande->systemesProduction()->create([
+                    if (!is_null($superficie) && $superficie !== '') {
+                        $demande->systemesProductions()->create([
                             'id_type_systeme_production' => $typeSystemeId,
-                            'superficie' => $superficie,
+                            'superficie' => $superficie
                         ]);
                     }
                 }
@@ -275,8 +255,8 @@ class DemandeController extends Controller
             'acteur',
             'typeActeur',
             'localite.departement',
-            'systemesProduction.typeSystemeProduction',
-            'lignes.appui.uniteAppui',
+            'systemesProductions.typeSystemeProduction',
+            'lignes.typeAppui',
             'piecesDemandes.typePiece',
             'rapports.service',
             'attribution.lignesAttributions.appui',

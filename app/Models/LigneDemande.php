@@ -14,7 +14,7 @@ class LigneDemande extends Model
 
     protected $primaryKey = 'id_ligne_demande';
 
-    protected $fillable = ['id_demande', 'id_appui', 'quantite_demandee','date_rejet_service','motif_rejet_service'];
+    protected $fillable = ['id_demande', 'id_type_appui', 'quantite_demandee'];
 
     public function demande(): BelongsTo
     {
@@ -22,9 +22,9 @@ class LigneDemande extends Model
     }
 
     /** L'appui sollicité. Son type et son service se lisent à travers lui. */
-    public function appui(): BelongsTo
+    public function typeAppui(): BelongsTo
     {
-        return $this->belongsTo(Appui::class, 'id_appui', 'id_appui');
+        return $this->belongsTo(TypeAppui::class, 'id_type_appui', 'id_type_appui');
     }
 
     public function rejeterLigne($motifRejet){

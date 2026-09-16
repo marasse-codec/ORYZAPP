@@ -36,9 +36,7 @@ class ApprovisionnementController extends Controller
             return response()->json([]);
         }
 
-        $appuis = Appui::quantifiables()
-            ->with([
-                'uniteAppui',
+        $appuis = Appui::with([
                 'typeAppui',
             ])
             ->where('libelle', 'like', '%'.$search.'%')
@@ -50,7 +48,6 @@ class ApprovisionnementController extends Controller
                 'libelle' => $appui->libelle,
                 'type' => $appui->typeAppui?->libelle ?? 'Autres',
                 'stock' => $appui->quantite_en_stock,
-                'unite' => $appui->uniteAppui?->lib_unite_appui ?? 'unité',
             ]);
 
         return response()->json($appuis);

@@ -13,7 +13,7 @@ class TypeAppuiFactory extends Factory
     public function definition(): array
     {
         return [
-            'libelle' => $this->faker->word(),
+            'lib_type_appui' => $this->faker->word(),
             'est_intrant' => $this->faker->boolean(),
             'est_stockable' => $this->faker->boolean(),
             'id_service' => Service::factory(),

@@ -35,6 +35,33 @@ class Service {
   - libelleService : String
 }
 
+class TypeAppui {
+  - idTypeAppui : Long
+  - libelleTypeAppui : String
+}
+
+class ReferenceAppui {
+  - idReferenceAppui : Long
+  - libelleReferenceAppui : String
+  - quantiteEnStock : Integer
+  - coutUnitaire : Double
+  - quantiteTarifaire : Double
+}
+
+class Equipement {
+  - idEquipement : Long
+  - matriculeEquipement : String
+  - etat : String
+  - remis : Boolean
+  - estEquipement : Boolean
+
+}
+
+ReferenceAppui "1" -l- "0..*" Equipement : inventorier >
+TypeAppui "0..*" -- "1" Service : fournir <
+ReferenceAppui "0..*" -l- "1" TypeAppui : classifier <
+
+
 class StatutDemande {
   - idStatutDemande : Long
   - libelleStatutDemande : String
@@ -52,19 +79,20 @@ class HistoriqueDemande {
 }
 
 
-
 Demande "1" *-- "0..*" HistoriqueDemande : entretenir >
 StatutDemande "1" -- "0..*" HistoriqueDemande : marquer >
 
 ' DateFinTraitement prend la date de fin du dernier traitement
 ' dateSoumission marque qu'on ne peut plus modifier apès soummission
 
-StatutDemandeq "1" - "1..*" Demande : statuer >
+StatutDemande "1" - "1..*" Demande : statuer >
 
 class Traitement {
   - datePriseEnCharge : Date
   - observationInterne : String
   - dateFinTraitement : Date
+  - dateRejetService : Boolean
+  - motifRejetService : String
 }
 
 Traitement "1..*" -d- "1" Demande : entrainer <
@@ -80,8 +108,6 @@ Traitement "0..1" -- "0..1" Attribution : produire >
 class LigneDemande {
   - idLigneDemande : Long
   - quantiteDemandee : Integer
-  - dateRejetService : Boolean
-  - motifRejetService : String
 }
 
 class SessionCommission {
@@ -119,6 +145,9 @@ class LigneAttribution {
   - remise : Double
   - dateRestitutionPrevue : Date
 }
+
+LigneAttribution "1..*" -- "1..*" ReferenceAppui : "donner"
+
 ' ============================================================
 ' ASSOCIATIONS
 ' ============================================================
@@ -126,6 +155,5 @@ class LigneAttribution {
 Demande "1" *-- "1..*" LigneDemande : constituer >
 
 Attribution "1" *-- "1..*" LigneAttribution : comporter >
-LigneAttribution "0..1" -l- "1" LigneDemande : servir >
 
 @enduml

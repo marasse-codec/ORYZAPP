@@ -73,7 +73,7 @@
                                 <td class="py-2 text-slate-600">{{ $attribution->demande->localite?->lib_localite }}</td>
                                 <td class="py-2 text-center text-slate-600">{{ $attribution->demande->lignes->count() }}</td>
                                 <td class="py-2 text-right">
-                                    <a href="{{ route('attributions.create', $attribution->demande->id_demande) }}"
+                                    <a href="{{ route('attributions.show', $attribution->id_attribution) }}"
                                        class="rounded-md bg-[--color-primary] px-3 py-1.5 text-xs font-semibold text-white hover:opacity-90">
                                         Traiter
                                     </a>

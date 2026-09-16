@@ -10,36 +10,38 @@
         ])->values(),
     ]);
 
-    // Index des appuis pour retrouver l'unité
-    $appuisIndex = $appuis->mapWithKeys(fn ($appui) => [
-        $appui->id_appui => [
-            'unite' => $appui->uniteAppui?->lib_unite_appui ?? 'unité',
-        ],
-    ]);
-
-    // Récupération des lignes d'appuis existantes
+    // Récupération des lignes de demandes existantes
     $lignesDB = $demande->lignes->map(fn($ligne) => [
-        'id_appui' => $ligne->id_appui ?? $ligne->appui->id_appui ?? '',
-        'quantite_demandee' => $ligne->quantite_demandee ?? $ligne->quantite ?? 1,
+        'id_type_appui' => $ligne->id_type_appui ?? $ligne->type_appui->id_appui ?? '',
+        'quantite_demandee' => $ligne->quantite_demandee ?? $ligne->quantite ?? 0,
     ])->toArray();
-    $lignesInitiales = old('lignes', empty($lignesDB) ? [['id_appui' => '', 'quantite_demandee' => '']] : $lignesDB);
+
+    $lignesInitiales = old('lignes', empty($lignesDB) ? [['id_type_appui' => '', 'quantite_demandee' => '']] : $lignesDB);
 
     // Récupération sécurisée des superficies existantes via la relation pivot
     $superficiesDB = [];
-    if ($demande->relationLoaded('systemesProduction')) {
-        foreach ($demande->systemesProduction as $sys) {
-            $superficiesDB[$sys->id_type_systeme_production] = $sys->pivot->superficie ?? '';
+    if ($demande->relationLoaded('systemesProductions')) {
+        foreach ($demande->systemesProductions as $sys) {
+            $superficiesDB[$sys->id_type_systeme_production] = $sys->superficie ?? '';
         }
     }
 
     // Récupération de la localité
     $idLocalite = $demande->id_localite ?? optional($demande->localite)->id_localite ?? '';
 
-    // Formatage strict de la date pour le champ <input type="date"> (Y-m-d)
+    // Formatage strict des dates pour les champ <input type="date"> (Y-m-d)
     $debutMiseEnPlace = '';
-    if (!empty($demande->debut_periode_mise_en_place)) {
-        $debutMiseEnPlace = \Carbon\Carbon::parse($demande->debut_periode_mise_en_place)->format('Y-m-d');
+    if (!empty($demande->periode_debut_mise_en_place)) {
+        $debutMiseEnPlace = \Carbon\Carbon::parse($demande->periode_debut_mise_en_place)->format('Y-m-d');
     }
+
+    $finMiseEnPlace = '';
+    if (!empty($demande->periode_fin_mise_en_place)) {
+        $finMiseEnPlace = \Carbon\Carbon::parse($demande->periode_fin_mise_en_place)->format('Y-m-d');
+    }
+
+    // Récupération de la campagne
+    $idCampagne =  $demande->id_campagne ?? optional($demande->campagne)->id_campagne ?? '';
 
     // Récupération des pièces déjà téléversées
     $piecesExistantes = $demande->piecesDemandes->pluck('id_type_piece')->toArray();
@@ -53,7 +55,6 @@
         idTypeActeur: '{{ old('id_type_acteur', $demande->id_type_acteur ?? optional($demande->acteur)->id_type_acteur ?? '') }}',
         lignes: {{ Illuminate\Support\Js::from(array_values($lignesInitiales)) }},
         piecesParTypeActeur: {{ Illuminate\Support\Js::from($piecesParTypeActeur) }},
-        appuisIndex: {{ Illuminate\Support\Js::from($appuisIndex) }},
         piecesExistantes: {{ Illuminate\Support\Js::from($piecesExistantes) }},
 
         get piecesAttendues() {
@@ -186,6 +187,11 @@
                 </div>
             </section>
 
+
+
+
+
+
             {{-- ÉTAPE 2 — Demandeur ------------------------------------------ --}}
             <section x-show="step === 2" x-cloak class="p-6 space-y-5">
                 <div>
@@ -215,6 +221,15 @@
                 </div>
             </section>
 
+
+
+
+
+
+
+
+
+
             {{-- ÉTAPE 3 — Demande -------------------------------------------- --}}
             <section x-show="step === 3" x-cloak class="p-6 space-y-5">
                 <div>
@@ -237,19 +252,43 @@
                     </div>
 
                     <div>
-                        <x-input-label for="debut_periode_mise_en_place" value="Début de mise en place" />
-                        <x-text-input id="debut_periode_mise_en_place" name="debut_periode_mise_en_place" type="date"
+                        <x-input-label for="id_campagne" value="Campagne" />
+                        <select id="id_campagne" name="id_campagne" required
+                                class="mt-1 block w-full border-gray-300 focus:border-[--color-primary] focus:ring-[--color-primary] rounded-md shadow-sm">
+                            <option value="">— Sélectionner —</option>
+                            @foreach ($campagnes as $campagne)
+                                <option value="{{ $campagne->id_campagne }}" @selected(old('id_campagne',$idCampagne) == $campagne->id_campagne)>
+                                    {{ $campagne->lib_campagne }} : ({{ $campagne->date_debut_campagne->format('m-Y') }} - {{ $campagne->date_fin_campagne->format('m-Y') }})
+                                </option>
+                            @endforeach
+                        </select>
+                        <x-input-error :messages="$errors->get('id_campagne')" class="mt-1" />
+                    </div>
+
+
+                    <div>
+                        <x-input-label for="periode_debut_mise_en_place" value="Début de mise en place" />
+                        <x-text-input id="periode_debut_mise_en_place" name="periode_debut_mise_en_place" type="date"
                                       class="mt-1 block w-full"
-                                      :value="old('debut_periode_mise_en_place', $debutMiseEnPlace)"
+                                      :value="old('periode_debut_mise_en_place', $debutMiseEnPlace)"
                                       required />
-                        <x-input-error :messages="$errors->get('debut_periode_mise_en_place')" class="mt-1" />
+                        <x-input-error :messages="$errors->get('periode_debut_mise_en_place')" class="mt-1" />
+                    </div>
+
+                    <div>
+                        <x-input-label for="periode_fin_mise_en_place" value="Fin de mise en place" />
+                        <x-text-input id="periode_fin_mise_en_place" name="periode_fin_mise_en_place" type="date"
+                                      class="mt-1 block w-full"
+                                      :value="old('periode_fin_mise_en_place', $finMiseEnPlace)"
+                                      required />
+                        <x-input-error :messages="$errors->get('periode_fin_mise_en_place')" class="mt-1" />
                     </div>
                 </div>
 
                 <fieldset class="rounded-lg border border-slate-200 p-4">
                     <legend class="px-2 text-sm font-medium text-slate-700">Superficie par système de production (ha)</legend>
                     <div class="grid gap-4 sm:grid-cols-3">
-                        @foreach ($typesSystemesProduction as $type)
+                        @foreach ($typesSystemesProductions as $type)
                             <div>
                                 <x-input-label :for="'superficie-'.$type->id_type_systeme_production"
                                                :value="$type->lib_type_systeme_production" />
@@ -264,10 +303,17 @@
                 </fieldset>
             </section>
 
+
+
+
+
+
+
+
             {{-- ÉTAPE 4 — Appuis & pièces ------------------------------------ --}}
             <section x-show="step === 4" x-cloak class="p-6 space-y-6">
                 <div>
-                    <h2 class="text-lg font-semibold text-[--color-primary]">4. Appuis sollicités</h2>
+                    <h2 class="text-lg font-semibold text-[--color-primary]">4. Types d'appuis sollicités</h2>
                 </div>
 
                 <div class="space-y-3">
@@ -275,13 +321,17 @@
                         <div class="grid gap-3 sm:grid-cols-12 items-end rounded-lg border border-slate-200 p-3">
                             <div class="sm:col-span-7">
                                 <label class="block text-sm text-slate-700" x-text="'Appui n°' + (index + 1)"></label>
-                                <select :name="`lignes[${index}][id_appui]`" x-model="ligne.id_appui" required
+                                
+                                {{-- Select du type d'appui et affichage des anciennes lignes --}}
+                                <select :name="`lignes[${index}][id_type_appui]`" x-model="ligne.id_type_appui" required
                                         class="mt-1 block w-full border-gray-300 focus:border-[--color-primary] focus:ring-[--color-primary] rounded-md shadow-sm">
-                                    <option value="">— Sélectionner un appui —</option>
-                                    @foreach ($appuis->groupBy(fn ($appui) => optional($appui->typeAppui)->libelle ?? 'Autres') as $libelleType => $groupe)
-                                        <optgroup label="{{ $libelleType }}">
-                                            @foreach ($groupe as $appui)
-                                                <option value="{{ $appui->id_appui }}">{{ $appui->libelle }}</option>
+                                    <option value="">Sélectionner un type d'appui</option>
+
+                                    {{-- Affichage des types d'appuis par service --}}
+                                    @foreach ($typesAppuis->groupBy(fn ($typeAppui) => $typeAppui?->service->lib_service ?? 'Autres') as $serviceTypeAppui => $groupe)
+                                        <optgroup label="{{ $serviceTypeAppui }}">
+                                            @foreach ($groupe as $typeAppui)
+                                                <option value="{{ $typeAppui->id_type_appui }}">{{ $typeAppui->lib_type_appui }}</option>
                                             @endforeach
                                         </optgroup>
                                     @endforeach
@@ -321,6 +371,16 @@
                 </button>
             </section>
 
+
+
+
+
+
+
+
+
+
+            
             {{-- Navigation --------------------------------------------------- --}}
             <div class="flex items-center justify-between border-t border-slate-200 px-6 py-4 bg-slate-50 rounded-b-xl">
                 <button type="button" @click="precedent()" x-show="step > 1" x-cloak

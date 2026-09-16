@@ -2,10 +2,12 @@
 
 namespace App\Models;
 
+use App\Enums\RoleEnum;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Auth;
 
 class Appui extends Model
 {
@@ -25,6 +27,18 @@ class Appui extends Model
     public function scopeQuantifiables($query)
     {
         return $query->whereHas('typeAppui', fn ($q) => $q->where('est_stockable', true));
+    }
+
+    public function scopePourUtilisateur($query) {
+        $user = Auth::user();
+        
+        if($user?->hasRole(RoleEnum::agentService)){
+
+            return $query->whereHas('typeAppui.service', function ($q) use ($user) {
+
+            $q->where('id_service', $user->id_service);
+            });
+        }
     }
 
     public function typeAppui(): BelongsTo

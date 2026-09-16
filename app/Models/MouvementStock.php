@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Model;
 #[Table('mouvements_stocks')]
 class MouvementStock extends Model
 {
+    protected $primaryKey = 'id_mouvement_stock';
     //
 
     public function approvisionnement()

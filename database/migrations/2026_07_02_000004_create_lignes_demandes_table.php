@@ -11,13 +11,11 @@ return new class extends Migration
         Schema::create('lignes_demandes', function (Blueprint $table) {
             $table->id('id_ligne_demande');
             $table->foreignId('id_demande')->constrained('demandes', 'id_demande')->cascadeOnDelete();
-            $table->foreignId('id_appui')->constrained('appuis', 'id_appui');
-            $table->integer('quantite_demandee');
-            $table->dateTime('date_rejet_service')->nullable();
-            $table->String('motif_rejet_service')->nullable();
+            $table->foreignId('id_type_appui')->constrained('types_appuis', 'id_type_appui');
+            $table->integer('quantite_demandee')->nullable();
             $table->timestamps();
 
-            $table->unique(['id_demande', 'id_appui']);
+            $table->unique(['id_demande', 'id_type_appui']);
         });
     }
 

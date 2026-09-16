@@ -126,7 +126,7 @@ class SyntheseCommissionService
     /** La confrontation restreinte à un seul dossier. */
     public function confrontationPourDemande(Demande $demande): Collection
     {
-        $demande->loadMissing('lignes.appui.uniteAppui', 'lignes.appui.typeAppui.service');
+        $demande->loadMissing('lignes.typeAppui', 'lignes.typeAppui.service');
 
         return $this->confrontationDemande(collect([$demande]));
     }

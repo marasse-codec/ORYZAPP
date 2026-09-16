@@ -11,15 +11,7 @@
         ])->values(),
     ]);
 
-    // Le demandeur ne connaît que l'unité de mesure : l'état des stocks ne
-    // regarde que la commission, qui arbitre, et le magasin, qui sert.
-    $appuisIndex = $appuis->mapWithKeys(fn ($appui) => [
-        $appui->id_appui => [
-            'unite' => $appui->uniteAppui?->lib_unite_appui ?? 'unité',
-        ],
-    ]);
-
-    $lignesInitiales = old('lignes', [['id_appui' => '', 'unite' => '' , 'quantite_demandee' => '']]);
+    $lignesInitiales = old('lignes', [['id_type_appui' => '' , 'quantite_demandee' => '']]);
 @endphp
 
 @section('content')
@@ -30,18 +22,13 @@
         idTypeActeur: '{{ old('id_type_acteur', '') }}',
         lignes: {{ Illuminate\Support\Js::from(array_values($lignesInitiales)) }},
         piecesParTypeActeur: {{ Illuminate\Support\Js::from($piecesParTypeActeur) }},
-        appuisIndex: {{ Illuminate\Support\Js::from($appuisIndex) }},
 
         get piecesAttendues() {
             return this.piecesParTypeActeur[this.idTypeActeur] ?? [];
         },
 
-        infosAppui(id) {
-            return this.appuisIndex[id] ?? null;
-        },
-
         ajouterLigne() {
-            this.lignes.push({ id_appui: '', quantite_demandee: '' });
+            this.lignes.push({ id_type_appui: '', quantite_demandee: '' });
         },
 
         retirerLigne(index) {
@@ -179,6 +166,16 @@
                 </div>
             </section>
 
+
+
+
+
+
+
+
+
+            
+
             {{-- ÉTAPE 3 — Demande -------------------------------------------- --}}
             <section x-show="step === 3" x-cloak class="p-6 space-y-5">
                 <div>
@@ -216,12 +213,21 @@
                     </div>
 
                     <div>
-                        <x-input-label for="debut_periode_mise_en_place" value="Début de mise en place" />
-                        <x-text-input id="debut_periode_mise_en_place" name="debut_periode_mise_en_place" type="date"
+                        <x-input-label for="periode_debut_mise_en_place" value="Période début de mise en place" />
+                        <x-text-input id="periode_debut_mise_en_place" name="periode_debut_mise_en_place" type="date"
                                       class="mt-1 block w-full"
-                                      :value="old('debut_periode_mise_en_place')"
+                                      :value="old('periode_debut_mise_en_place')"
                                       min="{{ now()->toDateString() }}" required />
-                        <x-input-error :messages="$errors->get('debut_periode_mise_en_place')" class="mt-1" />
+                        <x-input-error :messages="$errors->get('periode_debut_mise_en_place')" class="mt-1" />
+                    </div>
+
+                    <div>
+                        <x-input-label for="periode_fin_mise_en_place" value="Période fin de mise en place" />
+                        <x-text-input id="periode_fin_mise_en_place" name="periode_fin_mise_en_place" type="date"
+                                      class="mt-1 block w-full"
+                                      :value="old('periode_fin_mise_en_place')"
+                                      min="{{ now()->toDateString() }}" required />
+                        <x-input-error :messages="$errors->get('periode_fin_mise_en_place')" class="mt-1" />
                     </div>
                     
                 </div>
@@ -229,7 +235,7 @@
                 <fieldset class="rounded-lg border border-slate-200 p-4">
                     <legend class="px-2 text-sm font-medium text-slate-700">Superficie par système de production (ha)</legend>
                     <div class="grid gap-4 sm:grid-cols-3">
-                        @foreach ($typesSystemesProduction as $type)
+                        @foreach ($typesSystemesProductions as $type)
                             <div>
                                 <x-input-label :for="'superficie-'.$type->id_type_systeme_production"
                                                :value="$type->lib_type_systeme_production" />
@@ -245,11 +251,19 @@
                 </fieldset>
             </section>
 
+
+
+
+
+
+
+
+
             {{-- ÉTAPE 4 — Appuis & pièces ------------------------------------ --}}
             <section x-show="step === 4" x-cloak class="p-6 space-y-6">
                 <div>
-                    <h2 class="text-lg font-semibold text-[--color-primary]">4. Appuis sollicités</h2>
-                    <p class="text-sm text-slate-500">Choisissez chaque appui et la quantité souhaitée.</p>
+                    <h2 class="text-lg font-semibold text-[--color-primary]">4. Types d'appuis sollicités</h2>
+                    <p class="text-sm text-slate-500">Choisissez les types d'appuis et la quantité souhaitée. (La quantitée est facultative) </p>
                 </div>
 
                 <div class="space-y-3">
@@ -257,35 +271,28 @@
                         <div class="grid gap-3 sm:grid-cols-12 items-end rounded-lg border border-slate-200 p-3">
                             <div class="sm:col-span-7">
                                 <label class="block text-sm text-slate-700" x-text="'Appui n°' + (index + 1)"></label>
-                                <select :name="`lignes[${index}][id_appui]`" x-model="ligne.id_appui" required
+                                
+                                {{-- Select du type d'appui et affichage des anciennes lignes --}}
+                                <select :name="`lignes[${index}][id_type_appui]`" x-model="ligne.id_type_appui" required
                                         class="mt-1 block w-full border-gray-300 focus:border-[--color-primary] focus:ring-[--color-primary] rounded-md shadow-sm">
-                                    <option value="">— Sélectionner un appui —</option>
-                                    @foreach ($appuis->groupBy(fn ($appui) => $appui->typeAppui?->libelle ?? 'Autres') as $libelleType => $groupe)
-                                        <optgroup label="{{ $libelleType }}">
-                                            @foreach ($groupe as $appui)
-                                                <option value="{{ $appui->id_appui }}">{{ $appui->libelle }}</option>
+                                    <option value="">Sélectionner un type d'appui</option>
+
+                                    {{-- Affichage des types d'appuis par service --}}
+                                    @foreach ($typesAppuis->groupBy(fn ($typeAppui) => $typeAppui?->service->lib_service ?? 'Autres') as $serviceTypeAppui => $groupe)
+                                        <optgroup label="{{ $serviceTypeAppui }}">
+                                            @foreach ($groupe as $typeAppui)
+                                                <option value="{{ $typeAppui->id_type_appui }}">{{ $typeAppui->lib_type_appui }}</option>
                                             @endforeach
                                         </optgroup>
                                     @endforeach
                                 </select>
                             </div>
 
-                        <div class="sm:col-span-2">
-                            <label class="block text-sm text-slate-700">Unité</label>
-                            <input type="text" 
-                                :value="infosAppui(ligne.id_appui)?.unite || ''"
-                                readonly
-                                tabindex="-1"
-                                placeholder="—"
-                                class="mt-1 block w-full border-gray-300 bg-slate-100 text-slate-600 focus:border-gray-300 focus:ring-0 rounded-md shadow-sm cursor-not-allowed">
-                        </div>
-
-
                             <div class="sm:col-span-3">
                                 <label class="block text-sm text-slate-700">Quantité</label>
                                 <input type="number" min="1" step="1" required
                                        :name="`lignes[${index}][quantite_demandee]`"
-                                       x-model="ligne.quantite_demandee"
+                                       x-model="ligne.quantite_demandee" {{-- affichage ancienne valeurs--}}
                                        class="mt-1 block w-full border-gray-300 focus:border-[--color-primary] focus:ring-[--color-primary] rounded-md shadow-sm">
                             </div>
 
