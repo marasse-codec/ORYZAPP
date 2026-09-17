@@ -14,7 +14,7 @@ return new class extends Migration
             $table->id('id_systeme_production');
             $table->decimal('superficie', 10, 2);
             $table->foreignId('id_demande')->constrained('demandes', 'id_demande')->cascadeOnDelete();
-            $table->foreignId('id_type_systeme_production')->constrained('types_systemes_production', 'id_type_systeme_production');
+            $table->foreignId('id_type_systeme_production')->constrained('types_systemes_productions', 'id_type_systeme_production');
             $table->timestamps();
 
             // Une seule superficie par système et par demande.

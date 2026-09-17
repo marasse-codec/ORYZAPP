@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\PermissionEnum;
+use App\Exports\AttributionsExport;
 use App\Http\Controllers\ApprovisionnementController;
 use App\Http\Controllers\AppuiController;
 use App\Http\Controllers\AttributionController;
@@ -12,10 +13,12 @@ use App\Http\Controllers\EquipementController;
 use App\Http\Controllers\EquipementRetourController;
 use App\Http\Controllers\InstructionController;
 use App\Http\Controllers\Mouvement\MouvementStockController;
+use App\Http\Controllers\Notification\PushSubscriptionController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RecuperationController;
 use App\Http\Controllers\SimulationSortieController;
 use App\Http\Controllers\VitrineController;
+use App\Livewire\AiAssistant;
 use Illuminate\Support\Facades\Route;
 
 // Vitrine publique : la démarche et le catalogue, sans authentification.
@@ -24,7 +27,7 @@ Route::get('/', VitrineController::class)->name('vitrine');
 Route::middleware('auth')->group(function () {
 
     Route::get('/dashboard', [DashboardController::class, '__invoke'])->name('dashboard');
-
+Route::get('/direction/assistant-ia', AiAssistant::class)->name('direction.ai-assistant');
     Route::get('/attributions', [AttributionController::class, 'index'])->name('attributions.index');
     Route::post('/attributions/valider', [AttributionController::class, 'valider'])->name('attributions.valider');
     Route::post('/attributions/annuler', [AttributionController::class, 'annuler'])->name('attributions.annuler');
@@ -52,6 +55,13 @@ Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+
+    Route::get('/statistiques/export/attributions', [AttributionsExport::class, 'exporterAttributions'])
+            ->name('stats.export.attributions');
+    
+    // Route d'enregistrement de l'abonnement PWA WebPush
+    Route::post('/push-subscribe', [PushSubscriptionController::class, 'store'])->name('push.subscribe');
+
 });
 
 // INSTRUCTION - chaque service se prononce sur les appuis qu'il fournit.

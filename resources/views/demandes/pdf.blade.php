@@ -1,3 +1,7 @@
+@php
+    use Illuminate\Support\Carbon;
+    Carbon::setLocale('fr');
+@endphp
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -99,7 +103,7 @@
             Pour mener à bien notre activité, nous souhaiterions avoir auprès de votre structure des appuis en 
             <strong>{{ $demande->typesAppuis()->pluck('lib_type_appui')->join(', ', ' et ') ?: '(semence, intrant, encadrement technique, matériel agricole)' }}</strong> 
             pour des mises en place dès 
-            <strong>{{ $demande->periode_debut_mise_en_place ? $demande->periode_debut_mise_en_place->translatedFormat('F Y') : '(la période de mise en place)' }}</strong>.
+            <strong>{{ $demande->periode_debut_mise_en_place ? Carbon::parse($demande->periode_debut_mise_en_place)->isoFormat('MMMM YYYY') : '(la période de mise en place)' }}</strong>.
         </p>
 
         <p class="paragraphe">

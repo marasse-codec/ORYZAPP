@@ -421,4 +421,5 @@ class AttributionController extends Controller
         return redirect()->route('attributions.index')
             ->with('success', 'Les résultats ont été publiés');
     }
+    
 }

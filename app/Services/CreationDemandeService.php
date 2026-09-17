@@ -89,8 +89,7 @@ class CreationDemandeService
         foreach ($lignes as $ligne) {
             $ligneD = LigneDemande::create([
                 'id_demande' => $demande->id_demande,
-                'id_type_appui' => $ligne['id_type_appui'],
-                'quantite_demandee' => $ligne['quantite_demandee'],
+                'id_type_appui' => $ligne['id_type_appui']
             ]);
 
             // Préchargement de la relation

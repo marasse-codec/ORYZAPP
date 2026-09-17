@@ -98,7 +98,6 @@ class SyntheseCommissionService
             ->map(function (Collection $lignesDeLAppui, $idAppui) use ($engagees) {
                 $appui = $lignesDeLAppui->first()->appui;
 
-                $demandee = (int) $lignesDeLAppui->sum('quantite_demandee');
                 $stock = (int) ($appui?->quantite_en_stock ?? 0);
                 $engagee = (int) ($engagees[$idAppui] ?? 0);
                 $disponible = $stock - $engagee;
@@ -107,11 +106,9 @@ class SyntheseCommissionService
                     'libelle' => $appui?->libelle ?? 'Appui inconnu',
                     'unite' => $appui?->uniteAppui?->lib_unite_appui,
                     'service' => $appui?->typeAppui?->service?->lib_service,
-                    'demandee' => $demandee,
                     'stock' => $stock,
                     'engagee' => $engagee,
                     'disponible' => $disponible,
-                    'couverte' => $disponible >= $demandee,
                     'nb_dossiers' => $lignesDeLAppui->count(),
                 ];
             })

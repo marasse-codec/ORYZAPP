@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class TypeSystemeProduction extends Model
 {
-    protected $table = 'types_systemes_production';
+    protected $table = 'types_systemes_productions';
 
     protected $primaryKey = 'id_type_systeme_production';
 

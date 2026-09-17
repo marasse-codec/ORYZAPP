@@ -16,8 +16,7 @@ class LigneDemandeFactory extends Factory
     {
         return [
             'id_demande' => Demande::factory(),
-            'id_appui' => Appui::factory(),
-            'quantite_demandee' => $this->faker->numberBetween(1,10)
+            'id_appui' => Appui::factory()
         ];
     }
 }

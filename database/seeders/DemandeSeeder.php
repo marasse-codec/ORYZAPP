@@ -44,8 +44,7 @@ class DemandeSeeder extends Seeder
 
             LigneDemande::create([
                 'id_demande' => $demande->id_demande,
-                'id_type_appui' => $idTypeAppui,
-                'quantite_demandee' => $quantite,
+                'id_type_appui' => $idTypeAppui
             ]);
         }
 

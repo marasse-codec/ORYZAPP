@@ -64,6 +64,18 @@ return [
             ]) : [],
         ],
 
+        // config/database.php
+        'mysql_readonly' => [
+            'driver' => 'mysql',
+            'host' => env('DB_HOST', '127.0.0.1'),
+            'database' => env('DB_DATABASE', 'varyza'),
+            'username' => env('DB_READONLY_USERNAME', 'varyza_ai_ro'),
+            'password' => env('DB_READONLY_PASSWORD'),
+            'options' => [
+                PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+            ],
+        ],
+
         'mariadb' => [
             'driver' => 'mariadb',
             'url' => env('DB_URL'),

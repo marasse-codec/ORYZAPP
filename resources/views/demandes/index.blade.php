@@ -5,13 +5,13 @@
 @extends($layout ?? 'layouts.app')
 
 @section('content')
-<div class="min-h-screen bg-[--color-background] px-6 py-8">
+<div class="min-h-screen bg-[--color-secondary] px-6 py-8">
     <div class="max-w-6xl mx-auto">
 
         <!-- DP -->
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
             <div>
-                <h1 class="text-2xl font-bold text-[--color-primary]">Demandes d'appui</h1>
+                <h1 class="text-2xl font-bold text-[--text-over-back-color]">Demandes d'appui</h1>
                 <p class="text-sm text-slate-500">{{ $demandes->count() }} dossier(s)</p>
             </div>
             @can(\App\Enums\PermissionEnum::creerDemande->value)
@@ -154,7 +154,7 @@
                                 <td class="px-4 py-3 text-slate-600">{{ $demande->localite?->lib_localite }}</td>
                                 <td class="px-4 py-3 text-center text-slate-600">{{ $demande->lignes->count() }}</td>
                                 <td class="px-4 py-3">
-                                    <span class="inline-block rounded-full px-2.5 py-1 text-xs font-semibold {{ $demande->soumise ? "bg-[--color-brouillon]" : "bg[--color-soumise]" }}">
+                                    <span class="inline-block rounded-full text-[--text-in-back-color] px-2.5 py-1 text-xs font-semibold {{ $demande->soumise ? "bg-[--color-soumise]" : "bg-[--color-brouillon]" }}">
                                         {{ $demande->soumise ? "Demande soumise" : "Demande en brouillon" }}
                                     </span>
                                     @if ($demande->motifs_rejet)

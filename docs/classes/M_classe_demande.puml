@@ -107,7 +107,6 @@ class SystemeProduction {
 
 class LigneDemande {
   - idLigneDemande : Long
-  - quantiteeDemandee : Double
 }
 
 class Service {

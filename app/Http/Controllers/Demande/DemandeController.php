@@ -6,6 +6,8 @@ use App\Enums\PermissionEnum;
 use App\Enums\StatutDemandeE;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreDemandeRequest;
+use App\Mail\MailService;
+use App\Models\Agent;
 use App\Models\Appui;
 use App\Models\Campagne;
 use App\Models\Demande;
@@ -15,6 +17,8 @@ use App\Models\Traitement;
 use App\Models\TypeActeur;
 use App\Models\TypeAppui;
 use App\Models\TypeSystemeProduction;
+use App\Models\User;
+use App\Notifications\SuiviDossierNotification;
 use App\Services\CreationDemandeService;
 use App\Services\SyntheseCommissionService;
 use App\Utils\Helper;
@@ -23,6 +27,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Notification;
 
 class DemandeController extends Controller
 {
@@ -130,16 +136,32 @@ class DemandeController extends Controller
                 ->with('error', 'La demande doit contenir au moins un appui avant sa soumission.');
         }
 
-        DB::transaction(function () use ($demande) {
+        /** @var Collection $services */
+        $services = $demande->getServices();
+
+        DB::transaction(function () use ($demande,$services) {
 
             $demande->soumettre();
-
-            /** @var Collection $services */
-            $services = $demande->getServices();
             
             Traitement::creerTraitements($demande->id_demande, $services);
 
         });
+
+        $servicesIds = $services->pluck('id_service')->flatten()->toArray();
+
+
+        $users = User::whereIn('id_service',$servicesIds)->get();
+
+        if ($users->isNotEmpty()) {
+            Notification::send($users, new SuiviDossierNotification(
+                titre: 'Nouvelle demande soumise',
+                message: "La demande {$demande->id_demande} a été soumise pour traitement.",
+                urlAction: route('demandes.show', $demande->id_demande),
+                type: 'success'
+            ));
+        }
+
+        Mail::to('freddegny@gmail.com')->send(new MailService('Message de demande'));
 
         return redirect()
             ->route('demandes.show', $demande->id_demande)

@@ -144,7 +144,6 @@ package "Élaboration des Demandes" {
 
   class LigneDemande {
     - idLigneDemande : Long
-    - quantiteDemandee : Integer
   }
 }
 

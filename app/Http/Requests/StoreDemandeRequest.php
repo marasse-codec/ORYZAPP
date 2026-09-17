@@ -30,7 +30,6 @@ class StoreDemandeRequest extends FormRequest
 
             'lignes' => ['required', 'array', 'min:1'],
             'lignes.*.id_type_appui' => ['required', 'exists:types_appuis,id_type_appui'],
-            'lignes.*.quantite_demandee' => ['nullable', 'numeric', 'min:0.01'],
 
             'pieces' => ['nullable', 'array'],
             'pieces.*' => ['nullable', 'file', 'max:10240'],
@@ -60,8 +59,6 @@ class StoreDemandeRequest extends FormRequest
 
             'lignes.*.id_type_appui.required' => "Le type d'appui est obligatoire pour chaque ligne.",
             'lignes.*.id_type_appui.exists' => "Le type d'appui sélectionné pour une ligne est invalide.",
-
-            'lignes.*.quantite_demandee.min' => 'La quantité demandée doit être supérieure à zéro.',
         ];
     }
 }

@@ -107,7 +107,6 @@ Traitement "0..1" -- "0..1" Attribution : produire >
 
 class LigneDemande {
   - idLigneDemande : Long
-  - quantiteDemandee : Integer
 }
 
 class SessionCommission {

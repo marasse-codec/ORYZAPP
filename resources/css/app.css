@@ -4,7 +4,7 @@
 
 :root {
   --color-primary: #1B4D3E;
-  --color-secondary: #D97706;
+  --color-secondary: #f7bd51;
   --color-tertiary: #673831;
   --color-neutral: #0F172A;
   --color-accent: #FF6B6B;
@@ -13,9 +13,11 @@
   --color-text-secondary: #666666;
 
   --color-brouillon: #ef4444;
-  --color-soumise: #22c55e;
+  --color-soumise: #1B4D3E;
 
 
+  --text-over-back-color: #ffffffd2;
+  --text-in-back-color: #ffffffd2;
   --text-heading: 1.5rem;
   --text-body: 1rem;
 }

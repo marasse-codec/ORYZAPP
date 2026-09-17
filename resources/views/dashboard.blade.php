@@ -5,7 +5,7 @@
     <div class="max-w-5xl mx-auto">
 
         <div class="mb-6">
-            <h1 class="text-2xl font-bold text-[--color-primary]">Tableau de bord</h1>
+            <h1 class="text-2xl font-bold text-[--text-over-back-color]">Tableau de bord</h1>
             <p class="text-sm text-slate-500">{{ $total }} demande(s) dans votre périmètre</p>
         </div>
 
@@ -22,11 +22,12 @@
 
             <!-- Section Graphiques & Analyses -->
         <div class="grid grid-cols-1 py-5 lg:grid-cols-1 gap-6">
-            <livewire:taux-satisfactions-widget />
+            <livewire:ai-assistant />
+            {{-- <livewire:taux-satisfactions-widget />
             <livewire:analyse-rejets-widget />
             <livewire:point-stocks-widget />
             <livewire:repartition-beneficiaires-widget />
-            <livewire:repartition-regionale-widget />
+            <livewire:repartition-regionale-widget /> --}}
         </div>
 
         <div class="mt-8">

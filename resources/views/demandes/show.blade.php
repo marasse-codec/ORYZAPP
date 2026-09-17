@@ -2,7 +2,7 @@
 
 @section('content')
 
-<div class="min-h-screen bg-[--color-background] px-6 py-8">
+<div class="min-h-screen bg-[--color-secondary] px-6 py-8">
     <div class="max-w-4xl mx-auto space-y-6">
 
         @if (session('success'))

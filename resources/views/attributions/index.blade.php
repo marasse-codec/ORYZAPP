@@ -9,6 +9,11 @@
                 <h1 class="text-2xl font-bold text-[--color-primary]">Attributions</h1>
                 <p class="text-sm text-slate-500">{{ $attributions->count() }} bon(s) d'attribution</p>
             </div>
+            <a href="{{ route('stats.export.attributions', ['date_debut' => request('date_debut'), 'date_fin' => request('date_fin')]) }}" 
+            class="inline-flex items-center gap-2 bg-emerald-700 hover:bg-emerald-800 text-white font-semibold px-4 py-2 rounded-xl transition-colors shadow-sm">
+                <span class="material-symbols-outlined text-lg">download_for_offline</span>
+                Exporter les Statistiques (Excel)
+            </a>
             @can(\App\Enums\PermissionEnum::gererCommission->value)
                 <form action="{{ route('attributions.publier') }}"
                     method="POST"

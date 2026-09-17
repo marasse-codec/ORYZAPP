@@ -11,7 +11,7 @@
         ])->values(),
     ]);
 
-    $lignesInitiales = old('lignes', [['id_type_appui' => '' , 'quantite_demandee' => '']]);
+    $lignesInitiales = old('lignes', [['id_type_appui' => '']]);
 @endphp
 
 @section('content')
@@ -28,7 +28,7 @@
         },
 
         ajouterLigne() {
-            this.lignes.push({ id_type_appui: '', quantite_demandee: '' });
+            this.lignes.push({ id_type_appui: ''});
         },
 
         retirerLigne(index) {
@@ -288,15 +288,7 @@
                                 </select>
                             </div>
 
-                            <div class="sm:col-span-3">
-                                <label class="block text-sm text-slate-700">Quantité</label>
-                                <input type="number" min="1" step="1" required
-                                       :name="`lignes[${index}][quantite_demandee]`"
-                                       x-model="ligne.quantite_demandee" {{-- affichage ancienne valeurs--}}
-                                       class="mt-1 block w-full border-gray-300 focus:border-[--color-primary] focus:ring-[--color-primary] rounded-md shadow-sm">
-                            </div>
-
-                            <div class="sm:col-span-2">
+                            <div class="sm:col-span-5">
                                 <button type="button" @click="retirerLigne(index)"
                                         :disabled="lignes.length === 1"
                                         class="w-full rounded-md border border-red-200 px-3 py-2 text-sm text-red-700 hover:bg-red-50 disabled:opacity-40 disabled:cursor-not-allowed">

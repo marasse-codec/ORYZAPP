@@ -14,7 +14,7 @@ class LigneDemande extends Model
 
     protected $primaryKey = 'id_ligne_demande';
 
-    protected $fillable = ['id_demande', 'id_type_appui', 'quantite_demandee'];
+    protected $fillable = ['id_demande', 'id_type_appui'];
 
     public function demande(): BelongsTo
     {
