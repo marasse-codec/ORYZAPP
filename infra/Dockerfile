@@ -18,7 +18,9 @@ RUN install-php-extensions \
     bcmath \
     gd \
     zip \
-    pcntl
+    pcntl \
+    intl
+
 
 # Récupération de Composer directement depuis l'image officielle
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer

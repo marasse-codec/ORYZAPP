@@ -30,6 +30,7 @@
                         <th class="px-4 py-3">Service</th>
                         <th class="px-4 py-3 text-right">Stock</th>
                         <th class="px-4 py-3 text-right">Coût unitaire</th>
+                        <th class=> Sour </th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100">
@@ -44,6 +45,43 @@
                             </td>
                             <td class="px-4 py-3 text-right text-slate-800">
                                 {{ $appui->cout_unitaire ? number_format($appui->cout_unitaire, 0, ',', ' ').' F' : '—' }}
+                            </td>
+                            <td>
+                                <div x-data="{ 
+                                    subscribed: {{ $appui->isSubscribedBy(auth()->user()) ? 'true' : 'false' }},
+                                    loading: false,
+                                    async toggleAlert() {
+                                        this.loading = true;
+                                        try {
+                                            let response = await fetch('{{ route('resources.toggle-alert', ['type' => 'appui', 'id' => $appui->id_appui]) }}', {
+                                                method: 'POST',
+                                                headers: {
+                                                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                                                    'Accept': 'application/json',
+                                                    'Content-Type': 'application/json'
+                                                }
+                                            });
+                                            let data = await response.json();
+                                            this.subscribed = data.subscribed;
+                                        } catch (error) {
+                                            console.error('Erreur lors du basculement de l\'alerte', error);
+                                        } finally {
+                                            this.loading = false;
+                                        }
+                                    }
+                                }">
+                                    <button @click="toggleAlert()" 
+                                            :disabled="loading"
+                                            :class="subscribed ? 'bg-amber-100 text-amber-800 border-amber-300' : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-50'"
+                                            class="inline-flex items-center gap-2 px-3 py-2 border text-sm font-medium rounded-lg shadow-sm transition disabled:opacity-50">
+                                        
+                                        <svg class="h-4 w-4" :class="subscribed ? 'fill-amber-500 text-amber-500' : 'text-slate-400'" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                                        </svg>
+
+                                        <span x-text="subscribed ? 'Alerte activée' : 'M\'alerter des changements'"></span>
+                                    </button>
+                                </div>
                             </td>
                         </tr>
                     @empty

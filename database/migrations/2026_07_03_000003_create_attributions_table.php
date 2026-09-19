@@ -11,7 +11,7 @@ return new class extends Migration
         Schema::create('attributions', function (Blueprint $table) {
             $table->id('id_attribution');
             // Une demande donne lieu à une attribution au plus.
-            $table->foreignId('id_demande')->unique()->constrained('demandes', 'id_demande')->cascadeOnDelete();
+            $table->foreignId('id_demande')->nullable()->unique()->constrained('demandes', 'id_demande')->cascadeOnDelete();
             $table->foreignId('id_session')->nullable()->constrained('sessions_commission', 'id_session')->restrictOnDelete();
             $table->string('commentaires', 500)->nullable();
             $table->decimal('remise', 5, 2)->default(0);

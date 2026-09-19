@@ -7,6 +7,7 @@ use App\Models\Appui;
 use App\Models\Attribution;
 use App\Models\Demande;
 use App\Models\LigneAttribution;
+use App\Models\Service;
 use Illuminate\Support\Collection;
 
 /**
@@ -36,6 +37,44 @@ class SyntheseAttributionService
             ->orderBy('id_attribution')
             ->get()
             ->values();
+    }
+
+    /**
+ * Synthèse globale de tous les appuis d'un service donné (pour les attributions directes/dons).
+ */
+    public function confrontationToutsAppuisService(Service $service): Collection
+    {
+        // 1. Récupération des appuis du service avec leurs stocks et types
+        $appuis = Appui::with(['typeAppui.service'])
+            ->whereHas('typeAppui', fn ($q) => $q->where('id_service', $service->id_service))
+            ->get();
+
+        if ($appuis->isEmpty()) {
+            return collect();
+        }
+
+        $idsTypesAppuis = $appuis->pluck('id_type_appui')->unique();
+        $engagees = $this->quantitesEngagees($idsTypesAppuis);
+
+        // 2. Formatage des données
+        return $appuis->map(function (Appui $appui) use ($engagees) {
+            $idAppui = $appui->id_appui;
+            $stock = (int) ($appui->quantite_en_stock ?? 0);
+            $engagee = (int) ($engagees[$idAppui] ?? 0);
+            $disponible = $stock - $engagee;
+
+            return [
+                'id_appui' => $idAppui,
+                'libelle' => $appui->libelle ?? 'Appui inconnu',
+                'service' => $appui->typeAppui?->service?->lib_service,
+                'demandee' => 0, // Non applicable pour un bilan global sans demande initiale
+                'stock' => $stock,
+                'engagee' => $engagee,
+                'disponible' => $disponible,
+                'couverte' => $disponible > 0,
+                'nb_dossiers' => 0,
+            ];
+        })->sortBy('libelle')->values();
     }
 
     /**

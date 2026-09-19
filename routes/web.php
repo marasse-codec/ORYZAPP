@@ -16,6 +16,7 @@ use App\Http\Controllers\Mouvement\MouvementStockController;
 use App\Http\Controllers\Notification\PushSubscriptionController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RecuperationController;
+use App\Http\Controllers\ResourceSubscriptionController;
 use App\Http\Controllers\SimulationSortieController;
 use App\Http\Controllers\VitrineController;
 use App\Livewire\AiAssistant;
@@ -25,6 +26,21 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', VitrineController::class)->name('vitrine');
 
 Route::middleware('auth')->group(function () {
+
+    Route::post('/resources/{type}/{id}/toggle-alert', [ResourceSubscriptionController::class, 'toggle'])
+            ->name('resources.toggle-alert');
+            
+// Routes pour l'attribution directe / don
+    Route::get('/attributions/direct/create', [AttributionController::class, 'createDirect'])
+        ->name('attributions.createDirect');
+
+    Route::post('/attributions/direct', [AttributionController::class, 'storeDirect'])
+        ->name('attributions.storeDirect');
+
+// Route vers la vue du CRUD Appuis
+    Route::get('/crud/appuis', function () {
+        return view('crud.appuis.index');
+    })->name('crud.appuis.index');
 
     Route::get('/dashboard', [DashboardController::class, '__invoke'])->name('dashboard');
 Route::get('/direction/assistant-ia', AiAssistant::class)->name('direction.ai-assistant');

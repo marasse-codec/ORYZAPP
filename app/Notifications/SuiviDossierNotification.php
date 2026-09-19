@@ -45,6 +45,22 @@ class SuiviDossierNotification extends Notification
     }
 
     /**
+     * 📧 Construction de l'e-mail
+     */
+    public function toMail($notifiable): MailMessage // 👈 2. Ajouter cette méthode
+    {
+        // Récupération du nom (prend $notifiable->nom pour un Acteur ou $notifiable->name pour un User)
+        $nom = $notifiable->nom ?? $notifiable->name ?? 'Cher destinataire';
+
+        return (new MailMessage)
+            ->subject($this->titre)
+            ->greeting("Bonjour {$nom},")
+            ->line($this->message)
+            ->action('Consulter le détail', $this->url ?? url('/'))
+            ->line('Merci d\'utiliser notre plateforme.');
+    }
+
+    /**
      * 2. Canal PWA (Notification Push)
      */
     public function toWebPush(object $notifiable, $notification): WebPushMessage

@@ -12,7 +12,6 @@ return new class extends Migration
             $table->id('id_ligne_demande');
             $table->foreignId('id_demande')->constrained('demandes', 'id_demande')->cascadeOnDelete();
             $table->foreignId('id_type_appui')->constrained('types_appuis', 'id_type_appui');
-            $table->integer('quantite_demandee')->nullable();
             $table->timestamps();
 
             $table->unique(['id_demande', 'id_type_appui']);

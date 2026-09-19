@@ -6,10 +6,11 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Table;
 use Illuminate\Database\Eloquent\Model;
 
-#[Fillable('id_agent', 'nom', 'matricule_agent', 'actif', 'user_id')]
+#[Fillable('nom', 'matricule_agent', 'actif', 'user_id')]
 #[Table('agents')]
 class Agent extends Model
 {
+    protected $primaryKey = 'id_agent';
     //
 
     public function mouvementsStocks()

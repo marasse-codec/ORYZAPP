@@ -4,16 +4,20 @@ namespace App\Http\Controllers;
 
 use App\Enums\PermissionEnum;
 use App\Enums\StatutAttributionEnum;
+use App\Models\Acteur;
 use App\Models\Agent;
 use App\Models\Appui;
 use App\Models\Attribution;
+use App\Models\Campagne;
 use App\Models\Demande;
 use App\Models\Equipement;
 use App\Models\LigneAttribution;
+use App\Models\Localite;
 use App\Models\MouvementStock;
 use App\Models\Service;
 use App\Models\SessionCommission;
 use App\Models\Traitement;
+use App\Models\TypeActeur;
 use App\Models\TypeMouvementStock;
 use App\Services\SyntheseAttributionService;
 use App\Services\SyntheseCommissionService;
@@ -111,6 +115,87 @@ class AttributionController extends Controller
             'synthese' => $synthese->confrontationPourDemande($demande),
             'layout' => Helper::layout(),
         ]);
+    }
+
+    /** Formulaire de création d'une attribution directe / don */
+    public function createDirect(SyntheseAttributionService $synthese)
+    {
+        $service = Service::where('id_service', Auth::user()->id_service)->firstOrFail();
+
+        return view('attributions.create-direct', [
+            'acteurs' => Acteur::orderBy('nom')->get(),
+            'typesActeurs' => TypeActeur::orderBy('lib_type_acteur')->get(),
+            'localites' => Localite::orderBy('lib_localite')->get(),
+            'campagnes' => Campagne::orderBy('date_debut_campagne', 'desc')->get(),
+            'catalogue' => Appui::pourUtilisateur()->orderBy('libelle')->get(),
+            'synthese' => $synthese->confrontationToutsAppuisService($service),
+            'layout' => Helper::layout(),
+        ]);
+    }
+
+    /** Enregistrement d'une attribution directe avec sa demande interne */
+    public function storeDirect(Request $request)
+    {
+        $validated = $request->validate([
+            'id_acteur' => 'required|exists:acteurs,id_acteur',
+            'id_type_acteur' => 'required|exists:types_acteurs,id_type_acteur',
+            'id_localite' => 'required|exists:localites,id_localite',
+            'id_campagne' => 'required|exists:campagnes,id_campagne',
+            'commentaires' => 'required|string|max:500',
+            'remise' => 'nullable|numeric|min:0|max:100',
+            'lignes' => 'required|array|min:1',
+            'lignes.*.id_appui' => 'required|exists:appuis,id_appui',
+            'lignes.*.quantite_attribuee' => 'required|numeric|min:1',
+            'lignes.*.cout_attribution' => 'required|numeric|min:0',
+            'lignes.*.remise' => 'nullable|numeric|min:0|max:100',
+        ]);
+
+        DB::transaction(function () use ($validated) {
+            // 1. Création automatique de la demande interne sous-jacente
+            $demande = Demande::create([
+                'id_acteur' => $validated['id_acteur'],
+                'id_type_acteur' => $validated['id_type_acteur'],
+                'id_localite' => $validated['id_localite'],
+                'id_campagne' => $validated['id_campagne'],
+                'id_user' => Auth::id(),
+                'date_demande' => now(),
+                'periode_debut_mise_en_place' => now(),
+                'periode_fin_mise_en_place' => now(),
+                'soumise' => true,
+            ]);
+
+            // 2. Associer les types d'appuis aux lignes de la demande
+            $appuis = Appui::whereIn('id_appui', collect($validated['lignes'])->pluck('id_appui'))
+                ->pluck('id_type_appui')
+                ->unique();
+
+            foreach ($appuis as $idTypeAppui) {
+                $demande->lignes()->create([
+                    'id_type_appui' => $idTypeAppui,
+                ]);
+            }
+
+            // 3. Création de l'attribution liée
+            $attribution = Attribution::create([
+                'id_demande' => $demande->id_demande,
+                'commentaires' => $validated['commentaires'],
+                'remise' => $validated['remise'] ?? 0,
+                'id_statut_attribution' => StatutAttributionEnum::brouillon,
+            ]);
+
+            // 4. Création des lignes d'attribution
+            foreach ($validated['lignes'] as $ligne) {
+                $attribution->lignesAttributions()->create([
+                    'id_appui' => $ligne['id_appui'],
+                    'quantite_attribuee' => $ligne['quantite_attribuee'],
+                    'cout_attribution' => $ligne['cout_attribution'],
+                    'remise' => $ligne['remise'] ?? 0,
+                ]);
+            }
+        });
+
+        return redirect()->route('attributions.index')
+            ->with('success', 'Attribution directe enregistrée avec succès.');
     }
 
     public function store(Request $request, string $idDemande)

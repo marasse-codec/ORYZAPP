@@ -9,6 +9,11 @@ export default {
         './resources/views/**/*.blade.php',
         './resources/js/**/*.js',
         './resources/css/**/*.css',
+        // 
+        './app/Livewire/**/*.php',
+        './app/Filament/**/*.php',
+        // Ingestion complète des vues Filament (Forms, Tables, Notifications, Support)
+        './vendor/filament/**/*.blade.php',
     ],
 
     theme: {

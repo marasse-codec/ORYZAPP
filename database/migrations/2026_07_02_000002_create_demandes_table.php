@@ -12,8 +12,8 @@ return new class extends Migration
             $table->id('id_demande');
             $table->date('date_demande');
 
-            $table->date('periode_debut_mise_en_place');
-            $table->date('periode_fin_mise_en_place');
+            $table->date('periode_debut_mise_en_place')->nullable();
+            $table->date('periode_fin_mise_en_place')->nullable();
 
             $table->boolean('soumise')->default(false);
 

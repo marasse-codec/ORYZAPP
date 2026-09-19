@@ -38,3 +38,66 @@
   padding: 2rem;
   background-color: var(--color-background);
 }
+
+/* ====================================================
+   PERSONNALISATION DES MODALES ET FORMULAIRES FILAMENT
+   ==================================================== */
+
+/* 1. En-tête de la modale */
+.fi-modal .fi-modal-header {
+  background-color: var(--color-primary) !important;
+  border-top-left-radius: 0.75rem;
+  border-top-right-radius: 0.75rem;
+  padding: 1.25rem;
+}
+
+.fi-modal .fi-modal-heading {
+  color: #ffffff !important;
+  font-weight: 700 !important;
+}
+
+.fi-modal .fi-modal-close-btn button {
+  color: #ffffff !important;
+}
+
+.fi-modal .fi-modal-window .fi-section{
+  background-color: var(--color-secondary);
+  border: none;
+}
+
+.fi-modal .fi-modal-window{
+  background-color: var(--color-secondary);
+}
+
+/* 2. Style des champs de saisie (Inputs, Selects, Textareas) */
+.fi-modal .fi-input-wrp {
+  background-color: #f8fafc !important; /* Fond gris/vert très clair */
+  border-color: #cbd5e1 !important;
+}
+
+.fi-modal .fi-input-wrp:focus-within {
+  border-color: var(--color-primary) !important;
+  ring-color: var(--color-primary) !important;
+  box-shadow: 0 0 0 2px rgba(27, 77, 62, 0.2) !important;
+}
+
+
+/* 3. Boutons d'action dans le pied de la modale (Footer) */
+/* Bouton principal (Enregistrer / Créer) */
+.fi-modal .fi-modal-footer button[type="submit"],
+.fi-modal .fi-modal-footer .fi-btn-color-primary {
+  background-color: var(--color-primary) !important;
+  color: #ffffff !important;
+}
+
+.fi-modal .fi-modal-footer button[type="submit"]:hover,
+.fi-modal .fi-modal-footer .fi-btn-color-primary:hover {
+  background-color: #143a2f !important;
+}
+
+/* Bouton Annuler */
+.fi-modal .fi-modal-footer .fi-btn-color-gray {
+  background-color: #f1f5f9 !important;
+  color: #475569 !important;
+  border: 1px solid #cbd5e1 !important;
+}

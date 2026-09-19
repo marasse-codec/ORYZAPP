@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\RoleEnum;
+use App\Traits\HasSubscriptions;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -11,7 +12,8 @@ use Illuminate\Support\Facades\Auth;
 
 class Appui extends Model
 {
-    use HasFactory;
+    use HasFactory, HasSubscriptions;
+    
 
     protected $primaryKey = 'id_appui';
 

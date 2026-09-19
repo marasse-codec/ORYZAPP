@@ -19,6 +19,10 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
+    {{-- Livewire & Filament Styles --}}
+    @livewireStyles
+    @filamentStyles
+
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="bg-gray-100 h-screen lg:flex">
@@ -57,6 +61,7 @@
             <a href="{{ route('attributions.index') }}" class="block p-2 text-sm text-gray-300 hover:text-white">Voir les attributions</a>
             @can(PermissionEnum::attribuerAppui->value)
                 <a href="{{ route('attributions.simulation') }}" class="block p-2 text-sm text-gray-300 hover:text-white">Simuler les sorties</a>
+                <a href="{{ route('attributions.createDirect') }}" class="block p-2 text-sm text-gray-300 hover:text-white">Attribution Directe</a>
             @endcan
         </x-menu-groupe>
 
@@ -67,6 +72,7 @@
                 <a href="{{ route('approvisionnements.index') }}" class="block p-2 text-sm text-gray-300 hover:text-white">Approvisionnements</a>
                 <a href="{{ route('recuperations.index') }}" class="block p-2 text-sm text-gray-300 hover:text-white">Sorties de stock</a>
                 <a href="{{ route('equipements.index') }}" class="block p-2 text-sm text-gray-300 hover:text-white">Gestion des Équipements</a>
+                
             </x-menu-groupe>
         @endcan
 
@@ -74,8 +80,12 @@
             <a href="{{ route('equipements.retour.create') }}" class="block p-2 text-sm text-gray-300 hover:text-white">Retour d'équipement</a>
         </x-menu-groupe>
 
-        <x-menu-groupe titre="Ressources">
+        <x-menu-groupe titre="Mouvements">
             <a href="{{ route('mouvements-stocks.index') }}" class="block p-2 text-sm text-gray-300 hover:text-white">Mouvements</a>
+        </x-menu-groupe>
+
+        <x-menu-groupe titre="Ressources">
+            <a href="/ressources" class="block p-2 text-sm text-gray-300 hover:text-white">Accéder aux ressources</a>
         </x-menu-groupe>
 
         <div class="mt-auto w-full p-4 border-t border-slate-700">
@@ -182,7 +192,10 @@
         </div>
     </div>
 
+    {{-- Scripts Livewire & Filament --}}
     @livewireScripts
+    @filamentScripts
+    @livewire('notifications')
 
     {{-- Configuration PWA & Push Notifications --}}
     <script>
@@ -195,13 +208,64 @@
                 .catch(err => console.error('Erreur Service Worker:', err));
         }
 
-        // Afficher le bouton d'activation si la permission n'est pas encore donnée
+        // Gestion automatique et affichage du bouton
         document.addEventListener("DOMContentLoaded", function () {
-            if ('Notification' in window && Notification.permission === 'default') {
+            if (!('Notification' in window) || !('serviceWorker' in navigator)) return;
+
+            if (Notification.permission === 'granted') {
+                // Si la permission est accordée, on s'assure que le jeton est synchronisé avec Laravel
+                navigator.serviceWorker.ready.then(registration => {
+                    registration.pushManager.getSubscription().then(subscription => {
+                        if (!subscription) {
+                            // Permission accordée mais jeton manquant -> On souscrit automatiquement
+                            enablePushNotifications(false);
+                        }
+                    });
+                });
+            } else if (Notification.permission === 'default') {
+                // Permission pas encore demandée -> On affiche le bouton
                 const btn = document.getElementById('btn-push-notif');
                 if (btn) btn.classList.remove('hidden');
             }
         });
+
+        function checkPushSubscriptionStatus() {
+            // 1. Vérifier si les notifications sont supportées
+            if (!('Notification' in window) || !('serviceWorker' in navigator)) {
+                console.log("Les notifications Push ne sont pas supportées.");
+                return;
+            }
+
+            // 2. Vérifier l'état de la permission
+            if (Notification.permission === 'granted') {
+                // La permission est accordée, vérifions si l'appareil a un abonnement actif
+                navigator.serviceWorker.ready.then(registration => {
+                    registration.pushManager.getSubscription().then(subscription => {
+                        if (subscription) {
+                            console.log("L'appareil est déjà abonné aux notifications Push :", subscription);
+                            // L'appareil a DÉJÀ accepté et est ABOUNÉ
+                            // Ex: Vous pouvez cacher le bouton ou afficher un badge "Notifications activées"
+                            const btn = document.getElementById('btn-push-notif');
+                            if (btn) btn.classList.add('hidden');
+                        } else {
+                            console.log("Permission accordée, mais aucun abonnement Push actif. Réabonnement nécessaire.");
+                            // On peut ré-enregistrer automatiquement l'abonnement auprès du serveur
+                            enablePushNotifications();
+                        }
+                    });
+                });
+
+            } else if (Notification.permission === 'default') {
+                console.log("L'utilisateur n'a pas encore fait de choix.");
+                // Afficher le bouton pour lui proposer l'activation
+                const btn = document.getElementById('btn-push-notif');
+                if (btn) btn.classList.remove('hidden');
+
+            } else if (Notification.permission === 'denied') {
+                console.warn("L'utilisateur a bloqué les notifications sur ce navigateur.");
+                // Le bouton reste caché car la navigateur bloquera toute nouvelle demande
+            }
+        }
 
         function fullScreenAlertManager() {
             return {
