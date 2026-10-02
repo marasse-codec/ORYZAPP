@@ -2,6 +2,7 @@
 
 use App\Enums\PermissionEnum;
 use App\Exports\AttributionsExport;
+use App\Http\Controllers\ActeurController;
 use App\Http\Controllers\ApprovisionnementController;
 use App\Http\Controllers\AppuiController;
 use App\Http\Controllers\AttributionController;
@@ -9,13 +10,14 @@ use App\Http\Controllers\CommissionAttributionController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Demande\DemandeRejetController;
 use App\Http\Controllers\Demande\DemandeController;
+use App\Http\Controllers\Editions\EditionArbitrageController;
+use App\Http\Controllers\Editions\EditionAttributionController;
 use App\Http\Controllers\EquipementController;
 use App\Http\Controllers\EquipementRetourController;
-use App\Http\Controllers\InstructionController;
 use App\Http\Controllers\Mouvement\MouvementStockController;
 use App\Http\Controllers\Notification\PushSubscriptionController;
 use App\Http\Controllers\ProfileController;
-use App\Http\Controllers\RecuperationController;
+use App\Http\Controllers\EnlevementController;
 use App\Http\Controllers\ResourceSubscriptionController;
 use App\Http\Controllers\SimulationSortieController;
 use App\Http\Controllers\VitrineController;
@@ -26,6 +28,23 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', VitrineController::class)->name('vitrine');
 
 Route::middleware('auth')->group(function () {
+
+    Route::get('/acteurs/rechercher', [App\Http\Controllers\ActeurController::class, 'rechercherParNomEtDate'])->name('acteurs.rechercher');
+    
+    Route::get('/editions/attributions', [EditionAttributionController::class, 'index'])->name('editions.attributions.index');
+    Route::prefix('editions')->name('editions.')->group(function () {
+        // Route de la page d'index de l'arbitrage
+        Route::get('/arbitrages', [EditionArbitrageController::class, 'index'])
+            ->name('arbitrages.index');
+
+        // Route d'impression de la fiche d'arbitrage
+        Route::match(['get', 'post'], '/attributions/imprimer-arbitrage', [EditionArbitrageController::class, 'imprimerArbitrage'])
+            ->name('attributions.imprimer-arbitrage');
+    });
+    Route::get('/attributions/{idAttribution}', [AttributionController::class, 'show'])->name('attributions.show');
+
+    Route::get('/attributions/{attribution}/edit', [AttributionController::class, 'edit'])->name('attributions.edit');
+    Route::put('/attributions/{attribution}', [AttributionController::class, 'update'])->name('attributions.update');
 
     Route::post('/resources/{type}/{id}/toggle-alert', [ResourceSubscriptionController::class, 'toggle'])
             ->name('resources.toggle-alert');
@@ -42,7 +61,8 @@ Route::middleware('auth')->group(function () {
         return view('crud.appuis.index');
     })->name('crud.appuis.index');
 
-    Route::get('/dashboard', [DashboardController::class, '__invoke'])->name('dashboard');
+    Route::get('/dashboard', DashboardController::class)->name('dashboard');
+    
 Route::get('/direction/assistant-ia', AiAssistant::class)->name('direction.ai-assistant');
     Route::get('/attributions', [AttributionController::class, 'index'])->name('attributions.index');
     Route::post('/attributions/valider', [AttributionController::class, 'valider'])->name('attributions.valider');
@@ -52,6 +72,7 @@ Route::get('/direction/assistant-ia', AiAssistant::class)->name('direction.ai-as
     // DEMANDES
     Route::resource('demandes', DemandeController::class)->only(['index', 'create', 'store', 'show']);
     Route::patch('/demandes/rejeter', DemandeRejetController::class)->name('demandes.rejeter');
+    Route::post('/demandes/visiter', [DemandeController::class, 'visiter'])->name('demandes.visite.valider');
     Route::post('/demandes/soumettre/{id}', [DemandeController::class, 'soumettre'])->name('demandes.soumettre');
     Route::get('/demandes/pieces/{demande}', [DemandeController::class, 'pieces'])->name('demandes.pieces');
     Route::get('/demandes/pdf/{id}', [DemandeController::class, 'telechargerPdf'])->name('demandes.pdf');
@@ -72,33 +93,12 @@ Route::get('/direction/assistant-ia', AiAssistant::class)->name('direction.ai-as
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
-    Route::get('/statistiques/export/attributions', [AttributionsExport::class, 'exporterAttributions'])
+    Route::get('/statistiques/export/attributions', [EditionAttributionController::class, 'exportAttributions'])
             ->name('stats.export.attributions');
     
     // Route d'enregistrement de l'abonnement PWA WebPush
     Route::post('/push-subscribe', [PushSubscriptionController::class, 'store'])->name('push.subscribe');
 
-});
-
-// INSTRUCTION - chaque service se prononce sur les appuis qu'il fournit.
-Route::middleware(['auth', 'permission:'.PermissionEnum::instruireDemande->value])->group(function () {
-
-    Route::post(
-        '/instructions/{idDemande}/demander-correction',
-        [InstructionController::class, 'demanderCorrection']
-    )->name('instructions.demander-correction');
-    Route::get('/instructions', [InstructionController::class, 'index'])->name('instructions.index');
-
-    // 1. Mettez la route spécifique AVANT les routes avec paramètres joker ({idDemande})
-    Route::post('/instructions/prendre-en-charge-tous', [InstructionController::class, 'prendreEnChargeTous'])->name('instructions.prendre-en-charge-tous');
-
-    // 2. Les autres routes spécifiques
-    Route::get('/instructions/fiches', [InstructionController::class, 'fiches'])->name('instructions.fiches');
-
-    // 3. Les routes dynamiques avec paramètres ({idDemande}) EN DERNIER
-    Route::get('/instructions/{idDemande}', [InstructionController::class, 'show'])->name('instructions.show');
-    Route::get('/instructions/{idDemande}/fiche', [InstructionController::class, 'fiche'])->name('instructions.fiche');
-    Route::post('/instructions/{idDemande}', [InstructionController::class, 'store'])->name('instructions.store');
 });
 
 // ATTRIBUTIONS — l'arbitrage de la commission.
@@ -115,7 +115,6 @@ Route::middleware(['auth', 'permission:'.PermissionEnum::attribuerAppui->value])
     Route::post('/attributions/simulation', [SimulationSortieController::class, 'noter'])->name('attributions.simulation.noter');
     Route::delete('/attributions/simulation', [SimulationSortieController::class, 'reinitialiser'])->name('attributions.simulation.reinitialiser');
 
-    Route::get('/attributions/{idAttribution}', [AttributionController::class, 'show'])->name('attributions.show');
     Route::post('/attributions/{idDemande}', [AttributionController::class, 'store'])->name('attributions.store');
     Route::post('/attributions/{idDemande}/rejeter', [AttributionController::class, 'rejeter'])->name('attributions.rejeter');
     Route::delete('/attributions/{attribution}', [AttributionController::class, 'destroy'])->name('attributions.destroy');
@@ -142,8 +141,8 @@ Route::middleware(['auth', 'permission:'.PermissionEnum::gererStock->value])->gr
     Route::get('/approvisionnements/create', [ApprovisionnementController::class, 'create'])->name('approvisionnements.create');
     Route::post('/approvisionnements', [ApprovisionnementController::class, 'store'])->name('approvisionnements.store');
     Route::get('/approvisionnements/recherche-appuis', [ApprovisionnementController::class, 'searchAppuis'])->name('approvisionnements.search-appuis');
-    Route::get('/recuperations', [RecuperationController::class, 'index'])->name('recuperations.index');
-    Route::get('/recuperations/{idAttribution}/create', [RecuperationController::class, 'create'])->name('recuperations.create');
+    Route::get('/enlevements', [EnlevementController::class, 'index'])->name('enlevements.index');
+    Route::get('/enlevements/{idAttribution}/create', [EnlevementController::class, 'create'])->name('enlevements.create');
     Route::patch('/attributions/{attribution}/destockage', [AttributionController::class, 'destocker'])->name('attributions.destocker');
 
     // EQUIPEMENT RETOUR //

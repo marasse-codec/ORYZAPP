@@ -12,7 +12,7 @@ return new class extends Migration
             $table->id('id_ligne_attribution');
             $table->foreignId('id_attribution')->constrained('attributions', 'id_attribution')->cascadeOnDelete();
             $table->foreignId('id_appui')->constrained('appuis', 'id_appui');
-            $table->integer('quantite_attribuee');
+            $table->decimal('quantite_attribuee', 12, 2);
             // Le coût est figé à l'attribution : la commission peut le réviser
             // à la baisse par rapport au coût unitaire du catalogue.
             $table->decimal('cout_attribution', 12, 2)->nullable();

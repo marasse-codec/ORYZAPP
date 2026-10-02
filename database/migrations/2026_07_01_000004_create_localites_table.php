@@ -10,8 +10,8 @@ return new class extends Migration
     {
         Schema::create('localites', function (Blueprint $table) {
             $table->id('id_localite');
-            $table->string('lib_localite', 250);
-            $table->foreignId('id_departement')->constrained('departements', 'id_departement')->cascadeOnDelete();
+            $table->string('lib_localite', 30);
+            $table->foreignId('id_departement')->constrained('departements', 'id_departement');
             $table->timestamps();
         });
     }

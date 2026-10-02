@@ -66,7 +66,26 @@
             Dossiers à examiner
         </h2>
 
-        @forelse ($dossiers as $demande)
+        @php
+            $demandesDistinctes = $dossiers
+                ->groupBy('id_demande') // 1. On groupe les attributions par demande
+                ->map(function ($attributionsDeLaDemande) {
+                    // 2. On récupère l'objet Demande depuis la première attribution du groupe
+                    $demande = $attributionsDeLaDemande->first()->demande;
+                    
+                    if ($demande) {
+                        // 3. Défi réussi : On injecte la collection de TOUTES ses attributions
+                        // dans une propriété dynamique de la demande
+                        $demande->attributions = $attributionsDeLaDemande;
+                    }
+                    
+                    return $demande;
+                })
+                ->filter(); // 4. Sécurité au cas où un id_demande ne pointe sur rien
+
+        @endphp
+
+        @forelse ($demandesDistinctes as $demande)
             <article class="mt-4 insecable border border-slate-300 p-4">
                 <div class="flex items-start justify-between gap-4">
                     <div>
@@ -78,14 +97,18 @@
                             {{ $demande->typeActeur?->lib_type_acteur }} ·
                             {{ $demande->localite?->lib_localite }}
                             ({{ $demande->localite?->departement?->lib_departement }}) ·
-                            {{ number_format($demande->systemesProduction->sum('superficie'), 2, ',', ' ') }} ha ·
+                            {{ number_format($demande->systemesProductions?->sum('superficie'), 2, ',', ' ') }} ha ·
                             {{ $demande->acteur?->telephone }}
                         </p>
                     </div>
                     <div class="text-right text-xs text-slate-500">
-                        <p>Mise en place</p>
+                        <p>Debut mise en place</p>
                         <p class="font-semibold text-slate-700">
-                            {{ $demande->debut_periode_mise_en_place?->format('d/m/Y') }}
+                            {{ $demande->periode_debut_mise_en_place?->format('d/m/Y') }}
+                        </p>
+                        <p>Fin mise en place</p>
+                        <p class="font-semibold text-slate-700">
+                            {{ $demande->periode_fin_mise_en_place?->format('d/m/Y') }}
                         </p>
                     </div>
                 </div>
@@ -93,23 +116,20 @@
                 <table class="mt-3 w-full text-sm">
                     <thead>
                         <tr class="border-b border-slate-200 text-left text-[10px] uppercase text-slate-500">
-                            <th class="pb-1">Appui sollicité</th>
-                            <th class="pb-1 text-right">Demandé</th>
-                            <th class="pb-1 text-right w-28">Accordé</th>
-                            <th class="pb-1 text-right w-28">Coût / remise</th>
+                            <th class="pb-1">Appui accordé</th>
+                            <th class="pb-1 w-28">Quantité</th>
+                            <th class="pb-1 w-28">Coût / remise</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100">
-                        @foreach ($demande->lignes as $ligne)
-                            <tr>
-                                <td class="py-1 text-slate-800">{{ $ligne->appui?->libelle }}</td>
-                                <td class="py-1 text-right text-slate-800">
-                                    {{ $ligne->quantite_demandee }}
-                                    {{ $ligne->appui?->typeAppui?->uniteTypeAppui?->lib_unite_type_appui }}
-                                </td>
-                                <td class="py-1"><span class="block border-b border-dotted border-slate-400">&nbsp;</span></td>
-                                <td class="py-1"><span class="block border-b border-dotted border-slate-400">&nbsp;</span></td>
-                            </tr>
+                        @foreach ($demande->attributions as $attribution)
+                            @foreach ($attribution->lignesAttributions as $ligneAttrib)
+                                <tr>
+                                    <td class="py-1 text-slate-800"><span class="block border-b border-dotted border-slate-400">{{ $ligneAttrib->appui->libelle }}</span></td>
+                                    <td class="py-1 text-slate-800"><span class="block border-b border-dotted border-slate-400">{{ $ligneAttrib->quantite_attribuee }}</span></td>
+                                    <td class="py-1"><span class="block border-b border-dotted border-slate-400">{{ $ligneAttrib->remise }}</span></td>
+                                </tr>
+                            @endforeach
                         @endforeach
                     </tbody>
                 </table>

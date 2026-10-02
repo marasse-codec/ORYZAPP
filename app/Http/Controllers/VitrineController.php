@@ -19,19 +19,18 @@ class VitrineController extends Controller
 {
     public function __invoke(): View
     {
-        $appuis = Appui::quantifiables()
-            ->with('uniteAppui', 'typeAppui.service')
+        $appuis = Appui::with('typeAppui.service')
             ->orderBy('libelle')
             ->get();
 
         return view('vitrine', [
             'typesActeurs' => TypeActeur::with('typesPieces')->orderBy('lib_type_acteur')->get(),
             'typesSystemesProduction' => TypeSystemeProduction::orderBy('lib_type_systeme_production')->get(),
-            'appuisParType' => $appuis->groupBy(fn (Appui $appui) => $appui->typeAppui?->libelle ?? 'Autres'),
+            'appuisParType' => $appuis->groupBy(fn (Appui $appui) => $appui->typeAppui?->lib_type_appui ?? 'Autres'),
 
             // Repères chiffrés de l'accroche, lus sur le référentiel réel
             // plutôt qu'écrits en dur : ils suivent le catalogue.
-            'nbTypesAppuis' => TypeAppui::where('est_stockable', true)->count(),
+            'nbTypesAppuis' => TypeAppui::where('est_intrant', false)->count(),
         ]);
     }
 }

@@ -1,17 +1,32 @@
 @extends($layout ?? 'layouts.app')
 
 @php
-    // Pièces attendues par type d'acteur : le choix de l'étape 1 pilote la
-    // liste des téléversements de l'étape 4.
-    $piecesParTypeActeur = $typesActeurs->mapWithKeys(fn ($type) => [
-        $type->id_type_acteur => $type->typesPieces->map(fn ($piece) => [
+    $piecesParTypeActeur = $typesActeurs->mapWithKeys(fn ($type) => [$type->id_type_acteur => $type->typesPieces->map(fn ($piece) => [
             'id' => $piece->id_type_piece,
             'libelle' => $piece->lib_type_piece,
             'obligatoire' => (bool) $piece->pivot->est_obligatoire,
         ])->values(),
     ]);
 
-    $lignesInitiales = old('lignes', [['id_type_appui' => '']]);
+    $typesActeursMeta = $typesActeurs->mapWithKeys(fn ($type) => [$type->id_type_acteur => [
+            'libelle' => $type->lib_type_acteur,
+            'est_structure' => !in_array(
+                mb_strtolower(trim($type->lib_type_acteur)), 
+                ['individu', 'groupement non formel', 'producteur individuel']
+            )
+        ]
+    ]);
+
+    $appuisDisponibles = $typesAppuis->flatMap(function($type) {
+        return $type->appuis->map(fn($appui) => [
+            'id' => $appui->id_appui,
+            'libelle' => $appui->libelle,
+            'id_type_appui' => $appui->id_type_appui,
+            'unite' => $appui->uniteDosage?->lib_unite ?? ''
+        ]);
+    })->values();
+
+    $lignesInitiales = old('lignes', [['id_type_appui' => '', 'id_appui' => '', 'quantite_demandee' => '']]);    
 @endphp
 
 @section('content')
@@ -22,13 +37,73 @@
         idTypeActeur: '{{ old('id_type_acteur', '') }}',
         lignes: {{ Illuminate\Support\Js::from(array_values($lignesInitiales)) }},
         piecesParTypeActeur: {{ Illuminate\Support\Js::from($piecesParTypeActeur) }},
+        typesActeursMeta: {{ Illuminate\Support\Js::from($typesActeursMeta) }},
+        superficies: {},
+        selectedDepartement: '',
+        selectedLocalites: {{ Illuminate\Support\Js::from(array_map('intval', (array) old('localites', isset($demande) ?$demande->localites->pluck('id_localite')->toArray() : []))) }},
+        localitesList: {{ Illuminate\Support\Js::from($localites) }},
+
+        idActeurExistant: '{{ old('id_acteur', '') }}',
+        nom: '{{ old('nom', '') }}',
+        dateNaissance: '{{ old('date_naissance', '') }}',
+        telephone: '{{ old('telephone', '') }}',
+        email: '{{ old('email', '') }}',
+        nomStructure: '{{ old('nom_structure', '') }}',
+
+        suggestionsActeurs: [],
+        acteurTrouve: false,
+
+        async rechercherActeurParNomEtDate() {
+            if (!this.nom || this.nom.length < 2 || !this.dateNaissance) {
+                this.suggestionsActeurs = [];
+                return;
+            }
+            if (this.acteurTrouve) return;
+
+            try {
+                let response = await fetch(`{{ route('acteurs.rechercher') }}?nom=${encodeURIComponent(this.nom)}&date_naissance=${encodeURIComponent(this.dateNaissance)}`);
+                this.suggestionsActeurs = await response.json();
+            } catch (error) {
+                console.error('Erreur lors de la recherche croisée:', error);
+            }
+        },
+
+        selectionnerActeur(acteur) {
+            this.idActeurExistant = acteur.id_acteur;
+            this.nom = acteur.nom;
+            this.dateNaissance = acteur.date_naissance;
+            this.telephone = acteur.telephone ?? '';
+            this.email = acteur.email ?? '';
+            this.nomStructure = acteur.nom_structure ?? '';
+            if (acteur.id_type_acteur) {
+                this.idTypeActeur = acteur.id_type_acteur;
+            }
+            this.suggestionsActeurs = [];
+            this.acteurTrouve = true;
+        },
+
+        reinitialiserActeur() {
+            this.idActeurExistant = '';
+            this.nom = '';
+            this.dateNaissance = '';
+            this.telephone = '';
+            this.email = '';
+            this.nomStructure = '';
+            this.acteurTrouve = false;
+            this.suggestionsActeurs = [];
+        },
+
+        get aBesoinNomStructure() {
+            if (!this.idTypeActeur || !this.typesActeursMeta[this.idTypeActeur]) return false;
+            return this.typesActeursMeta[this.idTypeActeur].est_structure;
+        },
 
         get piecesAttendues() {
             return this.piecesParTypeActeur[this.idTypeActeur] ?? [];
         },
 
         ajouterLigne() {
-            this.lignes.push({ id_type_appui: ''});
+            this.lignes.push({ id_type_appui: '', id_appui: '', quantite: '' });
         },
 
         retirerLigne(index) {
@@ -59,7 +134,7 @@
                              :class="step >= {{ $index + 1 }} ? 'bg-[--color-primary]' : 'bg-slate-200'"></div>
                         <span class="mt-1.5 block text-[11px] font-medium"
                               :class="step >= {{ $index + 1 }} ? 'text-[--color-primary]' : 'text-slate-400'">
-                            {{ $index + 1 }}. {{ $libelle }}
+                            {{ $index + 1 }}. {{$libelle }}
                         </span>
                     </li>
                 @endforeach
@@ -83,234 +158,15 @@
               class="bg-white rounded-xl shadow-sm border border-slate-200">
             @csrf
 
-            {{-- ÉTAPE 1 — Profil d'acteur ------------------------------------ --}}
-            <section x-show="step === 1" x-cloak class="p-6 space-y-5">
-                <div>
-                    <h2 class="text-lg font-semibold text-[--color-primary]">1. Profil du demandeur</h2>
-                    <p class="text-sm text-slate-500">Ce choix détermine les pièces justificatives à fournir.</p>
-                </div>
+            <input type="hidden" name="id_acteur" :value="idActeurExistant">
 
-                <div class="grid gap-3 sm:grid-cols-2">
-                    @foreach ($typesActeurs as $typeActeur)
-                        <label class="flex items-start gap-3 rounded-lg border p-4 cursor-pointer transition-colors"
-                               :class="idTypeActeur === '{{ $typeActeur->id_type_acteur }}'
-                                   ? 'border-[--color-primary] bg-emerald-50'
-                                   : 'border-slate-200 hover:border-slate-300'">
-                            <input type="radio" name="id_type_acteur" value="{{ $typeActeur->id_type_acteur }}"
-                                   x-model="idTypeActeur" class="mt-1 text-[--color-primary] focus:ring-[--color-primary]">
-                            <span>
-                                <span class="block text-sm font-medium text-slate-800">{{ $typeActeur->lib_type_acteur }}</span>
-                                <span class="block text-xs text-slate-500">
-                                    {{ $typeActeur->typesPieces->count() }} pièce(s) à fournir
-                                </span>
-                            </span>
-                        </label>
-                    @endforeach
-                </div>
-                <x-input-error :messages="$errors->get('id_type_acteur')" class="mt-1" />
-                
-                <div>
-                    <h3 class="text-base font-semibold text-[--color-primary]">Pièces justificatives</h3>
-                    <p class="text-sm text-slate-500" x-show="!idTypeActeur" x-cloak>
-                        Sélectionnez d'abord un profil à l'étape 1.
-                    </p>
-                    <p class="text-sm text-slate-500" x-show="idTypeActeur && piecesAttendues.length === 0" x-cloak>
-                        Aucune pièce n'est exigée pour ce profil.
-                    </p>
+            {{-- Inclusion des composants de chaque étape --}}
+            <x-demandes.demande-etape-profil :typesActeurs="$typesActeurs" />
+            <x-demandes.demande-etape-demandeur />
+            <x-demandes.demande-etape-infos :localites="$localites" :campagnes="$campagnes" :typesSystemesProductions="$typesSystemesProductions" />
+            <x-demandes.demande-etape-appuis :typesAppuis="$typesAppuis" :appuisDisponibles="$appuisDisponibles" />
 
-                    <div class="mt-3 space-y-3">
-                        <template x-for="piece in piecesAttendues" :key="piece.id">
-                            <div>
-                                <label class="block text-sm font-medium text-slate-700">
-                                    <span x-text="piece.libelle"></span>
-                                    <span class="text-red-600" x-show="piece.obligatoire">*</span>
-                                </label>
-                                <input type="file" accept=".pdf,.jpg,.jpeg,.png"
-                                       :name="`pieces[${piece.id}]`" :required="piece.obligatoire"
-                                       class="mt-1 block w-full text-sm text-slate-600 file:mr-3 file:rounded-md file:border-0 file:bg-[--color-primary] file:px-3 file:py-2 file:text-sm file:text-white hover:file:opacity-90">
-                            </div>
-                        </template>
-                    </div>
-                    <x-input-error :messages="$errors->get('pieces')" class="mt-1" />
-                </div>
-            </section>
-
-            {{-- ÉTAPE 2 — Demandeur ------------------------------------------ --}}
-            <section x-show="step === 2" x-cloak class="p-6 space-y-5">
-                <div>
-                    <h2 class="text-lg font-semibold text-[--color-primary]">2. Informations du demandeur</h2>
-                    <p class="text-sm text-slate-500">Le téléphone identifie le demandeur d'une demande à l'autre.</p>
-                </div>
-
-                <div class="grid gap-4 sm:grid-cols-2">
-                    <div>
-                        <x-input-label for="nom" value="Nom et prénoms" />
-                        <x-text-input id="nom" name="nom" type="text" class="mt-1 block w-full"
-                                      :value="old('nom')" required />
-                        <x-input-error :messages="$errors->get('nom')" class="mt-1" />
-                    </div>
-
-                    <div>
-                        <x-input-label for="telephone" value="Téléphone" />
-                        <x-text-input id="telephone" name="telephone" type="tel" class="mt-1 block w-full"
-                                      :value="old('telephone')" required />
-                        <x-input-error :messages="$errors->get('telephone')" class="mt-1" />
-                    </div>
-
-                    <div class="sm:col-span-2">
-                        <x-input-label for="email" value="Adresse e-mail (facultative)" />
-                        <x-text-input id="email" name="email" type="email" class="mt-1 block w-full"
-                                      :value="old('email')" />
-                        <x-input-error :messages="$errors->get('email')" class="mt-1" />
-                    </div>
-                </div>
-            </section>
-
-
-
-
-
-
-
-
-
-            
-
-            {{-- ÉTAPE 3 — Demande -------------------------------------------- --}}
-            <section x-show="step === 3" x-cloak class="p-6 space-y-5">
-                <div>
-                    <h2 class="text-lg font-semibold text-[--color-primary]">3. Informations sur la demande</h2>
-                    <p class="text-sm text-slate-500">Localité, superficies exploitées et date de mise en place.</p>
-                </div>
-
-                <div class="grid gap-4 sm:grid-cols-2">
-                    <div>
-                        <x-input-label for="id_localite" value="Localité" />
-                        <select id="id_localite" name="id_localite" required
-                                class="mt-1 block w-full border-gray-300 focus:border-[--color-primary] focus:ring-[--color-primary] rounded-md shadow-sm">
-                            <option value="">— Sélectionner —</option>
-                            @foreach ($localites as $localite)
-                                <option value="{{ $localite->id_localite }}" @selected(old('id_localite') == $localite->id_localite)>
-                                    {{ $localite->lib_localite }} ({{ $localite->departement?->lib_departement }})
-                                </option>
-                            @endforeach
-                        </select>
-                        <x-input-error :messages="$errors->get('id_localite')" class="mt-1" />
-                    </div>
-
-                    <div>
-                        <x-input-label for="id_campagne" value="Campagne" />
-                        <select id="id_campagne" name="id_campagne" required
-                                class="mt-1 block w-full border-gray-300 focus:border-[--color-primary] focus:ring-[--color-primary] rounded-md shadow-sm">
-                            <option value="">— Sélectionner —</option>
-                            @foreach ($campagnes as $campagne)
-                                <option value="{{ $campagne->id_campagne }}" @selected(old('id_campagne') == $campagne->id_campagne)>
-                                    {{ $campagne->lib_campagne }} : ({{ $campagne->date_debut_campagne->format('m-Y') }} - {{ $campagne->date_fin_campagne->format('m-Y') }})
-                                </option>
-                            @endforeach
-                        </select>
-                        <x-input-error :messages="$errors->get('id_campagne')" class="mt-1" />
-                    </div>
-
-                    <div>
-                        <x-input-label for="periode_debut_mise_en_place" value="Période début de mise en place" />
-                        <x-text-input id="periode_debut_mise_en_place" name="periode_debut_mise_en_place" type="date"
-                                      class="mt-1 block w-full"
-                                      :value="old('periode_debut_mise_en_place')"
-                                      min="{{ now()->toDateString() }}" required />
-                        <x-input-error :messages="$errors->get('periode_debut_mise_en_place')" class="mt-1" />
-                    </div>
-
-                    <div>
-                        <x-input-label for="periode_fin_mise_en_place" value="Période fin de mise en place" />
-                        <x-text-input id="periode_fin_mise_en_place" name="periode_fin_mise_en_place" type="date"
-                                      class="mt-1 block w-full"
-                                      :value="old('periode_fin_mise_en_place')"
-                                      min="{{ now()->toDateString() }}" required />
-                        <x-input-error :messages="$errors->get('periode_fin_mise_en_place')" class="mt-1" />
-                    </div>
-                    
-                </div>
-
-                <fieldset class="rounded-lg border border-slate-200 p-4">
-                    <legend class="px-2 text-sm font-medium text-slate-700">Superficie par système de production (ha)</legend>
-                    <div class="grid gap-4 sm:grid-cols-3">
-                        @foreach ($typesSystemesProductions as $type)
-                            <div>
-                                <x-input-label :for="'superficie-'.$type->id_type_systeme_production"
-                                               :value="$type->lib_type_systeme_production" />
-                                <x-text-input :id="'superficie-'.$type->id_type_systeme_production"
-                                              :name="'superficies['.$type->id_type_systeme_production.']'"
-                                              type="number" step="0.01" min="0" placeholder="0"
-                                              class="mt-1 block w-full"
-                                              :value="old('superficies.'.$type->id_type_systeme_production)" />
-                            </div>
-                        @endforeach
-                    </div>
-                    <x-input-error :messages="$errors->get('superficies')" class="mt-2" />
-                </fieldset>
-            </section>
-
-
-
-
-
-
-
-
-
-            {{-- ÉTAPE 4 — Appuis & pièces ------------------------------------ --}}
-            <section x-show="step === 4" x-cloak class="p-6 space-y-6">
-                <div>
-                    <h2 class="text-lg font-semibold text-[--color-primary]">4. Types d'appuis sollicités</h2>
-                    <p class="text-sm text-slate-500">Choisissez les types d'appuis et la quantité souhaitée. (La quantitée est facultative) </p>
-                </div>
-
-                <div class="space-y-3">
-                    <template x-for="(ligne, index) in lignes" :key="index">
-                        <div class="grid gap-3 sm:grid-cols-12 items-end rounded-lg border border-slate-200 p-3">
-                            <div class="sm:col-span-7">
-                                <label class="block text-sm text-slate-700" x-text="'Appui n°' + (index + 1)"></label>
-                                
-                                {{-- Select du type d'appui et affichage des anciennes lignes --}}
-                                <select :name="`lignes[${index}][id_type_appui]`" x-model="ligne.id_type_appui" required
-                                        class="mt-1 block w-full border-gray-300 focus:border-[--color-primary] focus:ring-[--color-primary] rounded-md shadow-sm">
-                                    <option value="">Sélectionner un type d'appui</option>
-
-                                    {{-- Affichage des types d'appuis par service --}}
-                                    @foreach ($typesAppuis->groupBy(fn ($typeAppui) => $typeAppui?->service->lib_service ?? 'Autres') as $serviceTypeAppui => $groupe)
-                                        <optgroup label="{{ $serviceTypeAppui }}">
-                                            @foreach ($groupe as $typeAppui)
-                                                <option value="{{ $typeAppui->id_type_appui }}">{{ $typeAppui->lib_type_appui }}</option>
-                                            @endforeach
-                                        </optgroup>
-                                    @endforeach
-                                </select>
-                            </div>
-
-                            <div class="sm:col-span-5">
-                                <button type="button" @click="retirerLigne(index)"
-                                        :disabled="lignes.length === 1"
-                                        class="w-full rounded-md border border-red-200 px-3 py-2 text-sm text-red-700 hover:bg-red-50 disabled:opacity-40 disabled:cursor-not-allowed">
-                                    Retirer
-                                </button>
-                            </div>
-                        </div>
-                    </template>
-                </div>
-
-                <button type="button" @click="ajouterLigne()"
-                        class="inline-flex items-center gap-1.5 rounded-md border border-[--color-primary] px-3 py-2 text-sm font-medium text-[--color-primary] hover:bg-emerald-50">
-                    <span class="material-symbols-outlined text-base">add</span> Ajouter un appui
-                </button>
-                <x-input-error :messages="$errors->get('lignes')" class="mt-1" />
-
-                <hr class="border-slate-200">
-
-                
-            </section>
-
-            {{-- Navigation --------------------------------------------------- --}}
+            {{-- Navigation --}}
             <div class="flex items-center justify-between border-t border-slate-200 px-6 py-4">
                 <button type="button" @click="precedent()" x-show="step > 1" x-cloak
                         class="rounded-md border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">

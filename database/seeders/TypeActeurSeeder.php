@@ -35,19 +35,12 @@ class TypeActeurSeeder extends Seeder
 
         TypeActeur::create([
             'id_type_acteur' => 4,
-            'code_type_acteur' => 'SCO',
-
-            'lib_type_acteur' => 'Société Coopérative',
-        ]);
-
-        TypeActeur::create([
-            'id_type_acteur' => 5,
             'code_type_acteur' => 'EAG',
             'lib_type_acteur' => 'Entreprise agricole',
         ]);
 
         TypeActeur::create([
-            'id_type_acteur' => 6,
+            'id_type_acteur' => 5,
             'code_type_acteur' => 'ONG',
             'lib_type_acteur' => 'Organisation Non Gouvernemental',
         ]);

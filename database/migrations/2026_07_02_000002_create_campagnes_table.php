@@ -14,8 +14,8 @@ return new class extends Migration
         Schema::create('campagnes', function (Blueprint $table) {
             $table->id('id_campagne');
             $table->string('lib_campagne',30);
-            $table->date('date_debut_campagne');
-            $table->date('date_fin_campagne');
+            $table->date('mois_debut_campagne');
+            $table->date('mois_fin_campagne');
 
             $table->timestamps();
         });

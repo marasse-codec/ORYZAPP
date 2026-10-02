@@ -1,27 +1,15 @@
 @startuml
 skinparam nodesep 100
 
-title Symbolique UML - Diagramme de Cas d'Utilisation
+class "ClasseA" as A {
 
-' 1. Acteur
-actor "Acteur / Rôle" as ActeurExemple
+}
 
-' 2. Cas d'utilisation
-usecase "Formuler une demande" as UCExemple
+class "ClasseB" as B {
+    
+}
 
-' 3. Association
-actor "Agent" as ActeurAssoc
-usecase "Consulter un dossier" as UCAssoc
-ActeurAssoc -- UCAssoc
+A "*" - "*" B
 
-' 4. Inclusion (<<include>>)
-usecase "Valider l'enlèvement" as UCMain
-usecase "S'authentifier" as UCInclude
-UCMain .> UCInclude : <<include>>
-
-' 5. Généralisation / Spécialisation
-actor "Utilisateur" as ActeurParent
-actor "Administrateur" as ActeurEnfant
-ActeurEnfant --|> ActeurParent
 
 @enduml

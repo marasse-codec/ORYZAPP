@@ -15,11 +15,10 @@ class TypeAppuiSeeder extends Seeder
         $types = [
             // [id, libellé, service, intrant, est_stockable]
             [1, 'Semences', 1, true, true],
-            [2, 'Intrants chimiques', 1, true, true],
-            [3, 'Produits phytosanitaires', 1, true, true],
+            [2, 'Urée', 1, true, true],
+            [3, 'Charrue', 2, false, true],
             [4, 'Tracteur', 2, false, true],
-            [5, 'Charrue', 2, false, true],
-            [6, 'Petit outillage', 2, false, true],
+            [5, 'Moissoneuse', 2, false, true],
         ];
 
         foreach ($types as [$id, $libelle, $idService, $estIntrant, $estStockable]) {

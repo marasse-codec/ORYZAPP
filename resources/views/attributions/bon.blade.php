@@ -23,8 +23,12 @@
                 DEM-{{ $attribution->demande?->date_demande?->format('Y') }}-{{ str_pad($attribution->id_demande, 3, '0', STR_PAD_LEFT) }}
             </p>
             <p class="text-slate-600">
-                {{ $attribution->demande?->localite?->lib_localite }}
-                ({{ $attribution->demande?->localite?->departement?->lib_departement }})
+                {{-- Affiche toutes les localités séparées par une virgule --}}
+                {{ $attribution->demande?->localites->pluck('lib_localite')->implode(', ') ?: '—' }}
+
+                @if ($attribution->demande?->localites->isNotEmpty())
+                    ({{ $attribution->demande->localites->pluck('departement.lib_departement')->unique()->filter()->implode(', ') }})
+                @endif
             </p>
             <p class="text-slate-600">
                 Séance du {{ $attribution->session?->date_debut_session?->format('d/m/Y') }}
@@ -97,4 +101,7 @@
         <p class="border-t border-slate-400 pt-1">Le bénéficiaire</p>
         <p class="border-t border-slate-400 pt-1">Pour l'ADERIZ</p>
     </section>
+
+</section>
+
 @endsection

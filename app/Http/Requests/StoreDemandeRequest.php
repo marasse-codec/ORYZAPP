@@ -8,31 +8,44 @@ class StoreDemandeRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        // Ajustez si l'accès dépend du rôle (ex: seul un délégué peut saisir).
         return true;
     }
 
     public function rules(): array
     {
         return [
-            'id_type_acteur' => ['required', 'exists:types_acteurs,id_type_acteur'],
-            'nom' => ['required', 'string', 'max:255'],
-            'telephone' => ['required', 'string', 'max:20'],
-            'email' => ['nullable', 'email', 'max:255'],
-            'id_localite' => ['required', 'exists:localites,id_localite'],
-            'id_campagne' => ['required', 'exists:campagnes,id_campagne'],
+            // Étape 1 : Profil
+            'id_type_acteur'              => ['required', 'exists:types_acteurs,id_type_acteur'],
+            
+            // Étape 2 : Demandeur
+            'nom_structure'               => ['nullable', 'string', 'max:150'],
+            'nom'                         => ['required', 'string', 'max:255'],
+            'telephone'                   => ['required', 'string', 'max:20'],
+            'email'                       => ['nullable', 'email', 'max:255'],
+
+            // Étape 3 : Demande & Localités (Tableau d'IDs)
+            'localites'                   => ['required', 'array', 'min:1'],
+            'localites.*'                 => ['required', 'integer', 'exists:localites,id_localite'],
+            'id_campagne'                 => ['required', 'exists:campagnes,id_campagne'],
 
             'periode_debut_mise_en_place' => ['required', 'date'],
-            'periode_fin_mise_en_place' => ['required', 'date'],
+            'periode_fin_mise_en_place'   => ['required', 'date', 'after_or_equal:periode_debut_mise_en_place'],
 
-            'superficies' => ['nullable', 'array'],
-            'superficies.*' => ['nullable', 'numeric', 'min:0'],
+            // Superficies par système de production
+            'superficies'                 => ['nullable', 'array'],
+            'superficies.*'               => ['nullable', 'numeric', 'min:0'],
 
-            'lignes' => ['required', 'array', 'min:1'],
-            'lignes.*.id_type_appui' => ['required', 'exists:types_appuis,id_type_appui'],
+            // Étape 4 : Appuis sollicités
+            'lignes'                      => ['required', 'array', 'min:1'],
+            'lignes.*.id_type_appui'      => ['required', 'exists:types_appuis,id_type_appui'],
+            'lignes.*.id_appui'           => ['nullable','exists:appuis,id_appui'],
+            'lignes.*.quantite_demandee'  => ['nullable'],
 
-            'pieces' => ['nullable', 'array'],
-            'pieces.*' => ['nullable', 'file', 'max:10240'],
+            // Pièces justificatives
+            'pieces'                      => ['nullable', 'array'],
+            'pieces.*'                    => ['nullable', 'file', 'max:10240'],
+
+            'date_naissance'              => ['required']
         ];
     }
 
@@ -42,23 +55,31 @@ class StoreDemandeRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'id_type_acteur.required' => "Le type d'acteur est obligatoire.",
-            'id_type_acteur.exists' => "Le type d'acteur sélectionné est invalide.",
-            
-            'nom.required' => 'Le nom est obligatoire.',
-            'id_campagne' => 'La campagne est obligatoire',
-            'telephone.required' => 'Le téléphone est obligatoire.',
+            'id_type_acteur.required'              => "Le type d'acteur est obligatoire.",
+            'id_type_acteur.exists'                => "Le type d'acteur sélectionné est invalide.",
 
-            'id_localite.required' => 'La localité est obligatoire.',
-            'id_localite.exists' => 'La localité sélectionnée est invalide.',
+            'nom_structure.max'                    => 'Le nom de la structure ne peut pas dépasser 150 caractères.',
+            'nom.required'                         => 'Le nom du représentant est obligatoire.',
+            'telephone.required'                   => 'Le téléphone est obligatoire.',
+            'email.email'                          => "L'adresse e-mail est invalide.",
 
-            'periode_debut_mise_en_place.required' => 'La date de début de la période de mise en place est obligatoire.',
-            'periode_fin_mise_en_place.date' => 'La date de début de la période de mise en place est invalide.',
+            'localites.required'                   => 'Au moins une localité doit être sélectionnée.',
+            'localites.min'                        => 'Veuillez sélectionner au moins une localité.',
+            'localites.*.exists'                   => 'Une des localités sélectionnées est invalide.',
 
-            'lignes.required' => 'Au moins une ligne de demande est requise.',
+            'id_campagne.required'                 => 'La campagne est obligatoire.',
+            'id_campagne.exists'                   => 'La campagne sélectionnée est invalide.',
 
-            'lignes.*.id_type_appui.required' => "Le type d'appui est obligatoire pour chaque ligne.",
-            'lignes.*.id_type_appui.exists' => "Le type d'appui sélectionné pour une ligne est invalide.",
+            'periode_debut_mise_en_place.required' => 'La date de début de mise en place est obligatoire.',
+            'periode_debut_mise_en_place.date'     => 'La date de début de mise en place est invalide.',
+            'periode_fin_mise_en_place.required'   => 'La date de fin de mise en place est obligatoire.',
+            'periode_fin_mise_en_place.date'       => 'La date de fin de mise en place est invalide.',
+            'periode_fin_mise_en_place.after_or_equal' => 'La date de fin doit être égale ou postérieure à la date de début.',
+
+            'lignes.required'                      => 'Au moins un type d\'appui doit être sollicité.',
+            'lignes.min'                           => 'Au moins un type d\'appui doit être sollicité.',
+            'lignes.*.id_type_appui.required'      => "Le type d'appui est obligatoire pour chaque ligne.",
+            'lignes.*.id_type_appui.exists'        => "Le type d'appui sélectionné est invalide.",
         ];
     }
 }

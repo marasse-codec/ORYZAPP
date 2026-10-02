@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -17,8 +18,6 @@ return new class extends Migration
             $table->integer('quantite');
 
             $table->dateTime('date_mouvement');
-
-            $table->string('motif')->nullable();
 
             // Relations
             $table->foreignId('id_type_mouvement_stock')
@@ -38,18 +37,26 @@ return new class extends Migration
                 ->constrained('agents', 'id_agent')
                 ->restrictOnDelete();
 
+            // Modification : restrictOnDelete() au lieu de nullOnDelete()
             $table->foreignId('id_approvisionnement')
                 ->nullable()
                 ->constrained('approvisionnements', 'id_approvisionnement')
-                ->nullOnDelete();
+                ->restrictOnDelete();
 
-            $table->foreignId('id_ligne_attribution')
+            // Modification : restrictOnDelete() au lieu de nullOnDelete()
+            $table->foreignId('id_attribution')
                 ->nullable()
-                ->constrained('lignes_attributions', 'id_ligne_attribution')
-                ->nullOnDelete();
+                ->constrained('attributions', 'id_attribution')
+                ->restrictOnDelete();
 
             $table->timestamps();
         });
+        
+        // Contrainte d'exclusivité (XOR)
+        DB::statement('ALTER TABLE mouvements_stocks ADD CONSTRAINT chk_origine_unique CHECK (
+            (id_approvisionnement IS NOT NULL AND id_attribution IS NULL) OR
+            (id_approvisionnement IS NULL AND id_attribution IS NOT NULL)
+        )');
     }
 
     /**
@@ -57,6 +64,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('mouvements_stock');
+        Schema::dropIfExists('mouvements_stocks');
     }
 };

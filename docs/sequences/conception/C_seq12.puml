@@ -26,18 +26,14 @@ skinparam sequence {
 
 autonumber
 
-actor "agentService : Agent" as AgtService
+actor "Agent de commission : Agent" as AgtCommission
+
 participant "demande : Demande" as Demande
 participant "attribution : Attribution" as Attrib
-actor "validateur : Agent" as Val
-participant "session : SessionCommission" as Session
 
-note over AgtService
-  Pré-condition : agentService est authentifié et détient
-  le rôle "Agent de service". Il a déjà consulté la liste des
-  demandes soumises relevant de son service et sélectionné
-  une "demande" précise (recherche/affichage hors scope
-  pur métier, cf. diagrammes précédents).
+note over AgtCommission
+  Pré-condition : agent de commission est authentifié et détient
+  la liste des demandes à traiter.
 end note
 
 ' ============================================================
@@ -46,79 +42,19 @@ end note
 alt Créer une attribution pour la demande
 
     create participant "attribution : Attribution" as Attrib
-    AgtService -> Attrib : creer(demande, dateCreation, observation)
+    AgtCommission -> Attrib : creer(demande, dateCreation, observation)
 
     loop Pour chaque ligne d'attribution proposée
         create participant "ligneAttrib : LigneAttribution" as LigneAttrib
         Attrib -> LigneAttrib : creer(ligneDemande, quantiteAttribuee, dateRestitutionPrevue)
     end
 
-    note over Attrib
-      Attribution créée à l'état "brouillon" :
-      pas encore soumise à la commission.
-    end note
-
-    ' --------------------------------------------------------
-    ' 2. Soumission de l'attribution par l'agent de service
-    ' --------------------------------------------------------
-    AgtService -> Attrib : soumettre()
-    activate Attrib
-    Attrib --> AgtService
-    deactivate Attrib
-
-    note over Attrib
-      Après soumission, l'attribution
-      n'est plus modifiable par le service.
-    end note
-
 else Rejeter la demande
 
-    AgtService -> Demande : rejeter(motifRejet, dateTraitement)
+    AgtCommission -> Demande : rejeter(motifRejet, dateTraitement)
     activate Demande
-    create participant "historique : HistoriqueDemande" as HistDemande
-    Demande -> HistDemande : creer(dateChangement, motifRejet)
-    Demande --> AgtService
+    Demande --> AgtCommission
     deactivate Demande
 
 end
-
-' ============================================================
-' 3. Arbitrage par la commission (Validateur)
-' Pré-condition : une session de commission est déjà ouverte
-' (création hors scope de ce diagramme) et le Validateur a
-' consulté les attributions soumises relevant de son périmètre.
-' ============================================================
-alt Valider l'attribution
-
-    Val -> Session : arbitrer(attribution)
-    activate Session
-    Session -> Attrib : valider(dateValidation)
-    activate Attrib
-    create participant "histAttrib : HistoriqueAttribution" as HistAttrib
-    Attrib -> HistAttrib : creer(dateChangement, "Validée")
-    Attrib --> Session
-    deactivate Attrib
-    Session --> Val
-    deactivate Session
-
-    note over Attrib
-      Attribution validée, en attente
-      de publication par la commission.
-    end note
-
-else Annuler l'attribution
-
-    Val -> Session : arbitrer(attribution)
-    activate Session
-    Session -> Attrib : annuler(dateAnnulation, motifAnnulation)
-    activate Attrib
-    create participant "histAttrib2 : HistoriqueAttribution" as HistAttrib2
-    Attrib -> HistAttrib2 : creer(dateChangement, "Annulée")
-    Attrib --> Session
-    deactivate Attrib
-    Session --> Val
-    deactivate Session
-
-end
-
 @enduml

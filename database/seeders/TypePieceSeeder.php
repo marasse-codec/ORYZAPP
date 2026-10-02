@@ -11,12 +11,12 @@ class TypePieceSeeder extends Seeder
     public function run(): void
     {
         $types = [
-            1 => 'Scan de la demande',
-            2 => 'Récépissé de la coopérative',
-            3 => 'Agrément',
-            4 => 'Liste des membres',
-            5 => 'Demande-projet adressée à l\'ADERIZ',
-            6 => 'Documents de constitution',
+            1 => 'Récépissé de la coopérative',
+            2 => 'Agrément',
+            3 => 'Liste des membres',
+            4 => 'Demande-projet adressée à l\'ADERIZ',
+            5 => 'Documents de constitution',
+            6 => 'Plan de campagne',
         ];
 
         foreach ($types as $id => $libelle) {
@@ -26,12 +26,11 @@ class TypePieceSeeder extends Seeder
         // Ce que chaque profil doit fournir. Le scan de la demande est exigé
         // de tous ; le reste dépend de la forme juridique.
         $exigences = [
-            1 => [1 => true],                                    // Producteur individuel
-            2 => [1 => true, 4 => true],                         // Groupement informel
-            3 => [1 => true, 2 => true, 4 => true, 3 => false],  // Coopérative
-            4 => [1 => true, 2 => true, 4 => true, 3 => false],  // Société coopérative
-            5 => [1 => true, 5 => true, 6 => true],              // Entreprise agricole
-            6 => [1 => true, 5 => true, 6 => true],              // ONG
+            1 => [6 => false],                                    // Producteur individuel
+            2 => [3 => true, 6 => false],                         // Groupement informel
+            3 => [1 => true, 3 => true, 2 => false, 6 => false],  // Coopérative
+            4 => [4 => true, 5 => true, 6 => false],              // Entreprise agricole
+            5 => [4 => true, 5 => true, 6 => false],              // ONG
         ];
 
         foreach ($exigences as $idTypeActeur => $pieces) {

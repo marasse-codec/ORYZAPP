@@ -44,7 +44,8 @@ class UserSeed extends Seeder
         // Le compte « acteur » est aussi un demandeur : il consulte ses
         // propres dossiers via Demande::scopePourUtilisateur.
         Acteur::create([
-            'nom' => 'Coopérative Rizicole du Centre',
+            'nom' => 'acteur',
+            'date_naissance' => '2003-06-25',
             'telephone' => '0758221948',
             'email' => 'acteur@example.com',
         ]);

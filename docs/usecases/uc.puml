@@ -66,10 +66,9 @@ actor "Visiteur" as Visiteur #$COLOR_VISITEUR
 actor "Tous les agents" as TousAgents #$COLOR_AGENT
 actor "Délégué de pôle" as Delegue #$COLOR_DELEGUE
 actor "Agent de service" as AgentService #$COLOR_SERV
-actor "Validateur" as Validateur #$COLOR_VALID
+actor "Agent de commission" as AgentCommission #$COLOR_VALID
 actor "Agent de centre" as AgentCentre #$COLOR_CENTRE
 actor "Administrateur" as Admin #$COLOR_ADMIN
-rectangle "<color:Black>Horloge</color>" as Horloge
 
 ' ============================================================
 ' PLATEFORME CENTRALE
@@ -83,11 +82,10 @@ rectangle "<b>Plateforme de gestion des appuis</b>" as systeme {
         usecase "Consulter les conditions de dépôt" as UC_ConditionsDepot
 
         usecase "Enregistrer et Soumettre une demande d'appui" as UC_Demande
-        usecase "Suivre ses demandes déposées" as UC_SuiviDemande
+        usecase "Suivre les demandes déposées" as UC_SuiviDemande
         usecase "Consulter les décisions publiées" as UC_DecisionPublique
     
         usecase "Enregistrer et soumettre une attribution" as UC_AttrService
-        usecase "Rejeter une demande" as UC_RejeterDemande
 
         usecase "Enregistrer un approvisionnement d'appuis" as UC_Appro
         usecase "Enregistrer l'enlèvement d'appuis" as UC_Enlevement
@@ -101,12 +99,14 @@ rectangle "<b>Plateforme de gestion des appuis</b>" as systeme {
     rectangle " " as right #transparent;line:transparent {
 
     usecase "Enregistrer une session de commission" as UC_SessionComm
-    usecase "Valider ou rejeter une attribution" as UC_ValiderAttr
+    usecase "Enregistrer une attribution" as UC_ValiderAttr
     usecase "Imprimer formulaire d’arbitrage" as UC_ImpForm
     usecase "Imprimer l'état des stocks" as UC_ImpStocks
     usecase "Simuler des attributions" as UC_SimulAttr
-    usecase "Enregistrer le résultat de délibération" as UC_ResDelib
-    usecase "Publier les décisions de la commission" as UC_PublierComm
+
+    ' usecase "Enregistrer le résultat de délibération" as UC_ResDelib
+    
+    usecase "Publier les résultats de la commission" as UC_PublierComm
     usecase "Imprimer les listes de résultats" as UC_ImpRes
     usecase "Imprimer un bon d'attribution" as UC_ImpBon
 
@@ -130,18 +130,21 @@ Delegue --> UC_Demande #$COLOR_DELEGUE
 Delegue --> UC_SuiviDemande #$COLOR_DELEGUE
 Delegue --> UC_DecisionPublique #$COLOR_DELEGUE
 
-AgentService --> UC_AttrService #$COLOR_SERV
-AgentService --> UC_RejeterDemande #$COLOR_SERV
+AgentService -u-> UC_ImpStocks #$COLOR_SERV
+AgentService -u-> UC_ImpForm #$COLOR_SERV
+AgentService -u-> UC_ImpBon #$COLOR_SERV
 
-Validateur -u-> UC_SessionComm #$COLOR_VALID
-Validateur -u-> UC_ValiderAttr #$COLOR_VALID
-Validateur -u-> UC_ImpForm #$COLOR_VALID
-Validateur -u-> UC_ImpStocks #$COLOR_VALID
-Validateur -u-> UC_SimulAttr #$COLOR_VALID
-Validateur -u-> UC_ResDelib #$COLOR_VALID
-Validateur -u-> UC_PublierComm #$COLOR_VALID
-Validateur -u-> UC_ImpRes #$COLOR_VALID
-Validateur -u-> UC_ImpBon #$COLOR_VALID
+AgentCommission -u-> UC_SessionComm #$COLOR_VALID
+AgentCommission -u-> UC_ValiderAttr #$COLOR_VALID
+AgentCommission -u-> UC_ImpForm #$COLOR_VALID
+AgentCommission -u-> UC_ImpStocks #$COLOR_VALID
+AgentCommission -u-> UC_SimulAttr #$COLOR_VALID
+' AgentCommission -u-> UC_ResDelib #$COLOR_VALID
+AgentCommission -u-> UC_PublierComm #$COLOR_VALID
+AgentCommission -u-> UC_ImpRes #$COLOR_VALID
+AgentCommission -u-> UC_ImpBon #$COLOR_VALID
+
+AgentCommission --> UC_AttrService #$COLOR_VALID
 
 AgentCentre --> UC_Appro #$COLOR_CENTRE
 AgentCentre --> UC_Enlevement #$COLOR_CENTRE
@@ -152,5 +155,3 @@ AgentCentre --> UC_Reintegration #$COLOR_CENTRE
 Admin -u-> UC_Journal #$COLOR_ADMIN
 Admin -u-> UC_GererSys #$COLOR_ADMIN
 Admin -u-> UC_Synthese #$COLOR_ADMIN
-
-Horloge -u-> UC_Alertes #$COLOR_HORLOGE

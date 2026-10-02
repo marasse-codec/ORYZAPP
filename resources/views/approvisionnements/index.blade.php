@@ -52,60 +52,50 @@
                 @forelse ($approvisionnements as $appro)
 
                     @php
-                        $mouvement = $appro->mouvement;
-                        $appui = $mouvement?->appui;
-
-                        $unite = $appui?->uniteAppui?->lib_unite_appui
-                            ?? 'unité';
+                        $mouvements = $appro->mouvements;
                     @endphp
 
-                    <tr class="hover:bg-slate-50">
+                    @foreach ($mouvements as $mouvement)
 
-                        {{-- Date --}}
-                        <td class="px-4 py-3 text-slate-600">
-                            {{ $appro->date_approvisionnement?->format('d/m/Y') }}
-                        </td>
+                    @php 
+                        $appui = $mouvement?->appui;
+                    @endphp
+                        
+                        <tr class="hover:bg-slate-50">
 
-                        {{-- Appui --}}
-                        <td class="px-4 py-3 font-medium text-slate-800">
+                            {{-- Date --}}
+                            <td class="px-4 py-3 text-slate-600">
+                                {{ $appro->date_approvisionnement?->format('d/m/Y') }}
+                            </td>
 
-                            @if ($appui)
-                                {{ $appui->libelle }}
+                            {{-- Appui --}}
+                            <td class="px-4 py-3 font-medium text-slate-800">
 
-                                @if ($appui->typeAppui)
-                                    <span class="block text-xs text-slate-500">
-                                        {{ $appui->typeAppui->libelle }}
-                                    </span>
+                                @if ($appui)
+                                    {{ $appui->libelle }}
                                 @endif
-                            @else
-                                <span class="text-slate-400">
-                                    Appui non associé
-                                </span>
-                            @endif
 
-                        </td>
+                            </td>
 
-                        {{-- Quantité --}}
-                        <td class="px-4 py-3 text-right font-semibold text-emerald-700">
-                            @if ($mouvement)
-                                +{{ $mouvement->quantite }}
-                                {{ $unite }}
-                            @else
-                                —
-                            @endif
-                        </td>
+                            {{-- Quantité --}}
+                            <td class="px-4 py-3 text-right font-semibold text-emerald-700">
+                                @if ($mouvement)
+                                    +{{ $mouvement->total_quantite }}
+                                @endif
+                            </td>
 
-                        {{-- Référence commande --}}
-                        <td class="px-4 py-3 text-slate-600">
-                            {{ $appro->reference_commande ?? '—' }}
-                        </td>
+                            {{-- Référence commande --}}
+                            <td class="px-4 py-3 text-slate-600">
+                                {{ $appro->reference_commande ?? '—' }}
+                            </td>
 
-                        {{-- Origine --}}
-                        <td class="px-4 py-3 text-slate-600">
-                            {{ $appro->origine ?? '—' }}
-                        </td>
+                            {{-- Origine --}}
+                            <td class="px-4 py-3 text-slate-600">
+                                {{ $appro->origine ?? '—' }}
+                            </td>
 
-                    </tr>
+                        </tr>
+                    @endforeach
 
                 @empty
 

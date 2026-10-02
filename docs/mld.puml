@@ -1,245 +1,288 @@
-@startuml
+@startuml mld_aderiz
+title Modèle Logique de Données (MLD) — Système ADERIZ
 
-hide circle
+skinparam shadowing false
 skinparam linetype ortho
+skinparam defaultFontName "Segoe UI"
+skinparam class {
+    BackgroundColor White
+    BorderColor #1A1A1A
+    ArrowColor #1A1A1A
+}
 
-' --- Sécurité & Accès ---
-entity "users" {
-  *id_user : PK
-  --
-  name
+' Macro pour définir les entités
+!define Table(name,desc) entity "name" as name << (T,#FFAAAA) desc >>
+!define PK(x) <b><color:#D35400><&key> x</color></b>
+!define FK(x) <u><color:#2980B9><&link-intact> x</color></u>
+
+' --- TABLES ---
+Table(agents, "agents") {
+  PK(id_agent)
+  FK(id_service)
+  FK(id_poste)
+  matricule_agent
+  nom
+  prenoms
+  telephone
   email
-  password
+  mot_de_passe
 }
 
-entity "groups" {
-  *id_group : PK
-  --
-  group_name
+Table(agents_roles, "agents_roles") {
+  PK(FK(id_agent))
+  PK(FK(id_role))
 }
 
-entity "roles" {
-  *id_role : PK
-  --
-  role_name
+Table(approvisionnements, "approvisionnements") {
+  PK(id_approvisionnement)
+  FK(id_agent)
+  reference_commande
+  date_approvisionnement
+  origine
 }
 
-entity "permissions" {
-  *id_permission : PK
-  --
-  permission_name
+Table(attributions, "attributions") {
+  PK(id_attribution)
+  FK(id_demande)
+  FK(id_session_commission)
+  FK(id_statut_attribution)
+  FK(id_agent)
+  observation
 }
 
-' Tables Pivot (Indispensables pour le Many-to-Many)
-entity "user_has_roles" {
-  #id_user : FK
-  #id_role : FK
+Table(attributions_types_pieces_bons, "attributions_types_pieces_bons") {
+  PK(FK(id_attribution))
+  PK(FK(id_type_piece_bon))
 }
 
-entity "group_has_roles" {
-  #id_group : FK
-  #id_role : FK
+Table(campagnes, "campagnes") {
+  PK(id_campagne)
+  libelle_campagne
+  date_debut_campagne
+  date_fin_campagne
 }
 
-entity "role_has_permissions" {
-  #id_role : FK
-  #id_permission : FK
+Table(demandes, "demandes") {
+  PK(id_demande)
+  FK(id_demandeur)
+  FK(id_agent)
+  FK(id_campagne)
+  FK(id_type_demande)
+  date_demande
+  date_debut_mise_en_place_souhaitee
+  date_fin_mise_en_place_esperee
+  nom_demandeur
+  mail_demandeur
 }
 
-entity "group_user" {
-  #id_user : FK
-  #id_group : FK
-}
-
-' --- Métier ADERIZ ---
-
-entity "groupes_membres" as gmem {
-    #id_responsable (FK)
-    #id_membre (FK)
-    date_adhesion
-    statut 
-}
-
-entity "categories_acteurs" as catacts {
-    id_catacs (PK)
-    lib_catacts
-}
-
-entity "types_acteurs" as typact {
-    id_type_acteur (PK)
-    lib_type_acteur
-}
-
-entity "acteurs" {
-  *id_acteur (PK)
+Table(demandeurs, "demandeurs") {
+  PK(id_demandeur)
+  FK(id_type_demandeur)
   nom
-  adresse
   telephone
-  id_mandataire (FK)
+  email
 }
 
-entity "producteurs" {
-  *id_acteur : PK
-  --
-  #id_user : FK
-  nom
-  adresse
-  telephone
+Table(departements, "departements") {
+  PK(id_departement)
+  libelle_departement
 }
 
-entity "appuis" {
-  *id_appui (PK)
-  --
-  #id_type_appui : FK
-  libelle: varchar(100)
+Table(equipements, "equipements") {
+  PK(id_equipement)
+  FK(id_reference_appui)
+  matricule_equipement
+  etat
+  en_service
 }
 
-entity "appuis_materiels" {
-  *id_appui_mat : PK
-  --
-  #id_appui
-  dose_ha ?
-  cout_unitaire : decimal(10,2)
-  est_louable: boolean
-  quantite: entier
+Table(journal_actions, "journal_actions") {
+  PK(id_journal_action)
+  FK(id_agent)
+  entite_concernee
+  id_entite
+  action
+  date_action
+  valeur_avant
+  valeur_apres
 }
 
-entity "unites_types_appuis" as untyaps {
-    id_unite_appui (PK)
-    lib_unite_appui
+Table(lignes_attributions, "lignes_attributions") {
+  PK(id_ligne_attribution)
+  FK(id_attribution)
+  FK(id_reference_appui)
+  quantite_attribuee
+  remise
 }
 
-entity "types_appuis" {
-  *id_type_appui (PK)
-  libelle: varchar(100)
-  dose_predefini_ha
+Table(lignes_demandes, "lignes_demandes") {
+  PK(id_ligne_demande)
+  FK(id_demande)
+  FK(id_reference_appui)
+  FK(id_type_appui)
+  quantite_demandee
 }
 
-entity "categories_acteurs_types_appuis" as caactyaps {
-  #id_catacs
-  #id_type_appui
+Table(localites, "localites") {
+  PK(id_localite)
+  FK(id_departement)
+  libelle_localite
 }
 
-entity "types_cultures" as typcul {
-  * id_type_culture (PK)
-  '(BFO,PLA,IRR)
-  --
-  lib_type_culture
-    '(bas-fond, plateau, irriguée)
+Table(mouvements_stocks, "mouvements_stocks") {
+  PK(id_mouvement_stock)
+  FK(id_type_mouvement)
+  FK(id_reference_appui)
+  FK(id_agent)
+  FK(id_equipement)
+  FK(id_approvisionnement)
+  FK(id_attribution)
+  quantite
+  date_mouvement
+  motif
 }
 
-entity "demandes" {
-  *id_demande : PK
-  --
-  #id_acteur : FK
-  #id_commission : FK
-  commentaire_rejet : varchar(1000)
-  date_demande : date
-  statut : string
-  detials : string
+Table(pieces_enlevements, "pieces_enlevements") {
+  PK(id_piece_enlevement)
+  FK(id_attribution)
+  FK(id_type_piece_bon)
+  chemin_fichier
 }
 
-entity "demandes_types_cultures" as detycus {
-  id (PK)
-  #id_demande
-  #id_type_culture
+Table(pieces_justificatives, "pieces_justificatives") {
+  PK(id_piece_justificative)
+  FK(id_demande)
+  FK(id_type_piece)
+  chemin_fichier
 }
 
-entity "statuts_demandes" {
-  *id_statut_demande : PK
-  --
-  lib_statut_demande : varchar(15)
+Table(postes, "postes") {
+  PK(id_poste)
+  libelle_poste
 }
 
-entity "commissions_attributions" {
-  *id_commission : PK
-  --
-  date_ouverture_commission : date
-  date_fermeture_commission : date
-}
-'
-'alter old:ligne_demande
-entity "lignes_demandes" {
-  *id_ligne : PK
-  --
-  #id_demande : FK
-  #id_appui : FK
-  details : text
+Table(references_appuis, "references_appuis") {
+  PK(id_reference_appui)
+  FK(id_service)
+  libelle_reference_appui
+  quantite_en_stock
+  cout_unitaire
 }
 
-'alter
-entity "attributions" {
-  *id_attribution : PK
-  --
-  #id_demande : FK
-  #id_user : FK
-  date_attribution : date
-  date_retrait : date
-}
-'
-entity "lignes_attributions" {
-  *id_ligne_attribution : PK
-  --
-  #id_attribution : FK
-  #id_appui : FK
-  quantite : integer
-  'alter old cout_prestation
-  cout_attribution : decimal(10,2)
-  '
+Table(roles, "roles") {
+  PK(id_role)
+  libelle_role
 }
 
-entity "location_appui" {
-  *id_location_appui : PK
-  --
-  #id_ligne_attribution: FK
-  date_debut_location: date
-  date_fin_location: date
+Table(services, "services") {
+  PK(id_service)
+  libelle_service
 }
 
-entity "retrait" {
-  *id_retrait : PK
-  --
-  #id_attribution : FK
-  date_retrait : date
-  cni : varchar(255)
+Table(sessions_commissions, "sessions_commissions") {
+  PK(id_session_commission)
+  FK(id_type_session_commission)
+  FK(id_agent)
+  resume
+  date_session
+  date_publication
 }
 
+Table(systemes_productions, "systemes_productions") {
+  PK(id_systeme_production)
+  FK(id_demande)
+  FK(id_type_systeme_production)
+  superficie
+}
 
-' Relations Sécurité
-roles ||-u-o{ user_has_roles
-roles ||--o{ group_has_roles
-roles ||--o{ role_has_permissions
-permissions ||--o{ role_has_permissions
-users ||--o{ group_user
-users ||--o{ user_has_roles
-groups ||--o{ group_user
-groups ||--o{ group_has_roles
+Table(types_demandes, "types_demandes") {
+  PK(id_type_demande)
+  libelle_type_demande
+}
 
-' Relations Métier
-' o{ : hasMany
-' || : belongsTo
-' o| : hasOne
-users ||-r-o| acteurs : "représente"
-acteurs ||--o{ demandes : "émet"
-demandes ||-r-|{ lignes_demandes : "contient"
-appuis ||--o{ lignes_demandes : "concerne"
-appuis }o--|| types_appuis : "est de type"
-demandes ||--o| attributions : "reçoit"
-users ||--|| attributions : "envoit"
-appuis ||--o{ lignes_attributions : "intervient"
-attributions ||--o{ lignes_attributions : "contient"
-lignes_attributions ||--o| location_appui : "créer"
-appuis ||--|| appuis_materiels: "correspondre";
-demandes }o--|| statuts_demandes: "prendre"
-demandes }o--|| commisions_attributions: "traiter"
-typact }o--|| acteurs : ""
-gmem }o--|| acteurs : "former"
-catacts ||--|| acteurs : < "appartenir"
-catacts }o--|| caactyaps : "acceder1"
-types_appuis }o--|| caactyaps : "acceder2"
-untyaps ||--o{ types_appuis : "mesurer"
-'new
-typcul ||--o{ detycus : "concerner1"
-demandes ||--o{ detycus : "concerner2"
+Table(types_appuis, "types_appuis") {
+  PK(id_type_appui)
+  FK(id_service)
+  lib_type_appui
+  est_intrant
+}
 
+Table(types_demandes_types_pieces, "types_demandes_types_pieces") {
+  PK(FK(id_type_demande))
+  PK(FK(id_type_piece))
+}
+
+Table(types_mouvements, "types_mouvements") {
+  PK(id_type_mouvement)
+  libelle_type_mouvement
+}
+
+Table(types_pieces, "types_pieces") {
+  PK(id_type_piece)
+  libelle_type_piece
+}
+
+Table(types_pieces_enlevements, "types_pieces_enlevements") {
+  PK(id_type_piece_bon)
+  libelle_type_piece_bon
+}
+
+Table(types_systemes_production, "types_systemes_production") {
+  PK(id_type_systeme_production)
+  libelle_type_systeme_production
+}
+
+' --- RELATIONS ---
+services ||--o{ agents : id_service
+postes ||--o{ agents : id_poste
+agents ||--o{ agents_roles : id_agent
+roles ||--o{ agents_roles : id_role
+
+agents ||--o{ approvisionnements : id_agent
+agents ||--o{ journal_actions : id_agent
+agents ||--o{ mouvements_stocks : id_agent
+agents ||--o{ sessions_commissions : id_agent
+agents ||--o{ demandes : id_agent
+agents ||--o{ attributions : id_agent
+
+demandes ||--o{ attributions : id_demande
+sessions_commissions ||--o{ attributions : id_session_commission
+attributions ||--o{ attributions_types_pieces_bons : id_attribution
+types_pieces_enlevements ||--o{ attributions_types_pieces_bons : id_type_piece_bon
+
+demandeurs ||--o{ demandes : id_demandeur
+campagnes ||--o{ demandes : id_campagne
+types_demandes ||--o{ demandes : id_type_demande
+
+departements ||--o{ localites : id_departement
+
+references_appuis ||--o{ equipements : id_reference_appui
+services ||--o{ references_appuis : id_service
+
+attributions ||--o{ lignes_attributions : id_attribution
+references_appuis ||--o{ lignes_attributions : id_reference_appui
+
+demandes ||--o{ lignes_demandes : id_demande
+references_appuis ||--o{ lignes_demandes : id_reference_appui
+types_appuis ||--o{ lignes_demandes : id_type_appui
+
+types_mouvements ||--o{ mouvements_stocks : id_type_mouvement
+references_appuis ||--o{ mouvements_stocks : id_reference_appui
+equipements |o--o{ mouvements_stocks : id_equipement
+approvisionnements |o--o{ mouvements_stocks : id_approvisionnement
+attributions |o--o{ mouvements_stocks : id_attribution
+
+attributions ||--o{ pieces_enlevements : id_attribution
+types_pieces_enlevements ||--o{ pieces_enlevements : id_type_piece_bon
+
+demandes ||--o{ pieces_justificatives : id_demande
+types_pieces ||--o{ pieces_justificatives : id_type_piece
+
+demandes ||--o{ systemes_productions : id_demande
+types_systemes_production ||--o{ systemes_productions : id_type_systeme_production
+
+services ||--o{ types_appuis : id_service
+
+types_demandes ||--o{ types_demandes_types_pieces : id_type_demande
+types_pieces ||--o{ types_demandes_types_pieces : id_type_piece
 @enduml

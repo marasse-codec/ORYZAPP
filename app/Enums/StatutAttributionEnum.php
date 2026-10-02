@@ -18,7 +18,7 @@ enum StatutAttributionEnum: int
     public function libelle(): string
     {
         return match ($this) {
-            self::brouillon => 'Brouillon',
+            self::brouillon => 'En cours',
             self::soumise => 'Soumise',
             self::validee => 'Validee par commission',
             self::annulee => 'Annulee en commission'

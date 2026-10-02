@@ -20,19 +20,41 @@ use Illuminate\Support\Collection;
 class SyntheseCommissionService
 {
     /**
-     * Les dossiers en attente d'arbitrage : instruits favorablement par tous
-     * les services concernés, ni rejetés ni déjà attribués.
+     * Les dossiers en attente d'arbitrage : soumis, ni rejetés ni déjà
+     * attribués.
      *
      * @return Collection<int, Demande>
      */
-    public function dossiersEnAttente(): Collection
+    public function attributionEnAttente(): Collection
     {
         return Attribution::query()
             ->with([
                 'demande',
                 'lignesAttributions',
-            ])->where('id_statut_attribution', StatutAttributionEnum::soumise)
+                'demande.systemesProductions',
+                'demande.lignes'
+            ])
             ->orderBy('id_attribution')
+            ->get()
+            ->values();
+    }
+
+    /**
+     * Les dossiers en attente d'arbitrage : soumis, ni rejetés ni déjà
+     * attribués.
+     *
+     * @return Collection<int, Demande>
+     */
+    public function dossiersEnAttente(): Collection
+    {
+        return Demande::query()
+            ->with([
+                'lignes',
+                'SystemesProductions',
+            ])
+            ->orderBy('id_demande')
+            ->pourUtilisateur()
+            ->attribuables()
             ->get()
             ->values();
     }

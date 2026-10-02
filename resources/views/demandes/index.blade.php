@@ -1,22 +1,22 @@
-@php
-    use App\Enums\PermissionEnum;
-@endphp
+@use('App\Enums\PermissionEnum')
+@use('App\Enums\RoleEnum')
+@use('Illuminate\Support\Str')
 
 @extends($layout ?? 'layouts.app')
 
 @section('content')
-<div class="min-h-screen bg-[--color-secondary] px-6 py-8">
-    <div class="max-w-6xl mx-auto">
+<div class="min-h-screen bg-[--color-background] px-6 py-8">
+    <div class="max-w-7xl mx-auto space-y-6">
 
-        <!-- DP -->
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
+        {{-- En-tête de page --}}
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
-                <h1 class="text-2xl font-bold text-[--text-over-back-color]">Demandes d'appui</h1>
-                <p class="text-sm text-slate-500">{{ $demandes->count() }} dossier(s)</p>
+                <h1 class="text-2xl font-bold text-[--color-primary]">Demandes d'appui</h1>
+                <p class="text-sm text-[--color-text-secondary]">{{ $demandes->count() }} dossier(s) enregistré(s)</p>
             </div>
-            @can(\App\Enums\PermissionEnum::creerDemande->value)
+            @can(PermissionEnum::creerDemande->value)
                 <a href="{{ route('demandes.create') }}"
-                   class="inline-flex items-center gap-1.5 rounded-md bg-[--color-primary] px-4 py-2 text-sm font-semibold text-white hover:opacity-90">
+                   class="inline-flex items-center gap-1.5 rounded-md bg-[--color-button-first] px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-[--color-button-secondary] transition-colors">
                     <span class="material-symbols-outlined text-base">add</span> Nouvelle demande
                 </a>
             @endcan
@@ -24,17 +24,16 @@
 
         @include('partials.flash')
 
-        {{-- Attributeur --}}
-        @can(\App\Enums\PermissionEnum::gererCommission->value)
-            <section class="mb-8 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+        {{-- Section Arbitrage Commission (Attributeur) --}}
+        @can(PermissionEnum::gererCommission->value)
+            <section class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
                 <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                         <h2 class="text-base font-semibold text-[--color-primary]">
                             À traiter en commission
                         </h2>
-                        <p class="text-sm text-slate-500">
-                            {{ $dossiersCommission->count() }} dossier(s) instruit(s) favorablement,
-                            en attente d'arbitrage.
+                        <p class="text-sm text-[--color-text-secondary]">
+                            {{ $dossiersCommission->count() }} dossier(s) instruit(s) favorablement, en attente d'arbitrage.
                         </p>
                     </div>
                     @if ($dossiersCommission->isNotEmpty())
@@ -47,14 +46,13 @@
                 </div>
 
                 @if ($confrontation->isEmpty())
-                    <p class="rounded-lg bg-slate-50 px-4 py-6 text-center text-sm text-slate-500">
+                    <p class="rounded-lg bg-slate-50 px-4 py-6 text-center text-sm text-[--color-text-secondary]">
                         Aucun dossier n'attend d'arbitrage pour le moment.
                     </p>
                 @else
-                    {{-- Confrontation demandé / disponible, tous dossiers confondus --}}
                     <div class="overflow-x-auto rounded-lg border border-slate-200">
                         <table class="min-w-full divide-y divide-slate-200 text-sm">
-                            <thead class="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
+                            <thead class="bg-slate-50 text-left text-xs uppercase tracking-wide text-[--color-text-secondary]">
                                 <tr>
                                     <th class="px-4 py-2.5">Appui</th>
                                     <th class="px-4 py-2.5 text-center">Dossiers</th>
@@ -62,29 +60,28 @@
                                     <th class="px-4 py-2.5 text-right">En stock</th>
                                     <th class="px-4 py-2.5 text-right">Engagé</th>
                                     <th class="px-4 py-2.5 text-right">Disponible</th>
-                                    <th class="px-4 py-2.5 text-right">Actions</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-slate-100">
                                 @foreach ($confrontation as $ligne)
-                                    <tr class="{{ $ligne['couverte'] ? '' : 'bg-red-50/60' }}">
+                                    <tr class="{{ $ligne['couverte'] ? '' : 'bg-[--color-accent]/10' }}">
                                         <td class="px-4 py-2.5">
-                                            <span class="font-medium text-slate-800">{{ $ligne['libelle'] }}</span>
-                                            <span class="block text-xs text-slate-500">{{ $ligne['service'] }}</span>
+                                            <span class="font-medium text-[--color-text-primary]">{{ $ligne['libelle'] }}</span>
+                                            <span class="block text-xs text-[--color-text-secondary]">{{ $ligne['service'] }}</span>
                                         </td>
-                                        <td class="px-4 py-2.5 text-center text-slate-600">{{ $ligne['nb_dossiers'] }}</td>
-                                        <td class="px-4 py-2.5 text-right font-semibold text-slate-800">
+                                        <td class="px-4 py-2.5 text-center text-[--color-text-secondary]">{{ $ligne['nb_dossiers'] }}</td>
+                                        <td class="px-4 py-2.5 text-right font-semibold text-[--color-text-primary]">
                                             {{ $ligne['demandee'] }}
-                                            <span class="font-normal text-slate-500">{{ $ligne['unite'] }}</span>
+                                            <span class="font-normal text-[--color-text-secondary]">{{ $ligne['unite'] }}</span>
                                         </td>
-                                        <td class="px-4 py-2.5 text-right text-slate-600">{{ $ligne['stock'] }}</td>
-                                        <td class="px-4 py-2.5 text-right text-slate-600">{{ $ligne['engagee'] }}</td>
+                                        <td class="px-4 py-2.5 text-right text-[--color-text-secondary]">{{ $ligne['stock'] }}</td>
+                                        <td class="px-4 py-2.5 text-right text-[--color-text-secondary]">{{ $ligne['engagee'] }}</td>
                                         <td class="px-4 py-2.5 text-right">
-                                            <span class="font-bold {{ $ligne['couverte'] ? 'text-emerald-700' : 'text-red-700' }}">
+                                            <span class="font-bold {{ $ligne['couverte'] ? 'text-[--color-primary]' : 'text-[--color-accent]' }}">
                                                 {{ $ligne['disponible'] }}
                                             </span>
                                             @unless ($ligne['couverte'])
-                                                <span class="block text-xs text-red-700">
+                                                <span class="block text-xs text-[--color-accent]">
                                                     manque {{ $ligne['demandee'] - $ligne['disponible'] }}
                                                 </span>
                                             @endunless
@@ -94,115 +91,175 @@
                             </tbody>
                         </table>
                     </div>
-
-                    <p class="mt-2 text-xs text-slate-500">
-                        « Engagé » : quantités déjà attribuées sur des bons non encore retirés au magasin,
-                        donc toujours comptées dans le stock. Disponible = stock − engagé.
-                    </p>
-
-                    {{-- Les dossiers concernés, avec accès direct à l'arbitrage --}}
-                    <div class="mt-5 flex flex-wrap gap-2">
-                        @foreach ($dossiersCommission as $dossier)
-                            <a href="{{ route('attributions.create', $dossier->id_demande) }}"
-                               class="rounded-full border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:border-[--color-primary] hover:text-[--color-primary]">
-                                DEM-{{ $dossier->date_demande?->format('Y') }}-{{ str_pad($dossier->id_demande, 3, '0', STR_PAD_LEFT) }}
-                                — {{ $dossier->acteur?->nom }}
-                            </a>
-                        @endforeach
-                    </div>
                 @endif
             </section>
         @endcan
 
-
-
-
-        {{-- Tous acteurs --}}
-        {{-- La liste complète --}}
+        {{-- Tableau avec les colonnes spécifiées --}}
         @if ($demandes->isEmpty())
-            <div class="rounded-xl border border-dashed border-slate-300 bg-white px-6 py-12 text-center">
-                <p class="text-sm text-slate-500">Aucune demande à afficher pour le moment.</p>
+            <div class="rounded-xl border border-dashed border-slate-300 bg-white px-6 py-12 text-center shadow-sm">
+                <p class="text-sm text-[--color-text-secondary]">Aucune demande à afficher pour le moment.</p>
             </div>
         @else
             <div class="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
-                <table class="min-w-full divide-y divide-slate-200 text-sm">
-                    <thead class="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
+                <table class="min-w-full divide-y divide-slate-200 text-xs text-left">
+                    <thead class="bg-slate-100 uppercase tracking-wider font-semibold text-[--color-primary]">
                         <tr>
-                            <th class="px-4 py-3">Dossier</th>
-                            <th class="px-4 py-3">Demandeur</th>
-                            <th class="px-4 py-3">Profil</th>
-                            <th class="px-4 py-3">Localité</th>
-                            <th class="px-4 py-3 text-center">Appuis</th>
-                            <th class="px-4 py-3">Statut</th>
-                            <th class="px-4 py-3">Actions</th>
+                            <th class="px-3 py-3">Num</th>
+                            <th class="px-3 py-3">Département</th>
+                            <th class="px-3 py-3">Localité</th>
+                            <th class="px-3 py-3">Nom de l'entité</th>
+                            <th class="px-3 py-3">Contacts</th>
+                            {{-- <th class="px-3 py-3 whitespace-nowrap">Date d'enregistrement</th>
+                            <th class="px-3 py-3">Source</th> --}}
+                            {{-- <th class="px-3 py-3 text-right whitespace-nowrap">Sup en plat (ha)</th>
+                            <th class="px-3 py-3 text-right whitespace-nowrap">Sup en BF pluv (ha)</th>
+                            <th class="px-3 py-3 text-right whitespace-nowrap">Sup en irri (ha)</th> --}}
+                            <th class="px-3 py-3">Statut</th>
+                            <th class="px-3 py-3">Observations</th>
+                            <th class="px-3 py-3 text-right">Actions</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-slate-100">
+                    <tbody class="divide-y divide-slate-100 text-[--color-text-primary]">
                         @foreach ($demandes as $demande)
-                            <tr class="hover:bg-slate-50">
-                                <td class="px-4 py-3">
-                                    <span class="font-medium text-slate-800">
-                                        DEM-{{ $demande->date_demande?->format('Y') }}-{{ str_pad($demande->id_demande, 3, '0', STR_PAD_LEFT) }}
-                                    </span>
-                                    <span class="block text-xs text-slate-500">{{ $demande->date_demande?->format('d/m/Y') }}</span>
+                            @php
+                                // Extraction des superficies par système
+                                $supPlat = $demande->systemesProductions->first(
+                                    fn($s) => Str::contains(mb_strtolower($s->typeSystemeProduction?->lib_type_systeme_production ?? ''), ['plat', 'plateau'])
+                                )?->superficie;
+
+                                $supBfPluv = $demande->systemesProductions->first(
+                                    fn($s) => Str::contains(mb_strtolower($s->typeSystemeProduction?->lib_type_systeme_production ?? ''), ['bf', 'bas-fond', 'pluvial'])
+                                )?->superficie;
+
+                                $supIrri = $demande->systemesProductions->first(
+                                    fn($s) => Str::contains(mb_strtolower($s->typeSystemeProduction?->lib_type_systeme_production ?? ''), ['irri', 'irrigué'])
+                                )?->superficie;
+
+                                // Départements uniques
+                                $departements = $demande->localites->pluck('departement.lib_departement')->filter()->unique()->join(', ');
+                                // Localités uniques
+                                $localitesStr = $demande->localites->pluck('lib_localite')->join(', ');
+                            @endphp
+                            <tr class="hover:bg-slate-50 transition-colors">
+
+                                {{-- O. Demande --}}
+                                <td class="px-3 py-3 font-medium">
+                                    {{ $demande -> id_demande ?: '—' }}
                                 </td>
-                                <td class="px-4 py-3">
-                                    {{ $demande->acteur?->nom }}
-                                    <span class="block text-xs text-slate-500">{{ $demande->acteur?->telephone }}</span>
+
+                                {{-- 1. Département --}}
+                                <td class="px-3 py-3 font-medium">
+                                    {{ $departements ?: '—' }}
                                 </td>
-                                <td class="px-4 py-3 text-slate-600">{{ $demande->typeActeur?->lib_type_acteur }}</td>
-                                <td class="px-4 py-3 text-slate-600">{{ $demande->localite?->lib_localite }}</td>
-                                <td class="px-4 py-3 text-center text-slate-600">{{ $demande->lignes->count() }}</td>
-                                <td class="px-4 py-3">
-                                    <span class="inline-block rounded-full text-[--text-in-back-color] px-2.5 py-1 text-xs font-semibold {{ $demande->soumise ? "bg-[--color-soumise]" : "bg-[--color-brouillon]" }}">
-                                        {{ $demande->soumise ? "Demande soumise" : "Demande en brouillon" }}
+
+                                {{-- 2. Localité --}}
+                                <td class="px-3 py-3">
+                                    {{ $localitesStr ?: '—' }}
+                                </td>
+
+                                {{-- 3. Nom de l'entité --}}
+                                <td class="px-3 py-3">
+                                    <span class="font-semibold text-[--color-primary] block">
+                                        {{ $demande->nom_structure ?? $demande->acteur?->nom }}
                                     </span>
-                                    @if ($demande->motifs_rejet)
-                                        <span class="mt-1 block text-xs text-red-700">{{ $demande->motifs_rejet }}</span>
+                                    @if ($demande->nom_structure && $demande->acteur?->nom)
+                                        <span class="text-[10px] text-[--color-text-secondary]">Rep : {{ $demande->acteur->nom }}</span>
                                     @endif
                                 </td>
-                                <td class="px-4 py-3 text-right">
-                                    <div class="flex items-center justify-end gap-3">
 
+                                {{-- 4. Contacts --}}
+                                <td class="px-3 py-3 whitespace-nowrap">
+                                    <div>{{ $demande->acteur?->telephone ?? '—' }}</div>
+                                    @if ($demande->acteur?->email)
+                                        <div class="text-[10px] text-[--color-text-secondary]">{{ $demande->acteur->email }}</div>
+                                    @endif
+                                </td>
+
+                                {{-- 5. Date d'enregistrement --}}
+                                {{-- <td class="px-3 py-3 whitespace-nowrap">
+                                    {{ $demande->date_demande?->format('d/m/Y') ?? '—' }}
+                                </td> --}}
+
+                                {{-- 6. Source --}}
+                                {{-- <td class="px-3 py-3 whitespace-nowrap">
+                                    <span class="px-2 py-0.5 rounded text-[10px] font-medium bg-slate-100 text-slate-700">
+                                        {{ $demande->user?->name ?? 'Agent' }}
+                                    </span>
+                                </td> --}}
+
+                                {{-- 7. Sup en plat (ha)
+                                <td class="px-3 py-3 text-right font-medium whitespace-nowrap">
+                                    {{ $supPlat !== null ? number_format($supPlat, 2, ',', ' ') : '—' }}
+                                </td>
+
+                                {{-- 8. Sup en BF pluv (ha) --}}
+                                {{-- <td class="px-3 py-3 text-right font-medium whitespace-nowrap">
+                                    {{ $supBfPluv !== null ? number_format($supBfPluv, 2, ',', ' ') : '—' }}
+                                </td> --}}
+
+                                {{-- 9. Sup en irri (ha) --}}
+                                {{-- <td class="px-3 py-3 text-right font-medium whitespace-nowrap">
+                                    {{ $supIrri !== null ? number_format($supIrri, 2, ',', ' ') : '—' }}
+                                </td> --}}
+
+                                {{-- 10. Statut --}}
+                                <td class="px-3 py-3">
+                                    <div class="flex items-center gap-1.5">
+                                        <span class="inline-block rounded-full px-2 py-0.5 text-[8px] font-semibold text-[--text-in-back-color] {{ $demande->estSoumise() ? 'bg-[--color-soumise]' : 'bg-[--color-label-brouillon]' }}">
+                                            {{ $demande->estSoumise() ? 'Soumise' : 'En cours' }}
+                                        </span>
+                                    </div>
+                                </td>
+
+                                {{-- 11. Observations --}}
+                                <td class="px-3 py-3">
+                                    <div class="flex items-center gap-1.5">
+                                        <span class="inline-block rounded-full px-2 py-0.5 text-[12px] font-semibold">
+                                            {{$demande?->observations}}
+                                        </span>
+                                    </div>
+                                </td>
+
+                                {{-- Actions --}}
+                                <td class="px-3 py-3 text-right whitespace-nowrap">
+                                    <div class="flex items-center justify-end gap-2">
                                         <a href="{{ route('demandes.show', $demande->id_demande) }}"
-                                        class="text-sm font-medium text-[--color-secondary] hover:underline">
+                                           class="text-xs font-semibold text-[--color-primary] hover:underline">
                                             Consulter
                                         </a>
 
-                                        @can(PermissionEnum::attribuerAppui->value)
-                                            @if($demande->traitement_terminee === false)
-                                            <a href="{{ route('attributions.create', $demande->id_demande) }}"
-                                            class="text-sm font-medium text-[--color-primary] hover:underline">
-                                                Attribuer
-                                            </a>
-                                            @endif
-                                        @endcan
-
                                         @can(PermissionEnum::creerDemande->value)
-
-                                            @if(!$demande->soumise)
-
+                                            @if(!$demande->estSoumise())
+                                            
+                                            {{--Modifier--}}
                                                 <a href="{{ route('demandes.edit', $demande->id_demande) }}"
-                                                class="text-sm font-medium text-yellow-700 hover:underline">
+                                                   class="text-xs font-semibold text-[--color-button-first] hover:underline">
                                                     Modifier
                                                 </a>
 
+                                            @if($demande->terrainAEteVisite())
+                                            {{--Soumettre--}}
                                                 <form action="{{ route('demandes.soumettre', $demande->id_demande) }}"
-                                                    method="POST"
-                                                    class="inline">
+                                                      method="POST"
+                                                      class="inline">
                                                     @csrf
-
                                                     <button type="submit"
-                                                            class="text-sm font-semibold text-emerald-700 hover:underline"
-                                                            onclick="return confirm('Voulez-vous confirmer la soumission de cette demande ?')">
+                                                            class="text-xs font-semibold text-[--color-primary] hover:underline"
+                                                            onclick="return confirm('Confirmer la soumission ?')">
                                                         Soumettre
                                                     </button>
                                                 </form>
-
+                                            @else
+                                            {{-- Appel du composant réutilisable --}}
+                                                <x-modals.visite-terrain 
+                                                    :id="$demande->id_demande" 
+                                                    :action="route('demandes.visite.valider')" 
+                                                    :title="'Visite de terrain - Demande n°' . $demande->id_demande" 
+                                                />
                                             @endif
-
+                                            @endif
                                         @endcan
-
                                     </div>
                                 </td>
                             </tr>

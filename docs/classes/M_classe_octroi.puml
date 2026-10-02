@@ -58,46 +58,52 @@ class Equipement {
 }
 
 ReferenceAppui "1" -l- "0..*" Equipement : inventorier >
-TypeAppui "0..*" -- "1" Service : fournir <
+Service "1" -- "0..*" TypeAppui : fournir >
 ReferenceAppui "0..*" -l- "1" TypeAppui : classifier <
 
+' class StatutDemande {
+'   - idStatutDemande : Long
+'   - libelleStatutDemande : String
+' }
 
-class StatutDemande {
-  - idStatutDemande : Long
-  - libelleStatutDemande : String
-}
+' class HistoriqueDemande {
+'   - idHistorique : Long
+'   - dateChangement : DateTime
+'   - commentaire : String
+' }
 
 class Demande {
   - idDemande : Long
-  - dateDemande : Date
+  - dateSoummission : Date
+  - dateDebutMiseEnPlaceSouhaitee : Date
+  - nomDemandeur : String
+  - mailDemandeur : String
 }
 
-class HistoriqueDemande {
-  - idHistorique : Long
-  - dateChangement : DateTime
-  - commentaire : String
-}
+' class EtapeValidationDemande {
+'   - idEtape : Long
+'   - libEtape : String
+'   - ordre : Int
+' }
 
+' Service "1" -l- "1" EtapeValidationDemande : effectuer >
 
-Demande "1" *-- "0..*" HistoriqueDemande : entretenir >
-StatutDemande "1" -- "0..*" HistoriqueDemande : marquer >
+' Demande "1" *-- "0..*" HistoriqueDemande : entretenir >
+' StatutDemande "1" -r- "0..*" HistoriqueDemande : marquer >
+' Demande "0..*" -- "1" StatutDemande : statuer <
 
-' DateFinTraitement prend la date de fin du dernier traitement
+' DateFinTraitement prend la date de fin du dernier copiedemande
 ' dateSoumission marque qu'on ne peut plus modifier apès soummission
 
-StatutDemande "1" - "1..*" Demande : statuer >
-
-class Traitement {
-  - datePriseEnCharge : Date
-  - observationInterne : String
+class CopieDemande {
+  - observationService : String
   - dateFinTraitement : Date
-  - dateRejetService : Boolean
   - motifRejetService : String
 }
 
-Traitement "1..*" -d- "1" Demande : entrainer <
-Traitement "1..*" -l- "1" Service : engager <
-Traitement "0..1" -- "0..1" Attribution : produire >
+CopieDemande "1..*" -d- "1" Demande : entrainer <
+CopieDemande "1..*" -l- "1" Service : traiter <
+CopieDemande "0..1" -- "0..1" Attribution : produire >
 
 ' note top of [Demande]
 '   ! Remarque !
@@ -107,34 +113,38 @@ Traitement "0..1" -- "0..1" Attribution : produire >
 
 class LigneDemande {
   - idLigneDemande : Long
+  - quantiteeDemande : Int
 }
+
+TypeAppui "1" - "0..*" LigneDemande : demander <
 
 class SessionCommission {
   - idSessionCommission : Long
   - resume : String
-  - dateSession : Date
+  - dateDebutSession : Date
+  - dateFinSession : Date
 }
 
 class Attribution {
   - idAttribution : Long
   - observation : String
 }
+ 
+' class StatutAttribution {
+'   - idStatutAttribution : Long
+'   - libStatutAttribution : String
+' }
 
-class StatutAttribution {
-  - idStatutAttribution : Long
-  - libStatutAttribution : String
-}
+' class HistoriqueAttribution {
+'   - idHistorique : Long
+'   - dateChangement : DateTime
+'   - commentaire : String
+' }
 
-class HistoriqueAttribution {
-  - idHistorique : Long
-  - dateChangement : DateTime
-  - commentaire : String
-}
+' Attribution "1" *-- "0..*" HistoriqueAttribution : posseder >
+' StatutAttribution "0..1" -- "0..*" HistoriqueAttribution : qualifier >
 
-Attribution "1" *-- "0..*" HistoriqueAttribution : posseder >
-StatutAttribution "0..1" -- "0..*" HistoriqueAttribution : qualifier >
-
-Attribution "0..*" - "1" StatutAttribution : indiquer <
+' Attribution "0..*" - "1" StatutAttribution : statuer <
 SessionCommission "1" -- "0..*" Attribution : arbitrer >
 Demande "1" - "0..*" Attribution : couvrir <
 
@@ -145,7 +155,7 @@ class LigneAttribution {
   - dateRestitutionPrevue : Date
 }
 
-LigneAttribution "1..*" -- "1..*" ReferenceAppui : "donner"
+LigneAttribution "1..*" -- "1..*" ReferenceAppui : attribuer >
 
 ' ============================================================
 ' ASSOCIATIONS

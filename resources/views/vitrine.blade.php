@@ -230,9 +230,6 @@
                     @foreach ($appuis as $appui)
                         <li class="flex items-center justify-between gap-4 px-6 py-3.5">
                             <span class="text-sm font-medium text-slate-800">{{ $appui->libelle }}</span>
-                            <span class="shrink-0 rounded bg-slate-100 px-2 py-0.5 text-xs text-slate-600">
-                                en {{ $appui->typeAppui?->uniteTypeAppui?->lib_unite_type_appui ?? 'unité' }}
-                            </span>
                         </li>
                     @endforeach
                 </ul>

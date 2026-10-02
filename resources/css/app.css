@@ -4,16 +4,20 @@
 
 :root {
   --color-primary: #1B4D3E;
-  --color-secondary: #f7bd51;
+  --color-secondary: #d0d0d0;
   --color-tertiary: #673831;
   --color-neutral: #0F172A;
   --color-accent: #FF6B6B;
-  --color-background: #F0F0F0;
+  --color-background: #d0d0d0;
   --color-text-primary: #333333;
   --color-text-secondary: #666666;
+  --color-red-text: #f21818;
 
-  --color-brouillon: #ef4444;
+  --color-label-brouillon: #f59e0b;
   --color-soumise: #1B4D3E;
+
+  --color-button-first: #f8a100;
+  --color-button-secondary: #a86e1b;
 
 
   --text-over-back-color: #ffffffd2;

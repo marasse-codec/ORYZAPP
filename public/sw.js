@@ -1,6 +1,7 @@
 // Événement d'installation
 self.addEventListener('install', function (event) {
     self.skipWaiting();
+    
 });
 
 // Canal de communication avec la page web

@@ -14,14 +14,12 @@ enum StatutDemandeE: int
     case soumise = 2;
     case recu_attribution = 3;
     case rejetee = 4;
-    case a_corriger = 5;
 
     public function libelle(): string
     {
         return match ($this) {
-            self::brouillon => 'Brouillon',
+            self::brouillon => 'En cours',
             self::soumise => 'Soumise',
-            self::a_corriger => 'À corriger',
             self::recu_attribution => 'Reçu attribution',
             self::rejetee => 'Demande completement rejetée'
         };
@@ -33,7 +31,6 @@ enum StatutDemandeE: int
         return match ($this) {
             self::brouillon => 'bg-orange-100 text-slate-700',
             self::soumise => 'bg-red-100 text-slate-700',
-            self::a_corriger => 'bg-yellow-100 text-yellow-800',
             self::recu_attribution => 'bg-pink-100 text-pink-800',
             self::rejetee => 'bg-black-100 text-pink-800'
         };

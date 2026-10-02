@@ -13,10 +13,9 @@ return new class extends Migration
         Schema::create('approvisionnements', function (Blueprint $table) {
             $table->id('id_approvisionnement');
             $table->date('date_approvisionnement');
-            $table->string('reference_commande')->nullable();
+            $table->string('reference_commande')->unique()->nullable();
             $table->string('origine')->nullable();
             $table->timestamps();
-
         });
     }
 

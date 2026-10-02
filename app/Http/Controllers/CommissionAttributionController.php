@@ -15,11 +15,14 @@ class CommissionAttributionController extends Controller
 {
     public function index()
     {
-        return view('commissions.index', [
-            'sessions' => SessionCommission::withCount('attributions')
+        /**@var Collection $sessions */
+        $sessions = SessionCommission::withCount('attributions')
                 ->orderByDesc('date_debut_session')
-                ->get(),
-            'layout' => Helper::layout(),
+                ->get();
+
+        return view('commissions.index', [
+            'sessions' => $sessions,
+            'layout' => Helper::layout()
         ]);
     }
 
@@ -57,9 +60,13 @@ class CommissionAttributionController extends Controller
         $enAttente = $session->estOuverte()
             ? $synthese->dossiersEnAttente()
             : collect();
+        
+        $publiable = $session->estPubliable();
 
         return view('commissions.show', [
             'session' => $session,
+            'finie' => $session->estFinie(),
+            'publiable' => $publiable,
             'enAttente' => $enAttente,
             'layout' => Helper::layout(),
         ]);

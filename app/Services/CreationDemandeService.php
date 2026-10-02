@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use App\Enums\StatutDemandeE;
 use App\Models\Acteur;
 use App\Models\Demande;
 use App\Models\LigneDemande;
@@ -16,33 +15,35 @@ use Illuminate\Support\Facades\DB;
 class CreationDemandeService
 {
     /**
-     * Enregistre une demande et tout ce qui la constitue. Le tout en une
-     * transaction : une demande sans ses lignes ni ses superficies serait
-     * inexploitable en instruction.
+     * Enregistre une demande et tout ce qui la constitue en une seule transaction.
      *
      * @param  array<string, mixed>  $donnees  Données validées du formulaire.
      * @param  array<int, UploadedFile|null>  $pieces  Fichiers indexés par type de pièce.
      */
     public function creer(array $donnees, array $pieces = []): Demande
     {
+        // Vérifier si l'acteur a une demande en cours
+        $acteur = $this->resoudreDemandeur($donnees);
+
         return DB::transaction(function () use ($donnees, $pieces) {
             $acteur = $this->resoudreDemandeur($donnees);
 
             $demande = Demande::create([
-                'id_acteur' => $acteur->id_acteur,
-                'id_type_acteur' => $donnees['id_type_acteur'],
-                'id_localite' => $donnees['id_localite'],
-                'date_demande' => now()->toDateString(),
+                'id_acteur'                   => $acteur->id_acteur,
+                'id_type_acteur'              => $donnees['id_type_acteur'],
+                'nom_structure'               => $donnees['nom_structure'] ?? null,
+                'date_demande'                => now()->toDateString(),
 
                 'periode_debut_mise_en_place' => $donnees['periode_debut_mise_en_place'],
-                'periode_fin_mise_en_place' => $donnees['periode_fin_mise_en_place'],
+                'periode_fin_mise_en_place'   => $donnees['periode_fin_mise_en_place'],
 
-                'soumise' => false, // Par défaut à false en bd
+                'date_soummission'            => null, // Brouillon par défaut à la création
 
-                'id_user' => Auth::user()->id,
-                'id_campagne' => $donnees['id_campagne']
+                'id_user'                     => Auth::id(),
+                'id_campagne'                 => $donnees['id_campagne'],
             ]);
 
+            $this->enregistrerLocalites($demande, $donnees['localites'] ?? []);
             $this->enregistrerSuperficies($demande, $donnees['superficies'] ?? []);
             $this->enregistrerLignes($demande, $donnees['lignes'] ?? []);
             $this->enregistrerPieces($demande, $pieces);
@@ -57,16 +58,28 @@ class CreationDemandeService
      */
     private function resoudreDemandeur(array $donnees): Acteur
     {
-        $acteur = Acteur::firstOrNew(['telephone' => $donnees['telephone']]);
+        // On recherche par nom et date de naissance exacts, ou on crée un nouveau profil
+        $acteur = Acteur::firstOrNew([
+            'nom' => $donnees['nom'],
+            'date_naissance' => $donnees['date_naissance'],
+        ]);
 
-        $acteur->nom = $donnees['nom'];
+        $acteur->telephone = $donnees['telephone'];
         $acteur->email = $donnees['email'] ?? $acteur->email;
         $acteur->save();
 
         return $acteur;
     }
 
-    /** Seules les surfaces réellement exploitées sont enregistrées. */
+    /** Attachement des localités via la relation Many-to-Many. */
+    private function enregistrerLocalites(Demande $demande, array $localites): void
+    {
+        if (!empty($localites)) {
+            $demande->localites()->attach($localites);
+        }
+    }
+
+    /** Seules les surfaces réellement exploitées (> 0) sont enregistrées. */
     private function enregistrerSuperficies(Demande $demande, array $superficies): void
     {
         foreach ($superficies as $idTypeSystemeProduction => $superficie) {
@@ -75,44 +88,57 @@ class CreationDemandeService
             }
 
             SystemeProduction::create([
-                'id_demande' => $demande->id_demande,
+                'id_demande'                  => $demande->id_demande,
                 'id_type_systeme_production' => $idTypeSystemeProduction,
-                'superficie' => (float) $superficie,
+                'superficie'                  => (float) $superficie,
             ]);
         }
     }
 
-    private function enregistrerLignes(Demande $demande, array $lignes): void
+   private function enregistrerLignes(Demande $demande, array $lignes): void
     {
         $servicesCites = [];
 
+        // Optionnel : si on est en mise à jour, on supprime les anciennes lignes
+        // $demande->lignes()->delete();
+
         foreach ($lignes as $ligne) {
+            // Ignorer si aucun type d'appui n'est sélectionné
+            if (empty($ligne['id_type_appui'])) {
+                continue;
+            }
+
+            // Nettoyage de l'appui spécifique s'il est vide
+            $idAppui = !empty($ligne['id_appui']) ? $ligne['id_appui'] : null;
+
+            // Formater la quantité demandée
+            $quantite = isset($ligne['quantite_demandee']) && $ligne['quantite_demandee'] !== '' 
+                ? (float) $ligne['quantite_demandee'] 
+                : null;
+
             $ligneD = LigneDemande::create([
-                'id_demande' => $demande->id_demande,
-                'id_type_appui' => $ligne['id_type_appui']
+                'id_demande'        => $demande->id_demande,
+                'id_type_appui'     => $ligne['id_type_appui'],
+                'id_appui'          => $idAppui,
+                'quantite_demandee' => $quantite,
             ]);
 
-            // Préchargement de la relation
+            // Charger le service associé au type d'appui
             $ligneD->load('typeAppui.service');
 
-            // Récupération des services concernnées
             if ($ligneD->typeAppui && $ligneD->typeAppui->service) {
                 $service = $ligneD->typeAppui->service;
                 $servicesCites[$service->id_service] = $service;
             }
         }
 
-        // Unifications des services
-        $servicesUniques = array_values($servicesCites);
-
-        // Création de traitement pour chaque service (imputation)
-        foreach ($servicesUniques as $service) {
-            Traitement::create([
+        // Création des traitements pour chaque service concerné (évite les doublons en BDD)
+        foreach ($servicesCites as $service) {
+            Traitement::firstOrCreate([
                 'id_demande' => $demande->id_demande,
                 'id_service' => $service->id_service,
             ]);
         }
-
     }
 
     /** @param array<int, UploadedFile|null> $pieces */
@@ -124,8 +150,8 @@ class CreationDemandeService
             }
 
             PieceDemande::create([
-                'id_demande' => $demande->id_demande,
-                'id_type_piece' => $idTypePiece,
+                'id_demande'     => $demande->id_demande,
+                'id_type_piece'  => $idTypePiece,
                 'chemin_fichier' => $fichier->store("demandes/{$demande->id_demande}", 'public'),
             ]);
         }

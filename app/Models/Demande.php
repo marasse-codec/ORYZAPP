@@ -4,13 +4,21 @@ namespace App\Models;
 
 use App\Enums\RoleEnum;
 use App\Enums\StatutDemandeE;
+use App\Observers\DemandeObserver;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Collection;
 
+/**
+ *  @property boolean $terrain_visite
+ *  @property string $observations
+ */
+#[ObservedBy([DemandeObserver::class])]
 class Demande extends Model
 {
     use HasFactory;
@@ -20,25 +28,36 @@ class Demande extends Model
     protected $fillable = [
         'id_acteur',
         'id_type_acteur',
-        'id_localite',
         'date_demande',
+        'nom_structure',
 
         'periode_debut_mise_en_place',
         'periode_fin_mise_en_place',
 
-        'soumise',
+        'date_soummission',
+        'observations',
+        'terrain_visite',
 
         'id_user',
-        'id_campagne'
+        'id_campagne',
+
+        'id_session',
+        'motifs_rejet'
     ];
 
     protected $casts = [
         'date_demande' => 'date',
+        'date_soummission' => 'datetime',
 
         'periode_debut_mise_en_place' => 'date',
         'periode_fin_mise_en_place' => 'date',
 
     ];
+
+    /**
+     * Exécuter les événements d'observer uniquement après le COMMIT de la transaction BDD.
+     */
+    public $afterCommit = true;
 
     // ---------------------------------------------------------------- Relations
 
@@ -55,9 +74,18 @@ class Demande extends Model
         return $this->belongsTo(TypeActeur::class, 'id_type_acteur', 'id_type_acteur');
     }
 
-    public function localite(): BelongsTo
-    {
-        return $this->belongsTo(Localite::class, 'id_localite', 'id_localite');
+    public function localites(): BelongsToMany
+{
+    return $this->belongsToMany(
+        Localite::class, 
+        'demandes_localites', 
+        'id_demande', 
+        'id_localite'
+    );
+}
+    
+    public function sessionCommission() : HasOne {
+        return $this->hasOne(SessionCommission::class, 'id_session','id_session');
     }
 
     /** Les superficies déclarées, ventilées par système de production. */
@@ -76,15 +104,9 @@ class Demande extends Model
         return $this->hasMany(PieceDemande::class, 'id_demande', 'id_demande');
     }
 
-    /** L'instruction de la demande, un rapport par service concerné. */
-    public function rapports(): HasMany
+    public function attribution(): HasOne
     {
-        return $this->hasMany(Rapport::class, 'id_demande', 'id_demande');
-    }
-
-    public function attribution(): HasMany
-    {
-        return $this->hasMany(Attribution::class, 'id_demande', 'id_demande');
+        return $this->hasOne(Attribution::class, 'id_demande', 'id_demande');
     }
 
     public function user(): BelongsTo
@@ -96,6 +118,10 @@ class Demande extends Model
     public function traitements()
     {
         return $this->hasMany(Traitement::class, 'id_demande', 'id_demande');
+    }
+
+    public function attributions() : HasMany {
+        return $this->hasMany(Attribution::class,'id_demande','id_demande');
     }
 
     // ------------------------------------------------------------------ Métier
@@ -134,8 +160,6 @@ class Demande extends Model
             ->values();
     }
 
-
-
     /**
      * Retourne les lignes d'un service donné
      */
@@ -147,76 +171,17 @@ class Demande extends Model
 
     public function estBrouillon(): bool
     {
-        return $this->id_statut_demande === StatutDemandeE::brouillon;
+        return is_null($this->date_soummission);
     }
 
     public function estSoumise(): bool
     {
-        return $this->id_statut_demande === StatutDemandeE::soumise;
+        return ! is_null($this->date_soummission);
     }
 
     public function soumettre(){
-        $this->soumise = true;
+        $this->date_soummission = now();
         $this->save();
-    }
-
-    public function estACorriger(): bool
-    {
-        return $this->id_statut_demande === StatutDemandeE::a_corriger;
-    }
-
-    /**
-     * Rejeter une demande d'appui
-     */
-    public function rejeter(string $motif,array $services) {
-
-
-        $lignesConcernees = $this->lignes() // Adaptez le nom de la relation si nécessaire (ex: 'lignes')
-                ->whereHas('typeAppui', function ($query) use ($services) {
-                    $query->whereIn('id_service', $services); 
-                })
-                ->get();
-
-        foreach ($lignesConcernees as $ligne) {
-            $ligne->rejeterLigne($motif);
-        }
-
-        // 2. On compte s'il reste des lignes non rejetées pour CETTE demande
-        $lignesNonRejeteesRestantes = $this->lignes()
-            ->whereNull('date_rejet_service') // S'assure qu'il n'en reste aucune autre
-            ->count();
-
-        if ($lignesNonRejeteesRestantes === 0) {
-            $this->id_statut_demande = StatutDemandeE::rejetee;
-            $this->save();
-        }
-
-    }
-
-    public function renvoyerPourCorrection(
-        Traitement $traitement,
-        string $motif
-    ): DemandeCorrection {
-        if (! $this->estSoumise()) {
-            throw new \LogicException(
-                'Seule une demande soumise peut être renvoyée pour correction.'
-            );
-        }
-
-        $this->update([
-            'id_statut_demande' => StatutDemandeE::a_corriger,
-        ]);
-
-        return $traitement->demandesCorrections()->create([
-            'motif' => $motif,
-        ]);
-    }
-
-    public function traitementTerminee()
-    {
-        $this->update([
-            'id_statut_demande' => StatutDemandeE::recu_attribution,
-        ]);
     }
 
     // ------------------------------------------------------------------ Scopes
@@ -226,26 +191,41 @@ class Demande extends Model
      * @param User $user
      * @return void
      */
-    public function scopePourUtilisateur($query, $user)
+    public function scopePourUtilisateur($query)
     {
+        $user = auth()->user();
+        
         if ($user->hasRole(RoleEnum::acteur->value)) {
             return $query->whereHas('acteur', fn ($q) => $q->where('user_id', $user->id));
         } else if($user->hasRole([RoleEnum::agentService->value])){
-            return $query->whereHas('lignes.typeAppui.service', function ($q) use ($user) {
-                $q->where('id_service',$user->id_service)->where('soumise',true);
-            });
+            // « date_soummission » appartient à la demande, pas au service : le filtre se pose hors de la sous-requête.
+            return $query->whereNotNull('date_soummission')
+                ->whereHas('lignes.typeAppui.service', fn ($q) => $q->where('id_service', $user->id_service));
         } else if($user->hasRole(RoleEnum::agentCommission->value)){
-            return $query->whereHas('lignes.typeAppui.service', function ($q) use ($user) {
-                $q->where('soumise',true);
-            });
+            return $query->whereNotNull('date_soummission');
+        } else if($user->hasRole(RoleEnum::gestionnaireStock->value)){
+            return $query->where('id_user', $user->id);
         }
         // Agents internes et administrateurs voient l'ensemble des dossiers.
         return $query;
     }
 
+    public function scopeAttribuables($query)
+    {
+        $user = auth()->user();
+
+        if ($user->hasRole(RoleEnum::agentCommission->value)) {
+            return $query->whereNotNull('date_soummission')
+                            ->whereNull('id_session')
+                            ->whereDoesntHave('attribution');
+        }
+
+        return $query;
+    }
+
     public function estModifiable(): bool
     {
-        return !$this->soumise;
+        return is_null($this->date_soummission);
     }
 
     /**
@@ -265,5 +245,45 @@ class Demande extends Model
             ->filter()    // Élimine les valeurs nulles si une relation est cassée
             ->unique('id_service') // Supprime les doublons basés sur l'ID du service
             ->values();   // Réinitialise les clés du tableau
+    }
+
+    public function aAttributions(){
+        return count($this->attributions()->get()) > 0;
+    }
+
+    // public function estFavorablePourService($idService): bool {
+    //     return $this->traitements()
+    //     ->where('id_service', $idService)
+    //     ->favorable()
+    //     ->exists();
+    // }
+
+    public function demandeEnCours($idActeur){
+        if(self::whereNull('date_soumission')->where('id_acteur',$idActeur)->exists()) return true;
+    }
+
+    /**
+     * Rejeter une demande
+     */
+    public function rejeter($idSession, $motifsRejet) {
+        $this->id_session = $idSession;
+        $this->motifs_rejet = $motifsRejet;
+        $this->save();
+    }
+
+    public function aRecuAttribution() {
+        $this->motifs_rejet = null;
+        $this->save();
+    }
+
+    // TERRAIN
+    public function marquerVisite(string $observations) {
+        $this->observations = $observations;
+        $this->terrain_visite = true;
+        $this->save();
+    }
+
+    public function terrainAEteVisite(){
+        return $this->terrain_visite;
     }
 }

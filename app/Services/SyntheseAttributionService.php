@@ -102,7 +102,7 @@ class SyntheseAttributionService
         ->map(fn ($group) => (int) $group->sum('quantite_demandee'));
 
         // 2. Récupérer TOUS les appuis en base pour ces types d'appui
-    $appuis = Appui::with(['uniteAppui', 'typeAppui.service'])
+    $appuis = Appui::with(['uniteDosage', 'typeAppui.service'])
         ->whereIn('id_type_appui', $idsTypesAppuis)
         ->get();
 

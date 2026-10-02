@@ -48,6 +48,7 @@ class SimulationSortieService
     {
         $appuis = Appui::with('typeAppui.service')
             ->orderBy('libelle')
+            ->pourUtilisateur()
             ->get();
 
         $brouillon = $this->brouillon($seance);
@@ -137,16 +138,11 @@ class SimulationSortieService
     /**
      * Ce que réclament les dossiers mûrs pour l'arbitrage, appui par appui.
      *
-     * Le périmètre est celui de la séance : instruits, validés pour la
-     * commission — tous les services concernés ont rendu leur accord —, ni
-     * rejetés ni déjà attribués. Un dossier encore à l'instruction n'y figure
-     * pas : la commission ne peut rien lui allouer aujourd'hui, et le compter
-     * gonflerait une pression sur laquelle elle n'a pas la main.
+     * Le périmètre est celui de la séance : dossiers soumis, ni rejetés ni déjà
+     * attribués.
      *
-     * La liste vient de la synthèse : cette maturité se lit dans les rapports
-     * d'instruction, pas dans une colonne, donc elle ne se requête pas en SQL.
-     * C'est aussi ce qui garantit que la simulation et la synthèse imprimable
-     * comptent les mêmes dossiers.
+     * La liste vient de la synthèse, ce qui garantit que la simulation et la
+     * synthèse imprimable comptent les mêmes dossiers.
      *
      * @return Collection<int, int>
      */

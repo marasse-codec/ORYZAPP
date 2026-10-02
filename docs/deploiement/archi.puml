@@ -1,0 +1,22 @@
+@startuml
+title Diagramme de déploiement « Plateforme de gestion des appuis »
+skinparam componentStyle rectangle
+skinparam shadowing false
+left to right direction
+
+node "Poste agent" <<Ordinateur>> as poste {
+  artifact "Navigateur web" as nav
+}
+
+node "Serveur VPS (Linux)" <<serveur>> as vps {
+  node "Nginx\n(certificat SSL)" <<environnement d'exécution>> as nginx
+  node "PHP 8 / Laravel\n(MVC en 3 couches)" <<environnement d'exécution>> as app
+  database "MySQL" <<SGBD>> as db
+  folder "Stockage pièces" as files
+}
+
+nav --> nginx : HTTPS (TLS)
+nginx --> app
+app --> db
+app --> files
+@enduml

@@ -23,4 +23,14 @@ class CommissionAttribution extends Model
     {
         return $this->date_fermeture_commission === null;
     }
+
+    public function publiable(){
+
+        // Recherche attributions publiables
+        $attributions = Attribution::whereNull('date_publication')->where('id_session',$this->id_session)->first();
+
+        if(! is_null($this->date_fin_session) && ! count($attributions) === 0) return true;
+
+        return false;
+    }
 }

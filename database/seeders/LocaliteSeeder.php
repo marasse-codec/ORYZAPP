@@ -15,38 +15,43 @@ class LocaliteSeeder extends Seeder
     {
         Departement::create([
             'id_departement' => 1,
-            'lib_departement' => 'Departement 1',
+            'lib_departement' => 'Abengourou',
         ]);
 
         Departement::create([
             'id_departement' => 2,
-            'lib_departement' => 'Departement 2',
+            'lib_departement' => 'Agboville',
+        ]);
+
+        Departement::create([
+            'id_departement' => 3,
+            'lib_departement' => 'Bouake',
         ]);
 
         // 2. (Optionnel) Créer des données spécifiques "en dur"
         Localite::create([
-            'id_localite' => 1,
-            'lib_localite' => 'Localite 1',
+            'lib_localite' => 'Kongodjan',
             'id_departement' => 1,
         ]);
 
         Localite::create([
-            'id_localite' => 2,
-            'lib_localite' => 'Localite 2',
+            'lib_localite' => 'Koikoukro',
             'id_departement' => 1,
         ]);
 
         Localite::create([
-            'id_localite' => 3,
-            'lib_localite' => 'Localite 3',
+            'lib_localite' => 'Agboville',
             'id_departement' => 2,
         ]);
 
         Localite::create([
-            'id_localite' => 4,
-            'lib_localite' => 'Localite 4',
-            'id_departement' => 2,
+            'lib_localite' => 'M\'bahiakro',
+            'id_departement' => 3,
         ]);
 
+        Localite::create([
+            'lib_localite' => 'Yabra',
+            'id_departement' => 3,
+        ]);
     }
 }

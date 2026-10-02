@@ -87,16 +87,17 @@ package "Élaboration des Demandes" {
   }
 
   class Demandeur {
-    - idDemandeur : Long
-    - nom : String
-    - telephone : String
-    - email : String
-  }
+  - idDemandeur : Long
+  - nom : String
+  - telephone : String
+  - email : String
+}
 
-  class Departement {
-    - idDepartement : Long
-    - libelleDepartement : String
-  }
+ class Departement {
+  - idDepartement : Long
+  - libelleDepartement : String
+}
+
 
   class Localite {
     - idLocalite : Long
@@ -104,22 +105,26 @@ package "Élaboration des Demandes" {
   }
 
   class Campagne {
-    - idCampagne : Long
-    - libelleCampagne : String
-    - dateDebutCampagne : Date
-    - dateFinCampagne : Date
-  }
+  - idCampagne : Long
+  - libCampagne : String
+  - dateDebutCampagne : Date
+  - dateFinCampagne : Date
+}
+
 
   class StatutDemande {
     - idStatutDemande : Long
     - libelleStatutDemande : String
   }
 
-  class Demande {
-    - idDemande : Long
-    - dateDemande : Date
-    - dateDebutMiseEnPlaceSouhaitee : Date
-  }
+ class Demande {
+  - idDemande : Long
+  - dateDebutMiseEnPlaceSouhaitee : Date
+  - dateFinMiseEnPlaceEsperee: Date
+  - dateSoummission: Date
+  - nomDemandeur : String
+  - mailDemandeur : String
+}
 
   class HistoriqueDemande {
     - idHistorique : Long
@@ -176,12 +181,10 @@ package "Catalogue & Référentiel Appuis" {
   }
 
   class Equipement {
-    - idEquipement : Long
-    - matriculeEquipement : String
-    - etat : String
-    - remis : Boolean
-    - estEquipement : Boolean
-  }
+  - idEquipement : Long
+  - matriculeEquipement : String
+  - enService : Boolean
+}
 }
 
 ' ============================================================
@@ -198,9 +201,8 @@ package "Octroi & Commission" {
   class Attribution {
     - idAttribution : Long
     - observation : String
-    - datePublication : Date
-    - dateDestockage : Date
   }
+
 
   class StatutAttribution {
     - idStatutAttribution : Long
@@ -242,17 +244,17 @@ package "Gestion des Stocks" {
     - origine : String
   }
 
-  class TypeMouvement {
-    - idTypeMouvement : Long
-    - libelleTypeMouvement : String
+  class TypeMouvementStock {
+    - idTypeMouvementStock : Long
+    - libelleTypeMouvementStock : String
   }
 
-  class MouvementStock {
-    - idMouvementStock : Long
-    - quantite : Integer
-    - dateMouvement : DateTime
-    - motif : String
-  }
+class MouvementStock {
+  - idMouvementStock : Long
+  - quantite : Integer
+  - dateMouvement : DateTime
+  - motif : String
+}
 }
 
 ' ============================================================
@@ -305,7 +307,7 @@ Attribution "1" *-- "0..*" PieceEnlevement : autoriser <
 TypePieceBon "1" -- "0..*" PieceEnlevement : typer >
 
 ' --- Stock & Logistique ---
-MouvementStock "0..*" -- "1" TypeMouvement : qualifier >
+MouvementStock "0..*" -- "1" TypeMouvementStock : qualifier >
 MouvementStock "0..*" -- "1" ReferenceAppui : impacter >
 MouvementStock "0..*" -- "0..1" Equipement : tracer >
 Approvisionnement "0..1" o-- "0..*" MouvementStock : alimenter >

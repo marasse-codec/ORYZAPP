@@ -1,3 +1,6 @@
+@php
+    use App\Enums\RoleEnum;
+@endphp
 @extends($layout ?? 'layouts.app')
 
 @section('content')
@@ -16,28 +19,32 @@
             <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
                 <div>
                     <h1 class="text-2xl font-bold text-[--color-primary]">
-                        DEM-{{ $demande->date_demande?->format('Y') }}-{{ str_pad($demande->id_demande, 3, '0', STR_PAD_LEFT) }}
+                        Demande {{str_pad($demande->id_demande, 3, '0', STR_PAD_LEFT) }}
                     </h1>
-                    <p class="text-sm text-slate-500">
-                        Déposée le {{ $demande->date_demande?->format('d/m/Y') }} ·
-                        Mise en place souhaitée le {{ $demande->debut_periode_mise_en_place?->format('d/m/Y') }}
+                    <p class="text-sm text-slate-500 mt-1">
+                        Déposée le {{ $demande->date_demande?->format('d/m/Y') }} · <br>
+                        Début de mise en place souhaité : <strong>{{ $demande->periode_debut_mise_en_place?->format('d/m/Y') }}</strong> <br>
+                        Fin de mise en place espérée : <strong>{{ $demande->periode_fin_mise_en_place?->format('d/m/Y') }}</strong>
                     </p>
                 </div>
-                <span class="inline-block rounded-full px-3 py-1.5 text-xs font-semibold {{ $demande->soumise ? "bg-green-500" : "bg-red-500" }}">
-                    {{ $demande->soumise ? "Demande soumise" : "Demande en brouillon" }}
-                </span>
 
-                <a href="{{ route('demandes.pdf', $demande->id_demande) }}" 
-                    target="_blank"
-                    class="inline-flex SQLSTATE[HY000]: General error: 1364 Field 'id_demande' doesn't have a default value (Connection: mysql, Host: aderiz-mysql, Port: 3306, Database: aderiz_app, SQL: insert into `demandes_corrections` (`id_traitement`, `motif`, `date_demande_correction`, `updated_at`, `created_at`) values (1, Modifie, 2026-09-11 11:11:05, 2026-09-11 11:11:05, 2026-09-11 11:11:05))  items-center gap-2 rounded-lg bg-[--color-primary] px-4 py-2 text-sm font-semibold text-white shadow-sm hover:opacity-90">
-                        <span class="material-symbols-outlined text-base">picture_as_pdf</span> Télécharger la fiche PDF (A4)
-                </a>
+                <div class="flex flex-wrap items-center gap-2">
+                    <span class="inline-block rounded-full px-3 py-1.5 text-xs font-semibold text-white {{ $demande->estSoumise() ? 'bg-emerald-600' : 'bg-[--color-label-brouillon]' }}">
+                        {{ $demande->estSoumise() ? 'Demande soumise' : 'Demande en brouillon' }}
+                    </span>
+
+                    <a href="{{ route('demandes.pdf', $demande->id_demande) }}" 
+                       target="_blank"
+                       class="inline-flex items-center gap-2 rounded-lg bg-[--color-primary] px-4 py-2 text-sm font-semibold text-white shadow-sm hover:opacity-90 transition-opacity">
+                        <span class="material-symbols-outlined text-base">picture_as_pdf</span> Imprimer la demande
+                    </a>
+                </div>
             </div>
 
-            @if ($demande->motifs_rejet)
+            @if ($demande->motifs_rejet && ($demande->sessionCommission?->estFinie() || auth()->user()->hasRole(RoleEnum::agentCommission)))
                 <div class="mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3">
                     <p class="text-sm font-semibold text-red-800">
-                        Demande rejetée le {{ $demande->date_rejet?->format('d/m/Y') }}
+                       Motif de rejet
                     </p>
                     <p class="mt-1 text-sm text-red-700">{{ $demande->motifs_rejet }}</p>
                 </div>
@@ -48,8 +55,14 @@
         <div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
             <h2 class="mb-4 text-base font-semibold text-[--color-primary]">Demandeur</h2>
             <dl class="grid gap-4 sm:grid-cols-2 text-sm">
+                @if ($demande->nom_structure)
+                    <div class="sm:col-span-2">
+                        <dt class="text-xs uppercase tracking-wide text-slate-500">Nom de la structure</dt>
+                        <dd class="mt-0.5 font-semibold text-slate-800">{{ $demande->nom_structure }}</dd>
+                    </div>
+                @endif
                 <div>
-                    <dt class="text-xs uppercase tracking-wide text-slate-500">Nom</dt>
+                    <dt class="text-xs uppercase tracking-wide text-slate-500">Représentant / Nom</dt>
                     <dd class="mt-0.5 text-slate-800">{{ $demande->acteur?->nom }}</dd>
                 </div>
                 <div>
@@ -65,10 +78,16 @@
                     <dd class="mt-0.5 text-slate-800">{{ $demande->acteur?->email ?? '—' }}</dd>
                 </div>
                 <div class="sm:col-span-2">
-                    <dt class="text-xs uppercase tracking-wide text-slate-500">Localité</dt>
-                    <dd class="mt-0.5 text-slate-800">
-                        {{ $demande->localite?->lib_localite }}
-                        <span class="text-slate-500">({{ $demande->localite?->departement?->lib_departement }})</span>
+                    <dt class="text-xs uppercase tracking-wide text-slate-500">Localité(s) concernée(s)</dt>
+                    <dd class="mt-1.5 flex flex-wrap gap-1.5">
+                        @forelse ($demande->localites as $localite)
+                            <span class="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700 border border-slate-200">
+                                {{ $localite->lib_localite }} 
+                                <span class="text-slate-400 ml-1">({{ $localite->departement?->lib_departement }})</span>
+                            </span>
+                        @empty
+                            <span class="text-slate-400 italic">Aucune localité renseignée</span>
+                        @endforelse
                     </dd>
                 </div>
             </dl>
@@ -107,39 +126,7 @@
             @endif
         </div>
 
-
-
-
-
-        {{-- Appuis --}}
-        <div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-            <h2 class="mb-4 text-base font-semibold text-[--color-primary]">Types d'appuis sollicités</h2>
-            <table class="min-w-full divide-y divide-slate-200 text-sm">
-                <thead class="text-left text-xs uppercase tracking-wide text-slate-500">
-                    <tr>
-                        <th class="pb-2">Type d'appui</th>
-                        <th class="pb-2">Service</th>
-                        <th class="pb-2 text-right">Quantité</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-slate-100">
-                    @foreach ($demande->lignes as $ligne)
-                        <tr>
-                            <td class="py-2 text-slate-800">
-                                {{ $ligne->type_appui?->lib_type_appui }}
-                                <span class="block text-xs text-slate-500">{{ $ligne->typeAppui?->lib_type_appui }}</span>
-                            </td>
-                            <td class="py-2 text-slate-600">{{ $ligne->typeAppui?->service?->lib_service }}</td>
-                            <td class="py-2 text-right text-slate-800">
-                                {{ $ligne->quantite_demandee }}
-                            </td>
-                        </tr>
-                    @endforeach
-                </tbody>
-            </table>
-        </div>
-
-        {{-- Pièces --}}
+        {{-- Pièces justificatives --}}
         <div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
             <div class="mb-4 flex items-center justify-between gap-3">
                 <h2 class="text-base font-semibold text-[--color-primary]">Pièces justificatives</h2>
@@ -165,81 +152,79 @@
             @endif
         </div>
 
-
-
-
-
-
-
-        {{-- Attribution --}}
-        @if ($demande->attributions)
-            <div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-                <div class="mb-4 flex items-center justify-between">
-                    <h2 class="text-base font-semibold text-[--color-primary]">Attribution</h2>
-                    <a href="{{ route('attributions.bon', $demande->attribution->id_attribution) }}"
-                       class="rounded-md bg-[--color-primary] px-3 py-1.5 text-xs font-semibold text-white hover:opacity-90">
-                        Bon d'attribution
-                    </a>
-                </div>
-                <table class="min-w-full divide-y divide-slate-200 text-sm">
-                    <thead class="text-left text-xs uppercase tracking-wide text-slate-500">
+        {{-- Appuis sollicités --}}
+        <div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+            <h2 class="mb-4 text-base font-semibold text-[--color-primary]">Types d'appuis sollicités</h2>
+            <table class="min-w-full divide-y divide-slate-200 text-sm">
+                <thead class="text-left text-xs uppercase tracking-wide text-slate-500">
+                    <tr>
+                        <th class="pb-2">Type d'appui</th>
+                        <th class="pb-2">Service en charge</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    @foreach ($demande->lignes as $ligne)
                         <tr>
-                            <th class="pb-2">Appui</th>
-                            <th class="pb-2 text-right">Quantité</th>
-                            <th class="pb-2 text-right">Montant</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-slate-100">
-                        @foreach ($demande->attribution->lignesAttributions as $ligne)
-                            <tr>
-                                <td class="py-2 text-slate-800">{{ $ligne->appui?->libelle }}</td>
-                                <td class="py-2 text-right text-slate-800">{{ $ligne->quantite_attribuee }}</td>
-                                <td class="py-2 text-right text-slate-800">{{ number_format($ligne->montant(), 0, ',', ' ') }} F</td>
-                            </tr>
-                        @endforeach
-                    </tbody>
-                    <tfoot>
-                        <tr class="border-t border-slate-200 font-semibold">
-                            <td colspan="2" class="pt-2 text-slate-700">Total</td>
-                            <td class="pt-2 text-right text-slate-800">
-                                {{ number_format($demande->attribution->montantTotal(), 0, ',', ' ') }} F
+                            <td class="py-2 font-medium text-slate-800">
+                                {{ $ligne->typeAppui?->lib_type_appui }}
+                            </td>
+                            <td class="py-2 text-slate-600">
+                                {{ $ligne->typeAppui?->service?->lib_service ?? 'Non assigné' }}
                             </td>
                         </tr>
-                    </tfoot>
-                </table>
-                @if ($demande->attribution->commentaires)
-                    <p class="mt-4 rounded-lg bg-slate-50 px-4 py-3 text-sm text-slate-600">
-                        {{ $demande->attribution->commentaires }}
-                    </p>
-                @endif
-            </div>
-        @endif
-
-        {{-- Instruction --}}
-        @if ($demande->rapports->isNotEmpty())
-            <div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-                <h2 class="mb-4 text-base font-semibold text-[--color-primary]">Instruction</h2>
-                <ul class="space-y-3 text-sm">
-                    @foreach ($demande->rapports as $rapport)
-                        <li class="rounded-lg border border-slate-200 px-4 py-3">
-                            <div class="flex items-center justify-between">
-                                <span class="font-medium text-slate-800">{{ $rapport->service?->lib_service }}</span>
-                                <span class="text-xs {{ $rapport->estAccorde() ? 'text-emerald-700' : 'text-orange-700' }}">
-                                    {{ $rapport->estAccorde() ? 'Autorisée le '.$rapport->accord_service->format('d/m/Y') : 'En cours' }}
-                                </span>
-                            </div>
-                            @if ($rapport->commentaire)
-                                <p class="mt-1 text-slate-600">{{ $rapport->commentaire }}</p>
-                            @endif
-                        </li>
                     @endforeach
-                </ul>
+                </tbody>
+            </table>
+        </div>
+
+        {{-- Attributions --}}
+        @if ($demande->attributions->isNotEmpty())
+            <div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm space-y-6">
+                <h2 class="text-base font-semibold text-[--color-primary]">Attributions accordées</h2>
+
+                @foreach ($demande->attributions as $attribution)
+                    <div class="border-t border-slate-100 pt-4 first:border-0 first:pt-0">
+                        <table class="min-w-full divide-y divide-slate-200 text-sm">
+                            <thead class="text-left text-xs uppercase tracking-wide text-slate-500">
+                                <tr>
+                                    <th class="pb-2">Appui</th>
+                                    <th class="pb-2 text-right">Quantité</th>
+                                    <th class="pb-2 text-right">Montant</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100">
+                                @foreach ($attribution->lignesAttributions as $ligne)
+                                    <tr>
+                                        <td class="py-2 text-slate-800">{{ $ligne->appui?->libelle }}</td>
+                                        <td class="py-2 text-right text-slate-800">{{ $ligne->quantite_attribuee }}</td>
+                                        <td class="py-2 text-right text-slate-800">{{ number_format($ligne->montant(), 0, ',', ' ') }} F</td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                            <tfoot>
+                                <tr class="border-t border-slate-200 font-semibold">
+                                    <td colspan="2" class="pt-2 text-slate-700">Total</td>
+                                    <td class="pt-2 text-right text-slate-800">
+                                        {{ number_format($attribution->montantTotal(), 0, ',', ' ') }} F
+                                    </td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                        @if ($attribution->commentaires)
+                            <p class="mt-3 rounded-lg bg-slate-50 px-4 py-3 text-sm text-slate-600">
+                                {{ $attribution->commentaires }}
+                            </p>
+                        @endif
+                    </div>
+                @endforeach
             </div>
         @endif
 
-        <a href="{{ route('demandes.index') }}" class="inline-block text-sm font-medium text-[--color-primary] hover:underline">
-            ← Retour à la liste
-        </a>
+        <div class="pt-2">
+            <a href="{{ route('demandes.index') }}" class="inline-flex items-center gap-1 text-sm font-medium text-[--color-primary] hover:underline">
+                ← Retour à la liste des demandes
+            </a>
+        </div>
     </div>
 </div>
 @endsection

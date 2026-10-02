@@ -38,7 +38,6 @@ class ReferenceAppui {
   - libelleReferenceAppui : String
   - quantiteEnStock : Integer
   - coutUnitaire : Double
-  - estEquipement : Boolean
 }
 
 class Equipement {
@@ -58,23 +57,15 @@ class TypePieceBon {
   - libelleTypePiece : String
 }
 
-class BonAttribution {
-  - idBonAttribution : Long
-  - dateEditionBon : Date
-  - dateSignatureBon : Date
+class Attribution {
+  - idAttribution : Long
   - dateEnlevementAppuis : Date
+  - dateRestitutionAppuis : Date
   - observation : String
 }
 
-note right of [BonAttribution]
-  ! Remarque !
-  Ajout de dateEnlevementAppuis
-  Pour suivre la date à laquelle
-  les appuis ont été retirés du stock
-end note
-
-class LigneBonAttribution {
-  - idLigneBonAttribution : Long
+class LigneAttribution {
+  - idLigneAttribution : Long
   - quantiteAttribuee : Integer
   - remise : Double
 }
@@ -84,10 +75,10 @@ class PieceEnlevement {
   - cheminFichier : String
 }
 
-BonAttribution "1" *-- "1..*" LigneBonAttribution : comporter >
-BonAttribution "1" *-- "0..*" PieceEnlevement : autoriser <
+Attribution "1" *-- "1..*" LigneAttribution : comporter >
+Attribution "1" *-- "0..*" PieceEnlevement : autoriser <
 TypePieceBon "1" -- "0..*" PieceEnlevement : typer 
-LigneBonAttribution "0..*" -- "1" ReferenceAppui : concerner >
+LigneAttribution "0..*" -- "1" ReferenceAppui : concerner >
 
 ' ============================================================
 ' MOUVEMENTS LOGISTIQUES ET STOCK
@@ -98,7 +89,7 @@ class Approvisionnement {
   - referenceCommande : String
   - dateApprovisionnement : Date
   - origine : String
-}
+} 
 
 class TypeMouvement {
   - idTypeMouvement : Long
@@ -116,7 +107,7 @@ MouvementStock "0..*" -- "1" TypeMouvement : qualifier
 MouvementStock "0..*" -r- "1" ReferenceAppui : impacter >
 MouvementStock "0..*" -- "0..1" Equipement : tracer >
 Approvisionnement "0..1" o-- "0..*" MouvementStock : alimenter >
-LigneBonAttribution "0..1" -- "0..*" MouvementStock : provoquer >
+Attribution "0..1" -- "0..*" MouvementStock : provoquer >
 
 class Agent {
   - idAgent : Long

@@ -2,14 +2,15 @@
 
 namespace App\Exports;
 
+use App\Enums\RoleEnum;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Concerns\FromCollection;
+use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
-use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use Maatwebsite\Excel\Concerns\WithStyles;
 use Maatwebsite\Excel\Facades\Excel;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
@@ -18,19 +19,48 @@ class AttributionsExport implements FromCollection, WithHeadings, WithMapping, S
 {
     protected $dateDebut;
     protected $dateFin;
+    protected array $colonnesSelectionnees;
 
-    public function __construct($dateDebut = null, $dateFin = null)
+    // Catalogue complet des colonnes disponibles
+    public static function catalogueColonnes(): array
+    {
+        if(auth()->user()->hasRole(RoleEnum::dp->value)){
+            return [
+                'id_attribution' => 'ID Attribution',
+                'code_demande' => 'N° Demande',
+                'beneficiaire' => 'Bénéficiaire'
+            ];
+        }
+
+        return [
+            'id_attribution' => 'ID Attribution',
+            'code_demande' => 'N° Demande',
+            'superficie_totale' => 'Superficie totale (ha)',
+            'service_nom' => 'Service Traitant',
+            'beneficiaire' => 'Bénéficiaire',
+            'appui_libelle' => 'Appui Attribué',
+            'quantite_attribuee' => 'Quantité Attribuée',
+            'cout_attribution' => 'Coût Attribution (FCFA)',
+            'systemes_production' => 'Détail Systèmes de Production (ha)',
+            'statut' => 'Statut',
+            'created_at' => 'Date d\'Attribution',
+        ];
+    }
+
+    public function __construct($dateDebut = null, $dateFin = null, array $colonnesSelectionnees = [])
     {
         $this->dateDebut = $dateDebut;
         $this->dateFin = $dateFin;
+        // Si aucune colonne n'est choisie, on exporte toutes les colonnes par défaut
+        $this->colonnesSelectionnees = !empty($colonnesSelectionnees) 
+            ? $colonnesSelectionnees 
+            : array_keys(self::catalogueColonnes());
     }
 
     public function collection(): Collection
     {
         $dateDebut = $this->dateDebut ? Carbon::parse($this->dateDebut)->startOfDay() : now()->startOfYear();
         $dateFin = $this->dateFin ? Carbon::parse($this->dateFin)->endOfDay() : now()->endOfDay();
-
-        $typesSystemes = DB::table('types_systemes_productions')->get();
 
         $selects = [
             'attributions.id_attribution',
@@ -45,9 +75,13 @@ class AttributionsExport implements FromCollection, WithHeadings, WithMapping, S
             DB::raw("SUM(systemes_productions.superficie) as superficie_totale_demande")
         ];
 
-        foreach ($typesSystemes as $type) {
-            $idType = (int) $type->id_type_systeme_production;
-            $selects[] = DB::raw("SUM(CASE WHEN types_systemes_productions.id_type_systeme_production = {$idType} THEN systemes_productions.superficie ELSE 0 END) as sys_type_{$idType}");
+        // Colonnes dynamiques pour les systèmes de production
+        if (in_array('systemes_production', $this->colonnesSelectionnees)) {
+            $typesSystemes = DB::table('types_systemes_productions')->get();
+            foreach ($typesSystemes as $type) {
+                $idType = (int) $type->id_type_systeme_production;
+                $selects[] = DB::raw("SUM(CASE WHEN types_systemes_productions.id_type_systeme_production = {$idType} THEN systemes_productions.superficie ELSE 0 END) as sys_type_{$idType}");
+            }
         }
 
         return DB::table('attributions')
@@ -78,34 +112,25 @@ class AttributionsExport implements FromCollection, WithHeadings, WithMapping, S
 
     public function headings(): array
     {
-        $typesSystemes = DB::table('types_systemes_productions')->pluck('lib_type_systeme_production')->toArray();
+        $headers = [];
+        $catalogue = self::catalogueColonnes();
 
-        $headers = [
-            'ID Attribution',
-            'N° Demande',
-            'Superficie totale (ha)',
-            'Service Traitant',
-            'Bénéficiaire',
-            'Appui Attribué',
-            'Quantité Attribuée',
-            'Coût Attribution (FCFA)',
-        ];
-
-        // En-têtes dynamiques pour chaque système de production
-        foreach ($typesSystemes as $libelle) {
-            $headers[] = 'Sup. ' . $libelle . ' (ha)';
+        foreach ($this->colonnesSelectionnees as $col) {
+            if ($col === 'systemes_production') {
+                $typesSystemes = DB::table('types_systemes_productions')->pluck('lib_type_systeme_production')->toArray();
+                foreach ($typesSystemes as $libelle) {
+                    $headers[] = 'Sup. ' . $libelle . ' (ha)';
+                }
+            } elseif (isset($catalogue[$col])) {
+                $headers[] = $catalogue[$col];
+            }
         }
-
-        $headers[] = 'Statut';
-        $headers[] = 'Date d\'Attribution';
 
         return $headers;
     }
 
     public function map($row): array
     {
-        $typesSystemes = DB::table('types_systemes_productions')->get();
-
         $statuts = [
             1 => 'Brouillon',
             2 => 'Soumise',
@@ -113,27 +138,50 @@ class AttributionsExport implements FromCollection, WithHeadings, WithMapping, S
             4 => 'Annulée',
         ];
 
-        $statutLibelle = $statuts[$row->id_statut_attribution] ?? 'Statut ' . $row->id_statut_attribution;
+        $data = [];
 
-        $data = [
-            'ATTR-' . $row->id_attribution,
-            $row->code_demande,
-            (float) $row->superficie_totale_demande,
-            $row->service_nom ?? 'Non renseigné',
-            $row->beneficiaire ?? 'N/A',
-            $row->appui_libelle ?? 'N/A',
-            (int) $row->quantite_attribuee,
-            number_format((float) $row->cout_attribution, 0, ',', ' '),
-        ];
-
-        // Insertion des colonnes dynamiques
-        foreach ($typesSystemes as $type) {
-            $colKey = 'sys_type_' . $type->id_type_systeme_production;
-            $data[] = (float) ($row->$colKey ?? 0);
+        foreach ($this->colonnesSelectionnees as $col) {
+            switch ($col) {
+                case 'id_attribution':
+                    $data[] = 'ATTR-' . str_pad($row->id_attribution, 3, '0', STR_PAD_LEFT);
+                    break;
+                case 'code_demande':
+                    $data[] = $row->code_demande;
+                    break;
+                case 'superficie_totale':
+                    $data[] = (float) $row->superficie_totale_demande;
+                    break;
+                case 'service_nom':
+                    $data[] = $row->service_nom ?? 'Non renseigné';
+                    break;
+                case 'beneficiaire':
+                    $data[] = $row->beneficiaire ?? 'N/A';
+                    break;
+                case 'appui_libelle':
+                    $data[] = $row->appui_libelle ?? 'N/A';
+                    break;
+                case 'quantite_attribuee':
+                    $data[] = (int) $row->quantite_attribuee;
+                    break;
+                case 'cout_attribution':
+                    $data[] = number_format((float) $row->cout_attribution, 0, ',', ' ');
+                    break;
+                case 'systemes_production':
+                    $typesSystemes = DB::table('types_systemes_productions')->get();
+                    foreach ($typesSystemes as $type) {
+                        $colKey = 'sys_type_' . $type->id_type_systeme_production;
+                        $data[] = (float) ($row->$colKey ?? 0);
+                    }
+                    break;
+                case 'statut':
+                    $statutLibelle = $statuts[$row->id_statut_attribution] ?? 'Statut ' . $row->id_statut_attribution;
+                    $data[] = strtoupper($statutLibelle);
+                    break;
+                case 'created_at':
+                    $data[] = date('d/m/Y H:i', strtotime($row->created_at));
+                    break;
+            }
         }
-
-        $data[] = strtoupper($statutLibelle);
-        $data[] = date('d/m/Y H:i', strtotime($row->created_at));
 
         return $data;
     }
@@ -149,14 +197,5 @@ class AttributionsExport implements FromCollection, WithHeadings, WithMapping, S
                 ]
             ],
         ];
-    }
-
-            public function exporterAttributions(Request $request)
-    {
-        $dateDebut = $this->dateDebut ? Carbon::parse($this->dateDebut)->startOfDay() : now()->startOfYear();
-        $dateFin = $this->dateFin ? Carbon::parse($this->dateFin)->endOfDay() : now()->endOfDay();
-        $nomFichier = 'Varyza_Attributions_' . now()->format('Y_m_d_His') . '.xlsx';
-
-        return Excel::download(new AttributionsExport($dateDebut, $dateFin), $nomFichier);
     }
 }

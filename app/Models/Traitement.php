@@ -6,80 +6,41 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Table;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Collection;
 
-#[Fillable(
-    'date_fin_traitement',
-    'observation_interne',
-    'motifs_rejet',
-    'id_service',
-    'id_demande',
-    'id_traitement'
-)]
+/**
+ * Correspondance entre une demande et les services dont elle sollicite les
+ * appuis : c'est elle qui dit quel service a accès à quelle demande.
+ * Une ligne par couple (demande, service).
+ */
+#[Fillable('id_service', 'id_demande')]
 #[Table('traitements')]
 class Traitement extends Model
 {
     protected $primaryKey = 'id_traitement';
 
-    protected $casts = [
-        'date_fin_traitement' => 'datetime',
-    ];
-
     public function demande(): BelongsTo
     {
-        return $this->belongsTo(
-            Demande::class,
-            'id_demande',
-            'id_demande'
-        );
+        return $this->belongsTo(Demande::class, 'id_demande', 'id_demande');
     }
 
     public function service(): BelongsTo
     {
-        return $this->belongsTo(
-            Service::class,
-            'id_service',
-            'id_service'
-        );
+        return $this->belongsTo(Service::class, 'id_service', 'id_service');
     }
-
-    public function attribution(): HasOne {
-        return $this->hasOne(Attribution::class,'id_traitement','id_traitement');
-    }
-
-    /** METIER */
 
     /**
-     * Crée les traitements pour une demande et une liste de services.
+     * Rattache une demande à ses services, sans doublon.
      *
-     * @param int $idDemande
      * @param Collection<int, Service> $services
-     * @return void
      */
     public static function creerTraitements(int $idDemande, Collection $services): void
     {
         foreach ($services as $service) {
-            Traitement::firstOrCreate([
+            self::firstOrCreate([
                 'id_demande' => $idDemande,
                 'id_service' => $service->id_service,
             ]);
         }
     }
-
-    public function demandesCorrections(): HasMany
-    {
-        return $this->hasMany(
-            DemandeCorrection::class,
-            'id_traitement',
-            'id_traitement'
-        );
-    }
-
-    public static function traitementTerminee($idDemande)
-    {
-        return Traitement::where('id_demande', $idDemande)->whereNotNull('date_fin_traitement')->get();
-    }
-
 }

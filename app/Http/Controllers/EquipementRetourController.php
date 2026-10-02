@@ -31,37 +31,27 @@ class EquipementRetourController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'id_equipement' => ['required', 'exists:equipements,id_equipement'],
-            'etat'          => ['required', 'string', 'in:Bon état,Abîmé,Défectueux'],
+            'retours'                 => ['required', 'array', 'min:1'],
+            'retours.*.id_equipement' => ['required', 'exists:equipements,id_equipement'],
+            'retours.*.etat'          => ['required', 'in:Bon état,Abîmé,Défectueux'],
         ]);
 
-        $typeRetour = TypeMouvementStock::where('id_type_mouvement_stock',TypeMouvementStockEnum::RETOUR)->firstOrFail();
+        DB::transaction(function () use ($validated) {
+            foreach ($validated['retours'] as $retour) {
+                $equipement = Equipement::findOrFail($retour['id_equipement']);
+                
+                // Mise à jour de l'équipement
+                $equipement->update([
+                    'etat' => $retour['etat'],
+                    'disponible' => true, // Ou autre logique métier
+                ]);
 
-        DB::transaction(function () use ($validated, $typeRetour) {
-            $equipement = Equipement::findOrFail($validated['id_equipement']);
-
-            $equipement->update([
-                'etat'       => $validated['etat'],
-                'en_service' => false,
-            ]);
-
-            MouvementStock::create([
-                'id_type_mouvement_stock' => $typeRetour->id_type_mouvement_stock,
-                'quantite'                => 1,
-                'date_mouvement'          => now(),
-                'id_appui'                => $equipement->id_appui,
-                'id_equipement'           => $equipement->id_equipement,
-                'id_agent'                => Agent::where('user_id',Auth::id())->value('id_agent'),
-            ]);
-
-            // 3. Incrémenter la quantité en stock de l'appui associé (+1)
-            if ($equipement->appui) {
-                $equipement->appui()->increment('quantite_en_stock', 1);
+                // Optionnel : Enregistrer un historique/mouvement de restitution
+                // Restitution::create([...]);
             }
         });
 
-        return redirect()
-            ->route('equipements.index')
-            ->with('success', 'Retour enregistré avec succès.');
+        return redirect()->route('equipements.index')
+            ->with('success', count($validated['retours']) . ' équipement(s) restitué(s) avec succès.');
     }
 }

@@ -1,3 +1,7 @@
+@php
+    use App\Enums\PermissionEnum;
+@endphp
+
 @extends($layout ?? 'layouts.aderiz')
 
 @section('content')
@@ -25,7 +29,7 @@
                               onsubmit="return confirm('Clôturer définitivement cette séance ?')">
                             @csrf
                             <button type="submit"
-                                    class="rounded-md border border-slate-300 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50">
+                                    class="rounded-md border border-red-300 bg-red-50 px-2.5 py-1 text-xs font-medium text-red-700 hover:bg-red-100">
                                 Clôturer
                             </button>
                         </form>
@@ -35,15 +39,36 @@
                         Clôturée le {{ $session->date_fin_session?->format('d/m/Y') }}
                     </span>
                 @endif
+                <a href="{{ url()->previous() }}"
+                   class="rounded-md border border-slate-300 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">
+                    Retour
+                </a>
+                @can(PermissionEnum::gererCommission->value)
+                    @if ($publiable)
+                        
+                        <form action="{{ route('attributions.publier') }}"
+                            method="POST"
+                            class="inline">
+                            @csrf
+                            <input hidden name="id_session" value={{$session->id_session}} />
+                            <button type="submit"
+                                    class="text-sm font-medium text-[--color-primary] hover:underline"
+                                    onclick="return confirm('Voulez vous publier')">
+                                    Publier
+                            </button>
+
+                    @endif
+                    </form>
+                @endcan
             </div>
         </div>
 
         @include('partials.flash')
 
-        {{-- Attributions à arbitrer --}}
+        {{-- Demandes à traiter --}}
         <div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
             <h2 class="mb-4 text-base font-semibold text-[--color-primary]">
-                Attributions en attente d'arbitrage ({{ $enAttente->count() }})
+                Demandes en attente d'arbitrage ({{ $enAttente->count() }})
             </h2>
 
             @if ($enAttente->isEmpty())
@@ -56,7 +81,7 @@
                 <table class="min-w-full divide-y divide-slate-200 text-sm">
                     <thead class="text-left text-xs uppercase tracking-wide text-slate-500">
                         <tr>
-                            <th class="pb-2">Dossier</th>
+                            <th class="pb-2">Demande</th>
                             <th class="pb-2">Demandeur</th>
                             <th class="pb-2">Localité</th>
                             <th class="pb-2 text-center">Appuis</th>
@@ -64,18 +89,18 @@
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100">
-                        @foreach ($enAttente as $attribution)
+                        @foreach ($enAttente as $demande)
                             <tr>
                                 <td class="py-2 font-medium text-slate-800">
-                                    DEM-{{ $attribution->demande->date_demande?->format('Y') }}-{{ str_pad($attribution->demande->id_demande, 3, '0', STR_PAD_LEFT) }}
+                                    DEM-{{ str_pad($demande->id_demande, 3, '0', STR_PAD_LEFT) }}
                                 </td>
-                                <td class="py-2 text-slate-600">{{ $attribution->demande->acteur?->nom }}</td>
-                                <td class="py-2 text-slate-600">{{ $attribution->demande->localite?->lib_localite }}</td>
-                                <td class="py-2 text-center text-slate-600">{{ $attribution->demande->lignes->count() }}</td>
+                                <td class="py-2 text-slate-600">{{ $demande->acteur?->nom }}</td>
+                                <td class="py-2 text-slate-600">{{ $demande->localite?->lib_localite }}</td>
+                                <td class="py-2 text-center text-slate-600">{{ $demande->lignes->count() }}</td>
                                 <td class="py-2 text-right">
-                                    <a href="{{ route('attributions.show', $attribution->id_attribution) }}"
+                                    <a href="{{ route('attributions.create', ['idDemande' => $demande->id_demande, 'idSession'=>$session->id_session]) }}"
                                        class="rounded-md bg-[--color-primary] px-3 py-1.5 text-xs font-semibold text-white hover:opacity-90">
-                                        Traiter
+                                        Décider
                                     </a>
                                 </td>
                             </tr>
@@ -85,7 +110,7 @@
             @endif
         </div>
 
-        {{-- Attributions arbitrés --}}
+        {{-- Attributions créés --}}
         <div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
             <h2 class="mb-4 text-base font-semibold text-[--color-primary]">
                 Attributions de la séance ({{ $session->attributions->count() }})
@@ -97,7 +122,7 @@
                 <table class="min-w-full divide-y divide-slate-200 text-sm">
                     <thead class="text-left text-xs uppercase tracking-wide text-slate-500">
                         <tr>
-                            <th class="pb-2">Dossier</th>
+                            <th class="pb-2">Attribution</th>
                             <th class="pb-2">Demandeur</th>
                             <th class="pb-2 text-center">Lignes</th>
                             <th class="pb-2 text-right">Montant</th>
@@ -129,17 +154,7 @@
                                 </td>
                                 <td class="py-2 text-right">
                                     <div class="flex items-center justify-end gap-2">
-                                        {{-- Bouton Valider --}}
-                                        <form action="{{ route('attributions.valider') }}" method="POST" class="inline">
-                                            @csrf
-                                            <input type="hidden" name="id_attribution" value="{{ $attribution->id_attribution }}">
-                                            <button type="submit" 
-                                                    class="rounded-md border border-emerald-300 bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700 hover:bg-emerald-100"
-                                                    onclick="return confirm('Valider cette attribution ?')">
-                                                Valider
-                                            </button>
-                                        </form>
-
+                                        @if($session->estOuverte())
                                         {{-- Bouton Annuler --}}
                                         <form action="{{ route('attributions.annuler') }}" method="POST" class="inline">
                                             @csrf
@@ -150,6 +165,7 @@
                                                 Annuler
                                             </button>
                                         </form>
+                                        @endif
                                     </div>
                                 </td>
                             </tr>

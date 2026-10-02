@@ -2,34 +2,38 @@
 
 namespace App\Http\Controllers;
 
-use App\Enums\StatutDemandeE;
-use App\Models\Demande;
+use App\Enums\RoleEnum;
+use App\Services\StatistiqueService;
 use App\Utils\Helper;
 use Illuminate\Support\Facades\Auth;
 
+/**
+ * Tableau de bord : chaque rôle voit les chiffres de son étape du cycle de
+ * vie. Un utilisateur n'a qu'un rôle ; l'admin les voit tous.
+ */
 class DashboardController extends Controller
 {
-    public function __invoke()
+    public function __invoke(StatistiqueService $stats)
     {
-        $demandes = Demande::query()
-            ->pourUtilisateur(Auth::user())
-            ->with(['attribution', 'rapports', 'lignes.typeAppui.service'])
-            ->get();
+        $user = Auth::user();
+        $estAdmin = $user->hasRole(RoleEnum::admin->value);
 
-        $repartition = collect(StatutDemandeE::cases())
-            ->mapWithKeys(fn (StatutDemandeE $statut) => [
-                $statut->value => [
-                    'statut' => $statut,
-                    'total'  => $demandes->filter(fn (Demande $d) => 
-                        $d->statut === $statut || $d->statut === $statut->value
-                    )->count(),
-                ],
-            ]);
+        // Blocs affichés : un par rôle, tous pour l'admin.
+        $blocs = [
+            'commission' => $estAdmin || $user->hasRole(RoleEnum::agentCommission->value),
+            'stock' => $estAdmin || $user->hasRole(RoleEnum::gestionnaireStock->value),
+        ];
 
         return view('dashboard', [
-            'total'       => $demandes->count(),
-            'repartition' => $repartition,
-            'layout'      => Helper::layout(),
+            'layout' => Helper::layout(),
+            'estAdmin' => $estAdmin,
+            'etats' => $stats->demandesParEtat($user),
+            'parCampagne' => $stats->demandesParCampagne($user),
+            'attributions' => $stats->dernieresAttributions(),
+            'commission' => $blocs['commission'] ? $stats->commission() : null,
+            'stock' => $blocs['stock'] ? $stats->stock() : null,
+            // Le DP émet des demandes pour les acteurs : on lui en facilite l'accès.
+            'peutCreer' => $user->can(\App\Enums\PermissionEnum::creerDemande->value),
         ]);
     }
 }

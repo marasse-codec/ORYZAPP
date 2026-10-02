@@ -29,9 +29,9 @@ hide empty members
 ' ENTITÉS
 ' ============================================================
 
-class TypeDemandeur {
-  - idTypeDemandeur : Long
-  - libelleTypeDemandeur : String
+class TypeDemande {
+  - idTypeDemande : Long
+  - libelleTypeDemande : String
 }
 
 class TypePiece {
@@ -65,30 +65,35 @@ class Localite {
 
 class Campagne {
   - idCampagne : Long
+  - libCampagne : String
   - dateDebutCampagne : Date
   - dateFinCampagne : Date
 }
 
-class StatutDemande {
-  - idStatutDemande : Long
-  - libelleStatutDemande : String
-}
+' class StatutDemande {
+'   - idStatutDemande : Long
+'   - libelleStatutDemande : String
+' }
+
+' class HistoriqueDemande {
+'   - idHistorique : Long
+'   - dateChangement : DateTime
+'   - commentaire : String
+' }
 
 class Demande {
   - idDemande : Long
-  - dateDemande : Date
   - dateDebutMiseEnPlaceSouhaitee : Date
+  - dateFinMiseEnPlaceEsperee: Date
+  - dateSoummission: Date
+  - dateVisiteTerrain : Date
+  - nomDemandeur : String
+  - mailDemandeur : String
+  - commentaires : String
 }
 
-class HistoriqueDemande {
-  - idHistorique : Long
-  - dateChangement : DateTime
-  - commentaire : String
-}
-
-Demande "1" *-- "0..*" HistoriqueDemande : entretenir >
-StatutDemande "1" -- "0..*" HistoriqueDemande : marquer >
-
+' Demande "1" *-- "0..*" HistoriqueDemande : entretenir >
+' StatutDemande "1" -- "0..*" HistoriqueDemande : marquer >
 
 class PieceJustificative {
   - idPieceJustificative : Long
@@ -107,7 +112,10 @@ class SystemeProduction {
 
 class LigneDemande {
   - idLigneDemande : Long
+  - quantiteeDemande : int
 }
+
+LigneDemande "0..*" - "0..1" ReferenceAppui : "préciser" 
 
 class Service {
   - idService : Long
@@ -124,16 +132,18 @@ class ReferenceAppui {
   - libelleReferenceAppui : String
   - quantiteEnStock : Integer
   - coutUnitaire : Double
-  - quantiteTarifaire : Double
+}
+
+class UniteDosage {
+  - idUnite : Long
+  - codeUnite : String
+  - libUnite : String
 }
 
 class Equipement {
   - idEquipement : Long
   - matriculeEquipement : String
   - etat : String
-  - remis : Boolean
-  - estEquipement : Boolean
-
 }
 
 ReferenceAppui "1" -- "0..*" Equipement : inventorier >
@@ -142,12 +152,12 @@ ReferenceAppui "1" -- "0..*" Equipement : inventorier >
 ' ASSOCIATIONS
 ' ============================================================
 
-Demandeur "0..*" -- "1" TypeDemandeur : typer >
-TypeDemandeur "0..*" -- "0..*" TypePiece : exiger >
+Demande "0..*" -- "1" TypeDemande : typer <
+TypeDemande "0..*" -- "0..*" TypePiece : exiger >
 
 Demandeur "1" -- "0..*" Demande : effectuer >
 Agent "1" -- "0..*" Demande : enregistrer >
-Demande "0..*" -- "1" StatutDemande : statuer <
+' Demande "0..*" -- "1" StatutDemande : statuer <
 Campagne "1" -- "0..*" Demande : viser <
 Localite "1" -- "0..*" Demande : provenir <
 Localite "0..*" -- "1" Departement : situer >
@@ -156,10 +166,10 @@ Demande "1" *-- "0..*" PieceJustificative : joindre >
 TypePiece "1" -- "0..*" PieceJustificative : couvrir >
 Demande "1" *-- "1..*" SystemeProduction : contenir >
 TypeSystemeProduction "1" -- "0..*" SystemeProduction : catégoriser >
-Demande "1" *-- "1..*" LigneDemande : constituer >
+Demande "1" *-- "1..*" LigneDemande : constituer <
 
 LigneDemande "0..*" -- "1" TypeAppui : demander >
 TypeAppui "0..*" -- "1" Service : fournir <
 ReferenceAppui "0..*" -- "1" TypeAppui : classifier <
-
+ReferenceAppui "0..*" -- "1" UniteDosage : avoir <
 @enduml

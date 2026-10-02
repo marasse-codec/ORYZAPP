@@ -11,12 +11,14 @@ use Filament\Pages;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
+use Filament\View\PanelsRenderHook;
 use Filament\Widgets;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
+use Illuminate\Support\Facades\Blade;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 
 class AdminPanelProvider extends PanelProvider
@@ -31,8 +33,22 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->discoverResources(in: app_path('Filament/Admin/Resources'), for: 'App\\Filament\\Admin\\Resources')
             ->discoverPages(in: app_path('Filament/Admin/Pages'), for: 'App\\Filament\\Admin\\Pages')
-            ->pages([
-                Pages\Dashboard::class,
+            // ->pages([
+            //     Pages\Dashboard::class,
+            // ])
+            // --- CHARTE GRAPHIQUE GLOBALE ---
+            ->colors([
+                // Couleur principale (Boutons, éléments actifs de la sidebar, liens, focus)
+                'primary' => Color::Emerald, // ou Color::hex('#047857') pour un vert sur-mesure (ex: ADERIZ)
+
+                // Nuance de gris globale (Fond de page, cartes, bordures)
+                'gray' => Color::Slate, // Options : Slate, Zinc, Neutral, Stone, Gray
+
+                // Couleurs de statut / notifications
+                'danger'  => Color::Rose,
+                'info'    => Color::Sky,
+                'success' => Color::Emerald,
+                'warning' => Color::Amber,
             ])
             ->discoverWidgets(in: app_path('Filament/Admin/Widgets'), for: 'App\\Filament\\Admin\\Widgets')
             ->widgets([

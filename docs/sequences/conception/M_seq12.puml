@@ -10,7 +10,7 @@ skinparam ParticipantPadding 400
 
 skinparam actor {
     BackgroundColor #FFFFFF
-    BorderColor #1A1A1A
+    BorderColor #151010
 }
 
 skinparam participant {

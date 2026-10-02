@@ -17,7 +17,7 @@ class DatabaseSeeder extends Seeder
         $this->call([
             ServiceSeeder::class,
             LocaliteSeeder::class,
-            CampagneSeed::class,
+            CampagneSeeder::class,
             TypeActeurSeeder::class,
             TypePieceSeeder::class,
             TypeSystemeProductionSeeder::class,
@@ -28,6 +28,7 @@ class DatabaseSeeder extends Seeder
             StatutDemandeSeed::class,
             StatutAttributionSeed::class,
             DemandeSeeder::class,
+            SessionCommissionSeeder::class,
             TypeMouvementStockSeed::class,
         ]);
     }

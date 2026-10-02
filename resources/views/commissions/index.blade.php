@@ -1,3 +1,6 @@
+@php
+    use App\Enums\PermissionEnum;
+@endphp
 @extends($layout ?? 'layouts.aderiz')
 
 @section('content')
@@ -24,7 +27,7 @@
                         <th class="px-4 py-3">Séance</th>
                         <th class="px-4 py-3 text-center">Attributions</th>
                         <th class="px-4 py-3 text-center">État</th>
-                        <th class="px-4 py-3"></th>
+                        <th class="px-4 py-3 text-center">Àctions</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100">
@@ -43,9 +46,14 @@
                                     </span>
                                 @endif
                             </td>
-                            <td class="px-4 py-3 text-right">
-                                <a href="{{ route('commissions.show', $session->id_session) }}"
-                                   class="text-sm font-medium text-[--color-primary] hover:underline">Ouvrir</a>
+                            <td class="px-4 py-3">
+                                <div class="flex items-center justify-between gap-3">
+
+                                    <a href="{{ route('commissions.show', $session->id_session) }}"
+                                    class="text-sm font-medium text-[--color-button-secondary] hover:underline">
+                                    Lire
+                                    </a>
+                                </div>
                             </td>
                         </tr>
                     @empty

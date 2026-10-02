@@ -1,6 +1,11 @@
 @php
     use Illuminate\Support\Carbon;
+    use Illuminate\Support\Str;
     Carbon::setLocale('fr');
+
+    $departements = $demande->localites->pluck('departement.lib_departement')->filter()->unique()->join(', ');
+    $localitesStr = $demande->localites->pluck('lib_localite')->filter()->unique()->join(', ');
+    $nomExpediteur = $demande->nom_structure ?: ($demande->acteur?->nom ?? 'Nom de l\'entité');
 @endphp
 <!DOCTYPE html>
 <html lang="fr">
@@ -48,7 +53,6 @@
             margin-bottom: 1.5rem;
         }
         .paragraphe {
-            /*text-indent: 1.5cm;*/
             margin-bottom: 1.2rem;
         }
         .signature {
@@ -57,7 +61,6 @@
             text-align: center;
             width: 40%;
         }
-        /* Style pour l'impression navigateur */
         @media print {
             .no-print { display: none; }
         }
@@ -67,7 +70,10 @@
 
     <div class="header">
         <div class="expediteur">
-            <div class="expediteur-item"><strong>{{ $demande->acteur?->nom ?? 'Nom de l\'entité' }}</strong></div>
+            <div class="expediteur-item"><strong>{{ $nomExpediteur }}</strong></div>
+            @if ($demande->nom_structure && $demande->acteur?->nom)
+                <div class="expediteur-item">Représenté(e) par : {{ $demande->acteur->nom }}</div>
+            @endif
             <div class="expediteur-item">Tél : {{ $demande->acteur?->telephone ?? 'Numéro de téléphone' }}</div>
             <div class="expediteur-item">Email/Adresse : {{ $demande->acteur?->email ?? $demande->acteur?->adresse_postale ?? 'Adresse mail et/ou postale' }}</div>
         </div>
@@ -94,8 +100,8 @@
             Nous disposons d'une parcelle de 
             <strong>{{ number_format($demande->systemesProductions->sum('superficie'), 2, ',', ' ') }} ha</strong> 
             ({{ $demande->systemesProductions->pluck('typeSystemeProduction.lib_type_systeme_production')->filter()->unique()->join(', ') ?: 'bas-fond, plateau ou périmètre irrigué' }}) 
-            dans le Département de <strong>{{ $demande->localite?->departement?->lib_departement ?? '(............)' }}</strong> 
-            plus précisément dans la localité de <strong>{{ $demande->localite?->lib_localite ?? '(............)' }}</strong> 
+            dans {{ Str::contains($departements, ',') ? 'les Départements de' : 'le Département de' }} <strong>{{ $departements ?: '(............)' }}</strong> 
+            plus précisément dans {{ Str::contains($localitesStr, ',') ? 'les localités de' : 'la localité de' }} <strong>{{ $localitesStr ?: '(............)' }}</strong> 
             que nous voudrions mettre en valeur pour la présente campagne.
         </p>
 

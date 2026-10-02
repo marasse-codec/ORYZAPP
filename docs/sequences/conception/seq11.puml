@@ -1,5 +1,5 @@
 @startuml seq_enregistrer_demande_pur_metier
-title Diagramme de Séquence — Enregistrer / Soumettre une demande d'Appui
+title Diagramme de Séquence « Enregistrer / Soumettre une demande d'Appui »
 
 skinparam shadowing false
 skinparam defaultFontName "Segoe UI", sans-serif

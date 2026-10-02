@@ -23,8 +23,6 @@ class GenerateFilamentRessources extends Command
             'ResourceSubscription',
             'UniteAppui',
             'VerificationService',
-            'Rejet',
-            'Rapport',
             'LocationAppui'
         ];
 

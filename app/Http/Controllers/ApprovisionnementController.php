@@ -7,6 +7,7 @@ use App\Models\Appui;
 use App\Services\ApprovisionnementService as ServicesApprovisionnementService;
 use App\Utils\Helper;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Entrées de stock. Le magasin est le seul à incrémenter les quantités,
@@ -16,14 +17,21 @@ class ApprovisionnementController extends Controller
 {
     public function index()
     {
+
+        $approvisionnements = Approvisionnement::with([
+            'mouvements' => function($query) {
+                $query->select(
+                    'id_approvisionnement', 
+                    'id_appui', 
+                    DB::raw('SUM(quantite) as total_quantite')
+                )
+                ->groupBy('id_approvisionnement', 'id_appui')
+                ->with('appui');
+            }
+        ])->get();
+
         return view('approvisionnements.index', [
-            'approvisionnements' => Approvisionnement::with([
-                'mouvement.appui.uniteAppui',
-                'mouvement.appui.typeAppui',
-            ])
-                ->orderByDesc('date_approvisionnement')
-                ->orderByDesc('id_approvisionnement')
-                ->get(),
+            'approvisionnements' => $approvisionnements,
             'layout' => Helper::layout(),
         ]);
     }
@@ -47,7 +55,8 @@ class ApprovisionnementController extends Controller
                 'id' => $appui->id_appui,
                 'libelle' => $appui->libelle,
                 'type' => $appui->typeAppui?->libelle ?? 'Autres',
-                'stock' => $appui->quantite_en_stock,
+                'stock' => $appui->quantiteeEnStock(),
+                'est_intrant' => $appui->typeAppui->est_intrant
             ]);
 
         return response()->json($appuis);

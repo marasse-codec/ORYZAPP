@@ -19,12 +19,6 @@ class Service extends Model
         return $this->hasMany(TypeAppui::class, 'id_service', 'id_service');
     }
 
-    /** Les instructions rédigées par ce service. */
-    public function rapports(): HasMany
-    {
-        return $this->hasMany(Rapport::class, 'id_service', 'id_service');
-    }
-
     public function traitements(): HasMany
     {
         return $this->hasMany(Traitement::class, 'id_service', 'id_service');

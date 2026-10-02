@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\TypeMouvementStockEnum;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Table;
 use Illuminate\Database\Eloquent\Model;
@@ -11,6 +12,10 @@ use Illuminate\Database\Eloquent\Model;
 class TypeMouvementStock extends Model
 {
     //
+
+    protected $casts = [
+        'id_type_mouvement' => TypeMouvementStockEnum::class
+    ];
 
     public function mouvementsStocks()
     {

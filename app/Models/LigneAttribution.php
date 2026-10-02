@@ -14,6 +14,7 @@ class LigneAttribution extends Model
     protected $fillable = ['id_attribution', 'id_appui', 'quantite_attribuee', 'cout_attribution', 'remise'];
 
     protected $casts = [
+        'quantite_attribuee' => 'decimal:2',
         'cout_attribution' => 'decimal:2',
         'remise' => 'decimal:2',
     ];

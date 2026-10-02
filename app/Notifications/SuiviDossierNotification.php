@@ -3,12 +3,13 @@
 namespace App\Notifications;
 
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 use NotificationChannels\WebPush\WebPushChannel;
 use NotificationChannels\WebPush\WebPushMessage;
 
-class SuiviDossierNotification extends Notification
+class SuiviDossierNotification extends Notification implements ShouldQueue
 {
     use Queueable;
 
@@ -17,7 +18,8 @@ class SuiviDossierNotification extends Notification
         public string $message,
         public string $urlAction = '',
         public string $type = 'info', // info, warning, success, danger,
-        public bool $estUrgente = false // Nouveau drapeau d'urgence
+        public bool $estUrgente = false, // Nouveau drapeau d'urgence
+        public array $canaux = ['database', WebPushChannel::class] // Canaux par défaut
     ) {}
 
     /**
@@ -28,7 +30,7 @@ class SuiviDossierNotification extends Notification
      */
     public function via(object $notifiable): array
     {
-        return ['database', WebPushChannel::class];
+        return $this->canaux;
     }
 
     /**
@@ -42,22 +44,6 @@ class SuiviDossierNotification extends Notification
             'url' => $this->urlAction,
             'type' => $this->type,
         ];
-    }
-
-    /**
-     * 📧 Construction de l'e-mail
-     */
-    public function toMail($notifiable): MailMessage // 👈 2. Ajouter cette méthode
-    {
-        // Récupération du nom (prend $notifiable->nom pour un Acteur ou $notifiable->name pour un User)
-        $nom = $notifiable->nom ?? $notifiable->name ?? 'Cher destinataire';
-
-        return (new MailMessage)
-            ->subject($this->titre)
-            ->greeting("Bonjour {$nom},")
-            ->line($this->message)
-            ->action('Consulter le détail', $this->url ?? url('/'))
-            ->line('Merci d\'utiliser notre plateforme.');
     }
 
     /**

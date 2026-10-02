@@ -5,8 +5,11 @@ namespace App\Providers;
 use App\Enums\RoleEnum;
 use App\Models\Appui;
 use App\Models\Attribution;
+use App\Models\Demande;
+use App\Models\User;
 use App\Observers\AppuiObserver;
 use App\Observers\AttributionObserver;
+use App\Observers\DemandeObserver;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 
@@ -24,5 +27,9 @@ class AppServiceProvider extends ServiceProvider
         // L'administrateur passe toutes les autorisations sans qu'on ait à lui
         // rattacher chaque permission une à une.
         Gate::before(fn ($user) => $user->hasRole(RoleEnum::admin->value) ? true : null);
+
+        Gate::define('access-mouvement-usecases', function (User $user) { 
+            return $user->hasRole([RoleEnum::admin->value,RoleEnum::gestionnaireStock->value]);
+        });
     }
 }

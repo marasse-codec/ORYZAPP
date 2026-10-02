@@ -9,6 +9,9 @@
 @php
     $reference = 'DEM-'.$demande->date_demande?->format('Y').'-'.str_pad($demande->id_demande, 3, '0', STR_PAD_LEFT);
     $pieces = $demande->piecesDemandes;
+    $nomDemandeur = $demande->nom_structure ?: ($demande->acteur?->nom ?? 'Demandeur');
+    $departementsStr = $demande->localites->pluck('departement.lib_departement')->filter()->unique()->join(', ');
+    $localitesStr = $demande->localites->pluck('lib_localite')->filter()->unique()->join(', ');
 @endphp
 
 @section('sur-titre', 'Annexes au dossier')
@@ -33,11 +36,14 @@
     <section class="mt-6 flex items-start justify-between gap-6 text-sm">
         <div>
             <p class="text-xs uppercase tracking-wide text-slate-500">Demandeur</p>
-            <p class="mt-0.5 font-semibold text-slate-800">{{ $demande->acteur?->nom }}</p>
+            <p class="mt-0.5 font-semibold text-slate-800">{{ $nomDemandeur }}</p>
+            @if ($demande->nom_structure && $demande->acteur?->nom)
+                <p class="text-xs text-slate-500">Rep : {{ $demande->acteur->nom }}</p>
+            @endif
             <p class="text-slate-600">
-                {{ $demande->localite?->lib_localite }}
-                @if ($demande->localite?->departement)
-                    ({{ $demande->localite->departement->lib_departement }})
+                {{ $localitesStr ?: 'Localité non spécifiée' }}
+                @if ($departementsStr)
+                    ({{ $departementsStr }})
                 @endif
             </p>
         </div>

@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Enums\PermissionEnum;
+use App\Enums\RoleEnum;
 use App\Enums\StatutAttributionEnum;
 use App\Models\Acteur;
 use App\Models\Agent;
@@ -16,11 +16,9 @@ use App\Models\Localite;
 use App\Models\MouvementStock;
 use App\Models\Service;
 use App\Models\SessionCommission;
-use App\Models\Traitement;
 use App\Models\TypeActeur;
 use App\Models\TypeMouvementStock;
 use App\Services\SyntheseAttributionService;
-use App\Services\SyntheseCommissionService;
 use App\Utils\Helper;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -34,12 +32,12 @@ class AttributionController extends Controller
         $attributions = Attribution::query()
             ->with(['lignesAttributions.appui', 'demande.acteur', 'session'])
             ->orderByDesc('id_attribution')
-            ->userService(Auth::user()->id_service)
+            ->user()
             ->get();
 
         $actions = [];
-
-        if (Auth::user()->can(PermissionEnum::attribuerAppui->value)) {
+        $session = null ;
+        if (Auth::user()->hasRole(RoleEnum::agentService->value)) {
             $actions = [
                 'soumettre' => [
                     'lien' => 'attributions.soumettre',
@@ -49,10 +47,14 @@ class AttributionController extends Controller
                     'lien' => 'attributions.destroy', // Exemple de route de suppression
                     'libelle' => 'Supprimer',
                 ],
+                'modifier' => [
+                    'lien' => 'attributions.edit', // Exemple de route de suppression
+                    'libelle' => 'Modifier',
+                ]
             ];
         }
 
-        if (Auth::user()->can(PermissionEnum::gererCommission->value)) {
+        if (Auth::user()->hasRole(RoleEnum::agentCommission->value)) {
             $actions['soumettre'] = [
                 'lien' => 'attributions.valider', // Remplacez par le nom réel de votre route de validation
                 'libelle' => 'Valider',
@@ -61,13 +63,10 @@ class AttributionController extends Controller
                 'lien' => 'attributions.annuler', // Remplacez par le nom réel de votre route d'annulation
                 'libelle' => 'Annuler',
             ];
+
+            $session = SessionCommission::whereNull('date_fin_session')->first();
+            
         }
-
-        $attributions->each(function ($a) {
-            $a->submissible = $a->id_statut_attribution === StatutAttributionEnum::brouillon;
-        });
-
-        $session = SessionCommission::whereNull('date_fin_session')->first();
 
         $error = $session ? null : "Aucune session active, veuillez en créer une pour traiter les attributions";
 
@@ -80,28 +79,117 @@ class AttributionController extends Controller
         ])->with('error',$error);
     }
 
-    /** Formulaire d'attribution pour une demande donnée. */
-    public function create(string $idDemande, SyntheseAttributionService $synthese)
+    /**
+     * Formulaire d'édition d'une attribution existante.
+     */
+    public function edit(string $idAttribution)
     {
-        $service = Service::where('id_service', Auth::user()->id_service)->firstOrFail();
+        $attribution = Attribution::with([
+            'demande.lignes.typeAppui',
+            'demande.systemesProductions',
+            'demande.localites',
+            'lignesAttributions.appui.typeAppui', // eager loading complet
+        ])->findOrFail($idAttribution);
+
+        $demande = $attribution->demande;
+        $service = auth()->user()->service;
+
+        // Récupération des appuis du catalogue pour ce service
+        $catalogue = Appui::whereHas('typeAppui', function ($q) use ($service) {
+            if ($service) {
+                $q->where('id_service', $service->id_service);
+            }
+        })->get();
+
+        // Synthèse des stocks
+        $synthese = $catalogue->map(function ($appui) use ($demande) {
+            $ligneDemandee = $demande->lignes->first(
+                fn ($l) => ($l->typeAppui?->id_type_appui === $appui->id_type_appui)
+            );
+
+            return [
+                'libelle' => $appui->libelle,
+                'stock' => $appui->quantite_en_stock ?? 0,
+                'engagee' => $appui->quantiteEngagee(),
+                'demandee' => $ligneDemandee?->quantite_demandee ?? 0,
+            ];
+        });
+
+        return view('attributions.edit', [
+            'attribution' => $attribution,
+            'demande' => $demande,
+            'catalogue' => $catalogue,
+            'synthese' => $synthese,
+            'layout' => Helper::layout(),
+        ]);
+    }
+
+    /**
+     * Mise à jour de l'attribution et de ses lignes.
+     */
+    public function update(Request $request, string $idAttribution)
+    {
+        $attribution = Attribution::findOrFail($idAttribution);
+
+        $valide = $request->validate([
+            'commentaires' => 'nullable|string|max:2000',
+            'lignes' => 'required|array|min:1',
+            'lignes.*.id_appui' => 'required|distinct|exists:appuis,id_appui',
+            'lignes.*.quantite_attribuee' => 'required|integer|min:1',
+            'lignes.*.cout_attribution' => 'nullable|numeric|min:0',
+            'lignes.*.remise' => 'nullable|numeric|min:0|max:100',
+        ], [
+            'lignes.required' => 'Attribuez au moins un appui.',
+            'lignes.*.id_appui.distinct' => 'Un même appui ne peut être attribué deux fois.',
+        ]);
+
+        DB::transaction(function () use ($attribution, $valide) {
+
+            // 1. Remplacer les anciennes lignes par les nouvelles
+            $attribution->lignesAttributions()->delete();
+
+            foreach ($valide['lignes'] as $ligne) {
+                LigneAttribution::create([
+                    'id_attribution' => $attribution->id_attribution,
+                    'id_appui' => $ligne['id_appui'],
+                    'quantite_attribuee' => $ligne['quantite_attribuee'],
+                    'cout_attribution' => $ligne['cout_attribution'] ?? null,
+                    'remise' => $ligne['remise'] ?? 0,
+                ]);
+            }
+
+            // 2. Le commentaire de l'arbitrage se garde sur l'attribution elle-même
+            $attribution->update(['commentaires' => $valide['commentaires'] ?? null]);
+        });
+
+        return redirect()
+            ->route('attributions.show', $attribution->id_attribution)
+            ->with('success', 'Attribution mise à jour avec succès.');
+    }
+
+    /** Formulaire d'attribution pour une demande donnée. */
+    public function create(Request $request,string $idDemande, SyntheseAttributionService $synthese)
+    {
+        
+        // $service = Service::where('id_service', Auth::user()->id_service)->firstOrFail();
+        
         $demande = Demande::with([
             'acteur',
             'typeActeur',
-            'localite',
+            'localites.departement', // <-- Remplacer 'localite' par 'localites' ou 'localites.departement'
             'systemesProductions.typeSystemeProduction',
-            'lignes' => function ($query) use ($service) {
-                $query
-                    ->whereHas('typeAppui.service', function ($query) use ($service) {
-                        $query->where('id_service', $service->id_service);
-                    });
-            },
-            'attribution.lignesAttributions.appui',
-        ])->whereHas('traitements', function ($query) use ($service) {
-            $query
-                ->where('id_service', $service->id_service)
-                ->whereNull('date_fin_traitement');
-        })
-            ->findOrFail($idDemande);
+            'lignes.appui'
+            // 'lignes' => function ($query) use ($service) {
+            //     $query->whereHas('typeAppui.service', function ($query) use ($service) {
+            //         $query->where('id_service', $service->id_service);
+            //     });
+            //}
+        ])
+        // ->whereHas('traitements', function ($query) use ($service) {
+        //     $query->where('id_service', $service->id_service)
+        //         ->whereNotNull('date_fin_traitement');
+        // })
+        ->findOrFail($idDemande);
 
         // Extraction des IDs des types d'appui de la demande
         $idsTypesAppuis = $demande->typesAppuis()->pluck('id_type_appui');
@@ -109,9 +197,12 @@ class AttributionController extends Controller
         return view('attributions.create', [
             'demande' => $demande,
             'catalogue' => Appui::pourUtilisateur()
+                    ->with(['uniteDosage'])
                     ->whereIn('id_type_appui', $idsTypesAppuis)
                     ->orderBy('libelle')
-                    ->get(),            'sessionOuverte' => SessionCommission::whereNull('date_fin_session')->first(),
+                    ->get(),
+            'idSession' => $request->query('idSession'),
+            'superficieTotalDemande' => $demande->systemesProductions->sum('superficie'),
             'synthese' => $synthese->confrontationPourDemande($demande),
             'layout' => Helper::layout(),
         ]);
@@ -198,110 +289,93 @@ class AttributionController extends Controller
             ->with('success', 'Attribution directe enregistrée avec succès.');
     }
 
-    public function store(Request $request, string $idDemande)
-    {
+public function store(Request $request, string $idDemande)
+{
+    
+    // $service = Service::where('id_service', Auth::user()->id_service)->firstOrFail();
+    
+    $demande = Demande::findOrFail($idDemande);
 
-        $service = Service::where('id_service', Auth::user()->id_service)->firstOrFail();
+    $valide = $request->validate([
+        'commentaires' => 'nullable|string|max:500',
+        'lignes' => 'required|array|min:1',
+        'lignes.*.id_appui' => 'required|distinct|exists:appuis,id_appui',
+        'lignes.*.quantite_attribuee' => 'required|numeric|min:0.0001',
+        'lignes.*.cout_attribution' => 'nullable|numeric|min:0.0001',
+        'lignes.*.remise' => 'nullable|numeric|min:0|max:100'
+    ], [
+        'lignes.required' => 'Attribuez au moins un appui.',
+        'lignes.*.id_appui.distinct' => 'Un même appui ne peut être attribué deux fois.',
+    ]);
 
-        $demande = Demande::findOrFail($idDemande);
+    $idSession = $request->query('idSession');
 
-        $valide = $request->validate([
-            'commentaires' => 'nullable|string|max:500',
-            'lignes' => 'required|array|min:1',
-            'lignes.*.id_appui' => 'required|distinct|exists:appuis,id_appui',
-            'lignes.*.quantite_attribuee' => 'required|integer|min:1',
-            'lignes.*.cout_attribution' => 'nullable|numeric|min:0',
-            'lignes.*.remise' => 'nullable|numeric|min:0|max:100',
-        ], [
-            'lignes.required' => 'Attribuez au moins un appui.',
-            'lignes.*.id_appui.distinct' => 'Un même appui ne peut être attribué deux fois.',
+
+
+    // 1. Vérification du traitement terminé AVANT d'ouvrir la transaction
+    // $idTraitement = $demande->traitements()
+    //     ->where('id_service', $service->id_service)
+    //     ->whereNotNull('date_fin_traitement')
+    //     ->value('id_traitement');
+
+    // if (! $idTraitement) {
+    //     return back()->with('error', 'Le traitement de la demande n\'est pas terminé.');
+    // }
+
+
+    // 2. Transaction DB : retourne directement l'attribution créée
+    $attribution = DB::transaction(function () use ($demande, $valide, $idSession) {
+
+    
+        $attribution = Attribution::create([
+            'id_demande' => $demande->id_demande,
+            'id_session' => $idSession,
+            // 'id_statut_attribution' => StatutAttributionEnum::soumise->value,
         ]);
 
-        // Une demande rejetée ou déjà servie ne se réattribue pas.
-        // if (! $demande->estAttribuable()) {
-        //     return back()->with('error', 'Cette demande n\'est plus attribuable.');
-        // }
+        foreach ($valide['lignes'] as $ligne) {
+            LigneAttribution::create([
+                'id_attribution' => $attribution->id_attribution,
+                'id_appui' => $ligne['id_appui'],
+                'quantite_attribuee' => $ligne['quantite_attribuee'],
+                'cout_attribution' => $ligne['cout_attribution'] ?? null,
+                'remise' => $ligne['remise'] ?? 0,
+            ]);
+        }
 
-        // $session = SessionCommission::findOrFail($valide['id_session']);
+        $demande->update(['date_attribution' => now()->toDateString()]);
 
-        // if (! $session->estOuverte()) {
-        //     return back()->with('error', 'La séance de commission est clôturée.');
-        // }
+        return $attribution;
+    });
 
-        DB::transaction(function () use ($demande, $service, $valide) {
+    return redirect()
+        ->route('attributions.show', $attribution->id_attribution)
+        ->with('success', 'Attribution enregistrée.');
+}
 
-            // 1. Récupérer l'ID du traitement actif pour cette demande et ce service
-            $idTraitement = $demande->traitements()
-                ->where('id_service', $service->id_service)
-                ->whereNull('date_fin_traitement')
-                ->value('id_traitement');
+public function show($idAttribution, Request $request)
 
-            // Sécurité : vérifier qu'un traitement actif existe bien
-            if (! $idTraitement) {
-                return back()->with('error', 'Aucun traitement actif trouvé pour ce service.');
-            }
+{
+    $attribution = Attribution::findOrFail($idAttribution);
+    $sessionId = $request->query('idSession', null);
+    
+    $attribution->load([
+        'demande.acteur',
+        'demande.typeActeur',
+        'demande.localites.departement', // Relation Many-to-Many corrigée
+        'lignesAttributions.appui.uniteDosage',
+        'session',
+    ]);
 
-            // 2. Créer ou récupérer l'attribution rattachée à ce traitement
-            $attribution = Attribution::firstOrCreate(
-                [
-                    'id_demande' => $demande->id_demande,
-                    'id_traitement' => $idTraitement,
-                ],
-                [
-                    'id_statut_attribution' => StatutAttributionEnum::brouillon->value,
-                ]
-            );
+    $session = $sessionId ? SessionCommission::where('id_session', $sessionId)->first() : null;
 
-            foreach ($valide['lignes'] as $ligne) {
-                LigneAttribution::create([
-                    'id_attribution' => $attribution->id_attribution,
-                    'id_appui' => $ligne['id_appui'],
-                    'quantite_attribuee' => $ligne['quantite_attribuee'],
-                    'cout_attribution' => $ligne['cout_attribution'] ?? null,
-                    'remise' => $ligne['remise'] ?? 0,
-                ]);
-            }
-
-            $traitement = Traitement::where('id_service', $service->id_service)->where('id_demande', $demande->id_demande)
-                ->update([
-                    'date_fin_traitement' => now(),
-                ]);
-
-            // C'est cette date qui fait basculer la demande en « attribuée ».
-            $demande->update(['date_attribution' => now()->toDateString()]);
-
-            $traitementsFini = Traitement::traitementTerminee($demande->id_demande);
-            $servicesDemande = $demande->servicesConcernes();
-
-            if ($traitementsFini->count() === $servicesDemande->count()) {
-                $demande->traitementTerminee();
-            }
-        });
-
-        return redirect()
-            ->route('demandes.show', $demande->id_demande)
-            ->with('success', 'Attribution enregistrée.');
-    }
-
-    public function show($idAttribution)
-    {
-        $attribution = Attribution::findOrFail($idAttribution);
-
-        $attribution->load([
-            'demande.acteur',
-            'demande.typeActeur',
-            'demande.localite',
-            'lignesAttributions.appui.uniteAppui',
-            'session',
-        ]);
-
-        return view('attributions.show', [
-            'attribution' => $attribution,
-            'layout' => Helper::layout(),
-            'sessionOuverte' => SessionCommission::whereNull('date_fin_session')->first(),
-            'estValidee' => $attribution->id_statut_attribution === StatutAttributionEnum::validee
-        ]);
-    }
+    return view('attributions.show', [
+        'attribution' => $attribution,
+        'layout' => Helper::layout(),
+        'sessionOuverte' => $session,
+        'estValidee' => $attribution->id_statut_attribution === StatutAttributionEnum::validee
+    ]);
+}
 
     public function soumettre(Request $request)
     {
@@ -318,12 +392,8 @@ class AttributionController extends Controller
                 ->with('error', 'L\'attribution doit contenir au moins une ligne avant sa soumission.');
         }
 
-        DB::transaction(function () use ($attribution) {
-
-            $attribution->update([
-                'id_statut_attribution' => StatutAttributionEnum::soumise,
-            ]);
-        });
+        
+        $attribution->soumettre();
 
         return redirect()
             ->route('attributions.index', $attribution->id_demande)
@@ -342,9 +412,7 @@ class AttributionController extends Controller
 
         $attribution->valider($sessionOuverte->id_session);
 
-        return redirect()
-            ->route('attributions.index')
-            ->with('success', 'Attribution validée.');
+        return back()->with('success', 'L\'attribution a bien été validée !');
     }
 
     /**
@@ -360,6 +428,7 @@ class AttributionController extends Controller
         $attribution = Attribution::findOrFail($valide['id_attribution']);
         $sessionOuverte = $request->id_session ? SessionCommission::findOrFail($request->id_session) : SessionCommission::whereNull('date_fin_session')->first();
 
+        /** @var Attribution $attribution */
         $attribution->annuler($sessionOuverte->id_session);
 
         return redirect()
@@ -373,7 +442,7 @@ class AttributionController extends Controller
         $attribution->load([
             'demande.acteur',
             'demande.typeActeur',
-            'demande.localite.departement',
+            'demande.localites.departement',
             'session',
             'lignesAttributions.appui.uniteAppui',
         ]);
@@ -388,8 +457,11 @@ class AttributionController extends Controller
         }
 
         DB::transaction(function () use ($attribution) {
+
             $attribution->demande?->update(['date_attribution' => null]);
+            
             $attribution->delete();
+
         });
 
         return redirect()->route('attributions.index')->with('success', 'Attribution retirée.');
@@ -455,7 +527,7 @@ class AttributionController extends Controller
                             'id_type_mouvement_stock' => $idTypeMouvement,
                             'id_agent' => $idAgent,
                             'quantite' => 1,
-                            'id_ligne_attribution' => $ligne->id_ligne_attribution,
+                            'id_attribution' => $attribution->id_attribution, // <-- AJOUTER CETTE LIGNE
                             'date_mouvement' => $valide['date_destockage'],
                             'motif' => 'Attribution #'.$attribution->id_attribution,
                         ]);
@@ -490,20 +562,27 @@ class AttributionController extends Controller
             ]);
         });
 
-        return redirect()->route('recuperations.index')
+        return redirect()->route('enlevements.index')
             ->with('success', 'La sortie de stock a été validée avec succès.');
     }
 
-    public function publier()
+    /**
+     * Publier les resultats des attributions des demandes
+     * @param $request
+     */
+    public function publier(Request $request)
     {
+        $validated = $request->validate([
+            'id_session' => 'required|exists:sessions_commission,id_session'
+        ]);
 
-        $attributions = Attribution::whereNotNull('id_session')->get();
+        /**@var SessionCommission $session */
+        $session = SessionCommission::where('id_session',$validated['id_session'])->first();
 
-        foreach ($attributions as $attribution) {
-            $attribution->publier();
-        }
+        $session->publierAttributions();
 
-        return redirect()->route('attributions.index')
+        // Retourner à la page de la session
+        return redirect()->route('commissions.show',$validated['id_session'])
             ->with('success', 'Les résultats ont été publiés');
     }
     

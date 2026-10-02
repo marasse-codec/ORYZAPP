@@ -3,7 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Approvisionnement extends Model
 {
@@ -13,8 +13,8 @@ class Approvisionnement extends Model
 
     protected $casts = ['date_approvisionnement' => 'date'];
 
-    public function mouvement(): HasOne
+    public function mouvements(): HasMany
     {
-        return $this->hasOne(MouvementStock::class, 'id_approvisionnement', 'id_approvisionnement');
+        return $this->hasMany(MouvementStock::class, 'id_approvisionnement', 'id_approvisionnement');
     }
 }

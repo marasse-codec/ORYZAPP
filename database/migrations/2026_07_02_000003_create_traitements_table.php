@@ -15,12 +15,6 @@ return new class extends Migration
 
             $table->id('id_traitement');
 
-            $table->string('observation_interne')->nullable();
-
-            $table->dateTime('date_fin_traitement')->nullable();
-
-            $table->string('motifs_rejet')->nullable();
-
             $table->foreignId('id_demande')
                 ->constrained('demandes', 'id_demande')
                 ->cascadeOnDelete();
@@ -29,9 +23,10 @@ return new class extends Migration
                 ->constrained('services', 'id_service')
                 ->cascadeOnDelete();
 
-            $table->unique(['id_demande', 'id_service']);
             $table->timestamps();
 
+            $table->unique(['id_demande', 'id_service']);
+            
         });
     }
 

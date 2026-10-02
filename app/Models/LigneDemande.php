@@ -14,7 +14,11 @@ class LigneDemande extends Model
 
     protected $primaryKey = 'id_ligne_demande';
 
-    protected $fillable = ['id_demande', 'id_type_appui'];
+    protected $fillable = ['id_demande', 'id_type_appui', 'cession', 'id_appui', 'quantite_demandee'];
+
+    protected $casts = [
+        'quantite_demandee' => 'decimal:2',
+    ];
 
     public function demande(): BelongsTo
     {
@@ -27,19 +31,9 @@ class LigneDemande extends Model
         return $this->belongsTo(TypeAppui::class, 'id_type_appui', 'id_type_appui');
     }
 
-    public function rejeterLigne($motifRejet){
-
-        if(empty($motifRejet) || $motifRejet === null){
-            return;
-        }
-
-        $this->update([
-            'date_rejet_service' => now(),
-            'motif_rejet_service' => $motifRejet
-        ]);
-
-        JournalAction::enregistrerRejetDemandeService($this->id_demande);
-
+    public function appui(): BelongsTo
+    {
+        return $this->belongsTo(Appui::class, 'id_appui', 'id_appui');
     }
 
 }

@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class TypeSystemeProduction extends Model
@@ -16,5 +17,9 @@ class TypeSystemeProduction extends Model
     public function systemesProduction(): HasMany
     {
         return $this->hasMany(SystemeProduction::class, 'id_type_systeme_production', 'id_type_systeme_production');
+    }
+
+    public function appuis(): BelongsToMany {
+        return $this->belongsToMany(Appui::class,'appuis_types_systemes_productions','id_type_systeme_production','id_appui')->withTimestamps();
     }
 }

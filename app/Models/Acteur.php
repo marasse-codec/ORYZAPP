@@ -14,8 +14,11 @@ class Acteur extends Model
 
     protected $primaryKey = 'id_acteur';
 
-    protected $fillable = ['nom', 'telephone', 'email'];
+    protected $fillable = ['nom', 'telephone', 'date_naissance', 'email'];
 
+    protected $casts = [
+        'date_naissance' => 'date'
+    ];
 
     public function demandes(): HasMany
     {
