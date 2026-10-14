@@ -77,7 +77,7 @@
                                 <td class="border border-slate-400 p-1.5">{{ $ligne->appui?->libelle ?? '-' }}</td>
                                 <td class="border border-slate-400 p-1.5 text-right">
                                     @if ($ligne->quantite_demandee !== null)
-                                        {{ rtrim(rtrim(number_format($ligne->quantite_demandee, 2, ',', ' '), '0'), ',') }} {{ $ligne->appui?->uniteDosage?->lib_unite }}
+                                        {{ \App\Utils\Helper::quantite($ligne->quantite_demandee) }} {{ $ligne->appui?->uniteDosage?->lib_unite }}
                                     @else
                                         -
                                     @endif
@@ -105,7 +105,7 @@
                             <tr>
                                 <td class="border border-slate-400 p-1.5">{{ $appui['libelle'] }}</td>
                                 <td class="border border-slate-400 p-1.5 text-center">{{ $appui['unite'] ?? '-' }}</td>
-                                <td class="border border-slate-400 p-1.5 text-right {{ $appui['disponible'] < $appui['demandee'] ? 'font-bold' : '' }}">{{ $appui['disponible'] }}</td>
+                                <td class="border border-slate-400 p-1.5 text-right {{ $appui['disponible'] < $appui['demandee'] ? 'font-bold' : '' }}">{{ \App\Utils\Helper::quantite($appui['disponible']) }}</td>
                                 <td class="border border-slate-400 p-1.5">&nbsp;</td>
                                 <td class="border border-slate-400 p-1.5">&nbsp;</td>
                             </tr>

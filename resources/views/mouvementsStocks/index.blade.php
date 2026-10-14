@@ -67,7 +67,7 @@
                                 <span class="block text-xs font-normal text-[--color-muted]">{{ $mouvement->equipement->matricule_equipement }}</span>
                             @endif
                         </td>
-                        <td class="px-4 py-3 text-right font-semibold text-[--color-ink]">{{ $mouvement->quantite }}</td>
+                        <td class="px-4 py-3 text-right font-semibold text-[--color-ink]">{{ \App\Utils\Helper::quantite($mouvement->quantite) }}</td>
                         <td class="px-4 py-3 text-slate-600">{{ $mouvement->agent?->nom }}</td>
                         <td class="px-4 py-3 text-right">
                             <a href="{{ route('mouvements-stocks.show', $mouvement->id_mouvement_stock) }}" class="text-sm font-medium text-[--color-primary] hover:underline">Détails</a>

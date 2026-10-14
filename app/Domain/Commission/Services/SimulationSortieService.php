@@ -2,6 +2,8 @@
 
 namespace App\Domain\Commission\Services;
 
+use App\Utils\Helper;
+
 use App\Domain\Stock\Models\Appui;
 use App\Models\User;
 use Illuminate\Support\Collection;
@@ -38,7 +40,7 @@ class SimulationSortieService
      * Le catalogue entier est servi, pas seulement les appuis réclamés : la
      * commission doit pouvoir simuler une sortie qu'aucun dossier ne porte.
      *
-     * @return Collection<int, array{id_appui: int, libelle: string, unite: string, service: ?string, demandee: int, stock: int, engagee: int, disponible: int, simulee: int, restant: int}>
+     * @return Collection<int, array{id_appui: int, libelle: string, unite: string, service: ?string, demandee: float, stock: float, engagee: float, disponible: float, simulee: float, restant: float}>
      */
     public function etat(User $user): Collection
     {
@@ -53,22 +55,22 @@ class SimulationSortieService
 
         return $appuis
             ->map(function (Appui $appui) use ($brouillon, $demandees, $engagees) {
-                $stock = (int) $appui->quantite_en_stock;
-                $engagee = (int) ($engagees[$appui->id_appui] ?? 0);
+                $stock = Helper::arrondiQuantite($appui->quantite_en_stock);
+                $engagee = Helper::arrondiQuantite($engagees[$appui->id_appui] ?? 0);
                 $disponible = $stock - $engagee;
-                $simulee = (int) ($brouillon[$appui->id_appui] ?? 0);
+                $simulee = Helper::arrondiQuantite($brouillon[$appui->id_appui] ?? 0);
 
                 return [
                     'id_appui' => (int) $appui->id_appui,
                     'libelle' => $appui->libelle,
                     'unite' => $appui->uniteDosage?->lib_unite ?? 'unité',
                     'service' => $appui->typeAppui?->service?->lib_service,
-                    'demandee' => (int) ($demandees[$appui->id_appui] ?? 0),
+                    'demandee' => Helper::arrondiQuantite($demandees[$appui->id_appui] ?? 0),
                     'stock' => $stock,
                     'engagee' => $engagee,
                     'disponible' => $disponible,
                     'simulee' => $simulee,
-                    'restant' => $disponible - $simulee,
+                    'restant' => Helper::arrondiQuantite($disponible - $simulee),
                 ];
             })
             ->values();
@@ -77,7 +79,7 @@ class SimulationSortieService
     /**
      * Les quantités simulées par l'utilisateur, indexées par appui.
      *
-     * @return array<int, int>
+     * @return array<int, float>
      */
     public function brouillon(User $user): array
     {
@@ -93,7 +95,7 @@ class SimulationSortieService
      * La lecture-modification-écriture se fait sous verrou : la saisie part au
      * fil de la frappe, et deux envois rapprochés ne doivent pas s'écraser.
      */
-    public function noter(User $user, int $idAppui, int $quantite): void
+    public function noter(User $user, int $idAppui, float $quantite): void
     {
         Cache::lock($this->cle($user).':verrou', self::ATTENTE_VERROU + 1)
             ->block(self::ATTENTE_VERROU, function () use ($user, $idAppui, $quantite) {
@@ -136,6 +138,6 @@ class SimulationSortieService
             ->dossiersEnAttente()
             ->flatMap->lignes
             ->groupBy('id_appui')
-            ->map(fn (Collection $lignes) => (int) $lignes->sum('quantite_demandee'));
+            ->map(fn (Collection $lignes) => Helper::arrondiQuantite($lignes->sum('quantite_demandee')));
     }
 }

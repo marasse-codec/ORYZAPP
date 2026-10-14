@@ -53,8 +53,8 @@ class CatalogueAppuisTest extends TestCase
             ->assertRedirect(route('appuis.index'));
 
         $appui = Appui::where('libelle', 'Semences certifiées')->firstOrFail();
-        $this->assertSame(40, $appui->seuil_alerte);
-        $this->assertSame(0, $appui->quantite_en_stock);
+        $this->assertEquals(40, $appui->seuil_alerte);
+        $this->assertEquals(0, $appui->quantite_en_stock);
         $this->assertTrue($appui->typesSystemesProductions->contains($systeme));
         $this->assertDatabaseHas('journals_actions', ['action' => ActionJournalEnum::appuiCree->value]);
     }
@@ -82,7 +82,7 @@ class CatalogueAppuisTest extends TestCase
         ]))->assertRedirect(route('appuis.index'));
 
         $appui->refresh();
-        $this->assertSame(99, $appui->seuil_alerte);
+        $this->assertEquals(99, $appui->seuil_alerte);
         $this->assertSame($stock, $appui->quantite_en_stock);
         $this->assertDatabaseHas('journals_actions', ['action' => ActionJournalEnum::appuiModifie->value]);
     }

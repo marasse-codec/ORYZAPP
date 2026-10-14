@@ -42,19 +42,19 @@
 
                 <div>
                     <x-input-label for="dose_ha" value="Dose par hectare *" />
-                    <x-text-input id="dose_ha" name="dose_ha" type="number" step="0.001" min="0" class="mt-1 block w-full" :value="old('dose_ha', $appui->dose_ha)" required />
+                    <x-text-input id="dose_ha" name="dose_ha" type="number" step="0.0001" min="0" class="mt-1 block w-full" :value="old('dose_ha', $appui->dose_ha)" required />
                     <x-input-error :messages="$errors->get('dose_ha')" class="mt-1" />
                 </div>
 
                 <div>
                     <x-input-label for="cout_unitaire" value="Coût unitaire (F CFA)" />
-                    <x-text-input id="cout_unitaire" name="cout_unitaire" type="number" step="1" min="0" class="mt-1 block w-full" :value="old('cout_unitaire', $appui->cout_unitaire)" />
+                    <x-text-input id="cout_unitaire" name="cout_unitaire" type="number" step="0.01" min="0" class="mt-1 block w-full" :value="old('cout_unitaire', $appui->cout_unitaire)" />
                     <x-input-error :messages="$errors->get('cout_unitaire')" class="mt-1" />
                 </div>
 
                 <div>
                     <x-input-label for="seuil_alerte" value="Seuil d'alerte de stock" />
-                    <x-text-input id="seuil_alerte" name="seuil_alerte" type="number" step="1" min="0" class="mt-1 block w-full" :value="old('seuil_alerte', $appui->seuil_alerte)" />
+                    <x-text-input id="seuil_alerte" name="seuil_alerte" type="number" step="0.0001" min="0" class="mt-1 block w-full" :value="old('seuil_alerte', $appui->seuil_alerte)" />
                     <p class="mt-1 text-xs text-[--color-muted]">En dessous, l'appui remonte dans les alertes. 0 = pas d'alerte.</p>
                     <x-input-error :messages="$errors->get('seuil_alerte')" class="mt-1" />
                 </div>

@@ -2,6 +2,8 @@
 
 namespace App\Domain\Commission\Services;
 
+use App\Utils\Helper;
+
 use App\Domain\Commission\Models\Attribution;
 use App\Domain\Commission\Models\LigneAttribution;
 use App\Domain\Demande\Models\Demande;
@@ -26,7 +28,7 @@ class SyntheseAttributionService
      * en tête, puisque c'est là que l'arbitrage se joue.
      *
      * @param  Collection<int, Demande>  $dossiers
-     * @return Collection<int, array{libelle: string, unite: ?string, service: ?string, demandee: int, stock: int, engagee: int, disponible: int, couverte: bool, nb_dossiers: int}>
+     * @return Collection<int, array{libelle: string, unite: ?string, service: ?string, demandee: float, stock: float, engagee: float, disponible: float, couverte: bool, nb_dossiers: int}>
      */
 
 
@@ -42,7 +44,7 @@ class SyntheseAttributionService
         // 1. Extraire les types d'appui concernés et les quantités demandées par type
     $idsTypesAppuis = $lignes->pluck('id_type_appui')->filter()->unique();
     $quantitesDemandees = $lignes->groupBy('id_type_appui')
-        ->map(fn ($group) => $group->sum('quantite_demandee'));
+        ->map(fn ($group) => Helper::arrondiQuantite($group->sum('quantite_demandee')));
 
         // 2. Récupérer TOUS les appuis en base pour ces types d'appui
     $appuis = Appui::with(['uniteDosage', 'typeAppui.service'])
@@ -59,8 +61,8 @@ class SyntheseAttributionService
             $idAppui = $appui->id_appui;
 
             $demandee = $quantitesDemandees->get($idType, 0);
-            $stock = (int) ($appui->quantite_en_stock ?? 0);
-            $engagee = (int) ($engagees[$idAppui] ?? 0);
+            $stock = Helper::arrondiQuantite($appui->quantite_en_stock);
+            $engagee = Helper::arrondiQuantite($engagees[$idAppui] ?? 0);
             $disponible = $stock - $engagee;
 
             // Compte du nombre de dossiers demandant ce type d'appui

@@ -66,7 +66,7 @@ class SimulationTest extends TestCase
         $this->simulation()->noter($this->moi, 1, 40);
         $this->simulation()->noter($this->moi, 1, 25);                  // la dernière saisie l'emporte
 
-        $this->assertSame([1 => 25], $this->simulation()->brouillon($this->moi));
+        $this->assertEquals([1 => 25], $this->simulation()->brouillon($this->moi));
 
         $this->simulation()->noter($this->moi, 1, 0);
         $this->assertSame([], $this->simulation()->brouillon($this->moi));

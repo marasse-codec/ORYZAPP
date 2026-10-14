@@ -169,7 +169,7 @@
                     @foreach ($attribution->lignesAttributions as $ligne)
                         <tr>
                             <td class="px-4 py-3 text-[--color-ink]">{{ $ligne->appui?->libelle }}</td>
-                            <td class="px-4 py-3 text-right text-[--color-ink]">{{ $ligne->quantite_attribuee }}</td>
+                            <td class="px-4 py-3 text-right text-[--color-ink]">{{ \App\Utils\Helper::quantite($ligne->quantite_attribuee) }}</td>
                             <td class="px-4 py-3 text-right text-[--color-ink]">{{ number_format($ligne->montant(), 0, ',', ' ') }} F</td>
                         </tr>
                     @endforeach

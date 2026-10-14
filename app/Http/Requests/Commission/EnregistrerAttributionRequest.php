@@ -2,6 +2,8 @@
 
 namespace App\Http\Requests\Commission;
 
+use App\Http\Requests\Concerns\ReglesNumeriques;
+
 use App\Domain\Commission\Models\Attribution;
 use App\Domain\Demande\Models\Demande;
 use Illuminate\Foundation\Http\FormRequest;
@@ -19,12 +21,12 @@ class EnregistrerAttributionRequest extends FormRequest
         return [
             'commentaires' => 'nullable|string|max:500',
             'superficies' => 'nullable|array',
-            'superficies.*' => 'nullable|numeric|min:0',
+            'superficies.*' => ['nullable', ...ReglesNumeriques::superficie()],
             'lignes' => 'required|array|min:1',
             'lignes.*.id_appui' => 'required|distinct|exists:appuis,id_appui',
-            'lignes.*.quantite_attribuee' => 'required|numeric|min:0.0001',
-            'lignes.*.cout_attribution' => 'nullable|numeric|min:0.0001',
-            'lignes.*.remise' => 'nullable|numeric|min:0|max:100',
+            'lignes.*.quantite_attribuee' => ['required', ...ReglesNumeriques::quantite(strictementPositive: true), ReglesNumeriques::entierPourEquipement()],
+            'lignes.*.cout_attribution' => ['nullable', ...ReglesNumeriques::prix()],
+            'lignes.*.remise' => ['nullable', ...ReglesNumeriques::remise()],
         ];
     }
 

@@ -15,7 +15,8 @@ class MouvementStock extends Model
     //
 
     protected $casts = [
-        'date_mouvement' => 'datetime'
+        'date_mouvement' => 'datetime',
+        'quantite' => 'decimal:4',
     ];
 
     public function approvisionnement()

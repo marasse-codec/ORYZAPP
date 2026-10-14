@@ -2,6 +2,8 @@
 
 namespace App\Http\Requests\Stock;
 
+use App\Http\Requests\Concerns\ReglesNumeriques;
+
 use Illuminate\Foundation\Http\FormRequest;
 
 /** Une entrée de stock : consommables par quantité, matériel par matricules (uniques, y compris en base). */
@@ -21,7 +23,7 @@ class EnregistrerApprovisionnementRequest extends FormRequest
 
             'lignes' => 'required|array|min:1',
             'lignes.*.id_appui' => 'required|exists:appuis,id_appui',
-            'lignes.*.quantite_ajoutee' => 'required|integer|min:1',
+            'lignes.*.quantite_ajoutee' => ['required', ...ReglesNumeriques::quantite(strictementPositive: true), ReglesNumeriques::entierPourEquipement()],
             'lignes.*.matricules' => 'nullable|array',
             'lignes.*.matricules.*' => 'nullable|string|distinct|max:100|unique:equipements,matricule_equipement',
         ];

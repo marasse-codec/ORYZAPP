@@ -9,7 +9,7 @@
                 @forelse ($stock['alertes'] as $ligne)
                     <li class="flex items-center justify-between gap-3 px-4 py-3 text-sm sm:px-6">
                         <span class="min-w-0 truncate text-[--color-ink]">{{ $ligne['appui']->libelle }}</span>
-                        <x-ui.badge :ton="$ligne['stock'] === 0 ? 'rouge' : 'ambre'">{{ $ligne['stock'] }} / seuil {{ $ligne['appui']->seuil_alerte }}</x-ui.badge>
+                        <x-ui.badge :ton="$ligne['stock'] <= 0 ? 'rouge' : 'ambre'">{{ \App\Utils\Helper::quantite($ligne['stock']) }} / seuil {{ \App\Utils\Helper::quantite($ligne['appui']->seuil_alerte) }}</x-ui.badge>
                     </li>
                 @empty
                     <li class="px-4 py-6 text-center text-sm text-[--color-muted] sm:px-6">Aucun appui sous son seuil.</li>

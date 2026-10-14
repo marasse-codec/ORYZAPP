@@ -2,6 +2,8 @@
 
 namespace App\Domain\Suivi\Exports;
 
+use App\Utils\Helper;
+
 use App\Domain\Acces\Enums\RoleEnum;
 use App\Domain\Commission\Enums\StatutAttributionEnum;
 use App\Domain\Commission\Models\Attribution;
@@ -157,7 +159,7 @@ class AttributionsExport implements FromCollection, WithHeadings, WithMapping, S
                     $data[] = $row->appui_libelle ?? 'N/A';
                     break;
                 case 'quantite_attribuee':
-                    $data[] = (int) $row->quantite_attribuee;
+                    $data[] = Helper::arrondiQuantite($row->quantite_attribuee);
                     break;
                 case 'cout_attribution':
                     $data[] = number_format((float) $row->cout_attribution, 0, ',', ' ');

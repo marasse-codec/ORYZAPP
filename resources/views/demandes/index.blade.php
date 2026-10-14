@@ -60,11 +60,11 @@
                                         {{ $ligne['demandee'] }} <span class="font-normal text-[--color-muted]">{{ $ligne['unite'] }}</span>
                                     </td>
                                     <td class="px-4 py-2.5 text-right text-slate-600">{{ $ligne['stock'] }}</td>
-                                    <td class="px-4 py-2.5 text-right text-slate-600">{{ $ligne['engagee'] }}</td>
+                                    <td class="px-4 py-2.5 text-right text-slate-600">{{ \App\Utils\Helper::quantite($ligne['engagee']) }}</td>
                                     <td class="px-4 py-2.5 text-right">
-                                        <span @class(['font-bold', 'text-[--color-primary]' => $ligne['couverte'], 'text-rose-600' => ! $ligne['couverte']])>{{ $ligne['disponible'] }}</span>
+                                        <span @class(['font-bold', 'text-[--color-primary]' => $ligne['couverte'], 'text-rose-600' => ! $ligne['couverte']])>{{ \App\Utils\Helper::quantite($ligne['disponible']) }}</span>
                                         @unless ($ligne['couverte'])
-                                            <span class="block text-xs text-rose-600">manque {{ $ligne['demandee'] - $ligne['disponible'] }}</span>
+                                            <span class="block text-xs text-rose-600">manque {{ \App\Utils\Helper::quantite($ligne['demandee'] - $ligne['disponible']) }}</span>
                                         @endunless
                                     </td>
                                 </tr>

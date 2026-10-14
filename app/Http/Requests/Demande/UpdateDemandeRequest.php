@@ -2,6 +2,8 @@
 
 namespace App\Http\Requests\Demande;
 
+use App\Http\Requests\Concerns\ReglesNumeriques;
+
 use Illuminate\Foundation\Http\FormRequest;
 
 class UpdateDemandeRequest extends FormRequest
@@ -39,13 +41,13 @@ class UpdateDemandeRequest extends FormRequest
             
             // Superficies ventilées par système de production
             'superficies' => ['nullable', 'array'],
-            'superficies.*' => ['nullable', 'numeric', 'min:0'],
+            'superficies.*' => ['nullable', ...ReglesNumeriques::superficie()],
 
             // --- ÉTAPE 4 : APPUIS ---
             'lignes' => ['required', 'array', 'min:1'],
             'lignes.*.id_type_appui' => ['required', 'exists:types_appuis,id_type_appui'],
             'lignes.*.id_appui' => ['nullable', 'exists:appuis,id_appui'],
-            'lignes.*.quantite_demandee' => ['nullable', 'numeric', 'min:0'],
+            'lignes.*.quantite_demandee' => ['nullable', ...ReglesNumeriques::quantite(), ReglesNumeriques::entierPourEquipement()],
 
             // --- PIÈCES JOINTES ---
             // Les pièces jointes sont optionnelles en modification (nullable) 

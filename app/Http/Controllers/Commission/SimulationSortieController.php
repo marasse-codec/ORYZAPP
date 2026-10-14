@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Commission;
 
+use App\Http\Requests\Concerns\ReglesNumeriques;
+
 use App\Domain\Commission\Services\SimulationSortieService;
 use App\Http\Controllers\Controller;
 use App\Utils\Helper;
@@ -44,7 +46,7 @@ class SimulationSortieController extends Controller
             'id_appui' => 'required|integer|exists:appuis,id_appui',
             // Rien n'interdit de dépasser le disponible : c'est justement la
             // tension que l'on vient mesurer.
-            'quantite' => 'required|integer|min:0',
+            'quantite' => ['required', ...ReglesNumeriques::quantite()],
         ]);
 
         if ($validateur->fails()) {
@@ -53,7 +55,7 @@ class SimulationSortieController extends Controller
 
         $valide = $validateur->validated();
 
-        $this->simulation->noter($request->user(), (int) $valide['id_appui'], (int) $valide['quantite']);
+        $this->simulation->noter($request->user(), (int) $valide['id_appui'], (float) $valide['quantite']);
 
         return response()->json(['enregistre' => true]);
     }

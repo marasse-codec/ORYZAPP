@@ -120,7 +120,7 @@ entity "type_appui" as t_type_appui {
 entity "appui" as t_appui {
   id_appui : BIGINT [PK, AUTO]
   --
-  quantite_en_stock : INT = 0
+  quantite_en_stock : NUMERIC(16,4) = 0
   cout_unitaire : NUMERIC(12,2) = 0.00
   id_type_appui : BIGINT [FK]
 }
@@ -128,7 +128,7 @@ entity "appui" as t_appui {
 entity "ligne_demande" as t_ligne_demande {
   id_ligne_demande : BIGINT [PK, AUTO]
   --
-  quantite_demandee : INT
+  quantite_demandee : NUMERIC(16,4)
   date_debut_location : DATE
   date_fin_location : DATE
   id_demande : BIGINT [FK]
@@ -165,7 +165,7 @@ entity "attribution" as t_attribution {
 entity "ligne_attribution" as t_ligne_attribution {
   id_ligne_attribution : BIGINT [PK, AUTO]
   --
-  quantite_attribuee : INT
+  quantite_attribuee : NUMERIC(16,4)
   cout_attribution : NUMERIC(12,2)
   remise : NUMERIC(5,2) = 0.00
   date_debut_location : DATE
@@ -186,8 +186,8 @@ entity "doc_enlevement" as t_doc_enlevement {
 entity "approvisionnement" as t_approvisionnement {
   id_approvisionnement : BIGINT [PK, AUTO]
   --
-  quantite_avant : INT
-  quantite_ajoutee : INT
+  quantite_avant : NUMERIC(16,4)
+  quantite_ajoutee : NUMERIC(16,4)
   date_appro : TIMESTAMP
   id_appui : BIGINT [FK]
 }

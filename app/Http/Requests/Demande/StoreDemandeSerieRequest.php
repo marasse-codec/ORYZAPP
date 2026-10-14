@@ -2,6 +2,8 @@
 
 namespace App\Http\Requests\Demande;
 
+use App\Http\Requests\Concerns\ReglesNumeriques;
+
 use App\Domain\Demande\Models\Acteur;
 use App\Domain\Stock\Models\Appui;
 use Illuminate\Foundation\Http\FormRequest;
@@ -60,7 +62,7 @@ class StoreDemandeSerieRequest extends FormRequest
             'acteurs.*.date_naissance' => ['required', 'date', 'before:today'],
             'acteurs.*.telephone' => ['required', 'digits:10'],
             'acteurs.*.nom_structure' => ['nullable', 'string', 'max:150'],
-            'acteurs.*.quantites.*' => ['nullable', 'numeric', 'min:0'],
+            'acteurs.*.quantites.*' => ['nullable', ...ReglesNumeriques::quantite()],
             // Observations de la visite de terrain (colonne « observations » : 255 caractères).
             'acteurs.*.visite' => ['nullable', 'string', 'max:255'],
         ];

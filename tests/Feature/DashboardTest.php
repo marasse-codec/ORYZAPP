@@ -211,9 +211,9 @@ class DashboardTest extends TestCase
         $alertes = $this->stats()->stock()['alertes'];
 
         $this->assertEqualsCanonicalizing([1, 3], $alertes->pluck('appui.id_appui')->all());
-        $this->assertSame(10, $alertes->firstWhere('appui.id_appui', 1)['stock']);
-        $this->assertSame(1, $alertes->firstWhere('appui.id_appui', 3)['stock']);
+        $this->assertEquals(10, $alertes->firstWhere('appui.id_appui', 1)['stock']);
+        $this->assertEquals(1, $alertes->firstWhere('appui.id_appui', 3)['stock']);
         // Le plus bas stock d'abord.
-        $this->assertSame(1, $alertes->first()['stock']);
+        $this->assertEquals(1, $alertes->first()['stock']);
     }
 }

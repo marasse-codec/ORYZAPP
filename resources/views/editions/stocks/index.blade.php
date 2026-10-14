@@ -135,8 +135,8 @@
                         <td class="px-4 py-3 font-medium text-slate-800">{{ $appui->libelle }}</td>
                         <td class="px-4 py-3 text-slate-600">{{ $appui->typeAppui?->service?->lib_service }}</td>
                         <td class="px-4 py-3 text-slate-600">{{ $appui->uniteDosage?->lib_unite }}</td>
-                        <td class="px-4 py-3 text-right font-semibold {{ $appui->seuil_alerte > 0 && $stock <= $appui->seuil_alerte ? 'text-rose-600' : 'text-slate-800' }}">{{ $stock }}</td>
-                        <td class="px-4 py-3 text-right text-slate-600">{{ $appui->seuil_alerte }}</td>
+                        <td class="px-4 py-3 text-right font-semibold {{ $appui->seuil_alerte > 0 && $stock <= $appui->seuil_alerte ? 'text-rose-600' : 'text-slate-800' }}">{{ \App\Utils\Helper::quantite($stock) }}</td>
+                        <td class="px-4 py-3 text-right text-slate-600">{{ \App\Utils\Helper::quantite($appui->seuil_alerte) }}</td>
                     </tr>
                 @empty
                     <tr><td colspan="5" class="px-4 py-8 text-center text-slate-500">Aucun appui pour ce service.</td></tr>

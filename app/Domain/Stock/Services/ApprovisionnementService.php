@@ -2,6 +2,8 @@
 
 namespace App\Domain\Stock\Services;
 
+use App\Utils\Helper;
+
 use App\Domain\Journal\Enums\ActionJournalEnum;
 use App\Domain\Journal\Models\JournalAction;
 use App\Domain\Stock\Enums\TypeMouvementStockEnum;
@@ -22,7 +24,7 @@ use Illuminate\Support\Facades\DB;
 class ApprovisionnementService
 {
     /**
-     * @param  array{date_approvisionnement: string, reference_commande?: ?string, origine?: ?string, lignes: array<int, array{id_appui: int|string, quantite_ajoutee: int|string, matricules?: array<int, ?string>}>}  $donnees
+     * @param  array{date_approvisionnement: string, reference_commande?: ?string, origine?: ?string, lignes: array<int, array{id_appui: int|string, quantite_ajoutee: float|int|string, matricules?: array<int, ?string>}>}  $donnees
      */
     public function enregistrer(array $donnees, User $operateur): Approvisionnement
     {
@@ -38,7 +40,7 @@ class ApprovisionnementService
 
             foreach ($donnees['lignes'] as $ligne) {
                 $appui = Appui::findOrFail($ligne['id_appui']);
-                $quantite = (int) $ligne['quantite_ajoutee'];
+                $quantite = Helper::arrondiQuantite($ligne['quantite_ajoutee']);
 
                 $matricules = array_filter($ligne['matricules'] ?? []);
 
@@ -85,7 +87,7 @@ class ApprovisionnementService
     }
 
     /** Consommable : un mouvement global. */
-    private function entrerConsommable(Approvisionnement $approvisionnement, Appui $appui, int $quantite, int $idAgent, int $idEntree, string $date): void
+    private function entrerConsommable(Approvisionnement $approvisionnement, Appui $appui, float $quantite, int $idAgent, int $idEntree, string $date): void
     {
         MouvementStock::create([
             'id_approvisionnement' => $approvisionnement->id_approvisionnement,

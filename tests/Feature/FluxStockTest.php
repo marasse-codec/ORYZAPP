@@ -48,14 +48,14 @@ class FluxStockTest extends TestCase
             ],
         ])->assertSessionHasNoErrors();
 
-        $this->assertSame($stock1 + 30, Appui::find(1)->quantite_en_stock);
-        $this->assertSame($stock3 + 2, Appui::find(3)->quantite_en_stock);
+        $this->assertEquals($stock1 + 30, Appui::find(1)->quantite_en_stock);
+        $this->assertEquals($stock3 + 2, Appui::find(3)->quantite_en_stock);
 
         $appro = Approvisionnement::where('reference_commande', 'BC-2026-001')->sole();
 
         // Le consommable : un mouvement global, daté, signé par l'agent (pas par l'identifiant du compte).
         $global = MouvementStock::where('id_approvisionnement', $appro->id_approvisionnement)->where('id_appui', 1)->sole();
-        $this->assertSame(30, $global->quantite);
+        $this->assertEquals(30, $global->quantite);
         $this->assertSame($this->magasinier->agent->id_agent, $global->id_agent);
         $this->assertSame(today()->toDateString(), $global->date_mouvement->toDateString());
 
@@ -101,7 +101,7 @@ class FluxStockTest extends TestCase
         $this->assertSame('Abîmé', $equipement->etat);
 
         // Le stock remonte d'une unité, et le retour laisse son mouvement, signé du magasinier.
-        $this->assertSame($stockAvant + 1, Appui::find(3)->quantite_en_stock);
+        $this->assertEquals($stockAvant + 1, Appui::find(3)->quantite_en_stock);
         $mouvement = MouvementStock::where('id_equipement', $equipement->id_equipement)->where('id_type_mouvement_stock', TypeMouvementStock::idDe(TypeMouvementStockEnum::RETOUR))->sole();
         $this->assertSame($this->magasinier->agent->id_agent, $mouvement->id_agent);
         $this->assertSame($attribution->id_attribution, $mouvement->id_attribution);

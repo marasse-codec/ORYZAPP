@@ -138,7 +138,7 @@
                     <x-input-label :for="'superficie-'.$id" :value="$type->lib_type_systeme_production" />
                     <x-text-input :id="'superficie-'.$id"
                                   :name="'superficies['.$id.']'"
-                                  type="number" step="0.1" min="0" placeholder="0"
+                                  type="number" step="0.01" min="0" placeholder="0"
                                   x-model="superficies['{{ $id }}']"
                                   class="mt-1 block w-full transition-colors" />
                 </div>

@@ -15,7 +15,7 @@ class LigneAttribution extends Model
     protected $fillable = ['id_attribution', 'id_appui', 'quantite_attribuee', 'cout_attribution', 'remise'];
 
     protected $casts = [
-        'quantite_attribuee' => 'decimal:2',
+        'quantite_attribuee' => 'decimal:4',
         'cout_attribution' => 'decimal:2',
         'remise' => 'decimal:2',
     ];
@@ -30,9 +30,9 @@ class LigneAttribution extends Model
         return $this->belongsTo(Appui::class, 'id_appui', 'id_appui');
     }
 
-    /** Quantité × coût, diminué de la remise consentie par la commission. */
+    /** Quantité × coût, diminué de la remise consentie par la commission, arrondi au centime (précision d'un prix). */
     public function montant(): float
     {
-        return $this->quantite_attribuee * (float) $this->cout_attribution * (1 - (float) $this->remise / 100);
+        return round((float) $this->quantite_attribuee * (float) $this->cout_attribution * (1 - (float) $this->remise / 100), 2);
     }
 }

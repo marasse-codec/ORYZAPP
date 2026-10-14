@@ -59,7 +59,7 @@
                         <p class="border-r border-slate-800 px-2 py-1">{{ $ligne->appui?->libelle }}</p>
                         <p class="min-w-20 px-2 py-1 text-center">
                             @if ($loop->parent->first)
-                                {{ $ligne->quantite_attribuee }}
+                                {{ \App\Utils\Helper::quantite($ligne->quantite_attribuee) }}
                             @endif
                         </p>
                     </div>

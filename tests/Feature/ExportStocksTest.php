@@ -60,7 +60,7 @@ class ExportStocksTest extends TestCase
         $export = new StocksExport(null, ['appui', 'stock', 'engagee', 'disponible']);
         $ligne = $export->map($export->collection()->firstWhere('id_appui', $appui->id_appui));
 
-        $this->assertSame([$appui->libelle, 100, 30, 70], $ligne);
+        $this->assertEquals([$appui->libelle, 100, 30, 70], $ligne);
     }
 
     public function test_les_routes_et_les_droits(): void

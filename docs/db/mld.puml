@@ -173,7 +173,7 @@ package "Élaboration des Demandes" {
     --
     * id_demande : BIGINT <<FK>>
     * id_reference_appui : BIGINT <<FK>>
-    * quantite_demandee : INT
+    * quantite_demandee : DECIMAL(16,4)
   }
 }
 
@@ -206,7 +206,7 @@ package "Catalogue & Référentiel Appuis" {
     * id_categorie_appui : BIGINT <<FK>>
     * id_unite_appui : BIGINT <<FK>>
     * libelle_reference_appui : VARCHAR(150)
-    * quantite_en_stock : INT
+    * quantite_en_stock : DECIMAL(16,4)
     * cout_unitaire : DOUBLE
     * est_consommable : BOOLEAN
   }
@@ -268,7 +268,7 @@ package "Octroi & Commission" {
     * id_bon_attribution : BIGINT <<FK>>
     * id_ligne_demande : BIGINT <<FK>>
     * id_reference_appui : BIGINT <<FK>>
-    * quantite_attribuee : INT
+    * quantite_attribuee : DECIMAL(16,4)
     remise : DOUBLE
     date_restitution_prevue : DATE
   }
@@ -311,7 +311,7 @@ package "Gestion des Stocks" {
     id_equipement : BIGINT <<FK>>
     id_approvisionnement : BIGINT <<FK>>
     id_ligne_bon_attribution : BIGINT <<FK>>
-    * quantite : INT
+    * quantite : DECIMAL(16,4)
     * date_mouvement : DATETIME
     motif : TEXT
   }

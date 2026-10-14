@@ -43,10 +43,10 @@
                         <tr>
                             <td class="py-2 text-slate-800">{{ $ligne->appui?->libelle }}</td>
                             <td class="py-2 text-right text-slate-800">
-                                {{ $ligne->quantite_attribuee }} <span class="text-slate-500">{{ $unite }}</span>
+                                {{ \App\Utils\Helper::quantite($ligne->quantite_attribuee) }} <span class="text-slate-500">{{ $unite }}</span>
                             </td>
                             <td class="py-2 text-right {{ $suffisant ? 'text-slate-600' : 'text-red-700 font-semibold' }}">
-                                {{ $ligne->appui?->quantite_en_stock }} <span class="text-slate-500">{{ $unite }}</span>
+                                {{ \App\Utils\Helper::quantite($ligne->appui?->quantite_en_stock) }} <span class="text-slate-500">{{ $unite }}</span>
                             </td>
                             <td class="py-2 text-right text-slate-800">{{ number_format($ligne->montant(), 0, ',', ' ') }} F</td>
                         </tr>
@@ -57,7 +57,7 @@
                                 <td colspan="4" class="bg-slate-50 p-3 rounded-md">
                                     <x-input-label 
                                         for="equipements_{{ $ligne->id_ligne_attribution ?? $index }}" 
-                                        value="Sélectionner l'équipement/numéro de série à sortir ({{ $ligne->quantite_attribuee }} requis)" 
+                                        value="Sélectionner l'équipement/numéro de série à sortir ({{ \App\Utils\Helper::quantite($ligne->quantite_attribuee) }} requis)" 
                                         class="text-xs font-semibold text-slate-700" 
                                     />
 
@@ -88,7 +88,7 @@
                                                 </option>
                                             @endforeach
                                         </select>
-                                        <p class="mt-1 text-xs text-slate-500">Maintenez CTRL / CMD pour sélectionner plusieurs équipements ({{ $ligne->quantite_attribuee }} minimum).</p>
+                                        <p class="mt-1 text-xs text-slate-500">Maintenez CTRL / CMD pour sélectionner plusieurs équipements ({{ \App\Utils\Helper::quantite($ligne->quantite_attribuee) }} minimum).</p>
                                     @endif
 
                                     <x-input-error :messages="$errors->get('equipements.'.$ligne->id_ligne_attribution)" class="mt-1" />

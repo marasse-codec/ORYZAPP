@@ -69,7 +69,7 @@
                             <li class="flex items-center justify-between border-b border-slate-200/60 pb-1.5 last:border-0 last:pb-0">
                                 <span>{{ $ligne->typeAppui?->lib_type_appui }}</span>
                                 <span class="font-medium text-slate-700">
-                                    {{ $ligne->quantite_demandee ?? $ligne->quantite }}
+                                    {{ \App\Utils\Helper::quantite($ligne->quantite_demandee ?? $ligne->quantite) }}
                                 </span>
                             </li>
                         @empty
@@ -92,12 +92,12 @@
                             </div>
                             <div class="flex justify-between">
                                 <dt>Déjà attribué (global)</dt>
-                                <dd class="font-medium text-slate-800">{{ $ligne['engagee'] }}</dd>
+                                <dd class="font-medium text-slate-800">{{ \App\Utils\Helper::quantite($ligne['engagee']) }}</dd>
                             </div>
                             <div class="flex justify-between border-t border-slate-200 pt-1">
                                 <dt class="font-semibold">Disponible</dt>
                                 <dd class="font-bold {{ $disponible <$ligne['demandee'] ? 'text-[--color-accent]' : 'text-[--color-primary]' }}">
-                                    {{ $disponible }}
+                                    {{ \App\Utils\Helper::quantite($disponible) }}
                                 </dd>
                             </div>
                         </dl>
@@ -199,7 +199,7 @@
 
                             <div class="sm:col-span-2">
                                 <label class="block text-xs font-medium text-[--color-text-secondary]">Quantité</label>
-                                <input type="number" min="0" step="0.0001" required :name="`lignes[${index}][quantite_attribuee]`"
+                                <input type="number" min="0.0001" step="0.0001" required :name="`lignes[${index}][quantite_attribuee]`"
                                        x-model="ligne.quantite_attribuee"
                                        @input="ligne.manuelle = true"
                                        class="mt-1 block w-full text-sm border-gray-300 focus:border-[--color-primary] focus:ring-[--color-primary] rounded-md">

@@ -39,9 +39,9 @@
                                 {{ $ligne['demandee'] }} {{ $ligne['unite'] }}
                             </td>
                             <td class="py-1.5 text-right text-slate-600">{{ $ligne['stock'] }}</td>
-                            <td class="py-1.5 text-right text-slate-600">{{ $ligne['engagee'] }}</td>
+                            <td class="py-1.5 text-right text-slate-600">{{ \App\Utils\Helper::quantite($ligne['engagee']) }}</td>
                             <td class="py-1.5 text-right font-bold {{ $ligne['couverte'] ? 'text-slate-800' : 'text-red-700' }}">
-                                {{ $ligne['disponible'] }}
+                                {{ \App\Utils\Helper::quantite($ligne['disponible']) }}
                                 @unless ($ligne['couverte'])
                                     <span class="block text-[10px] font-normal">insuffisant</span>
                                 @endunless
@@ -126,7 +126,7 @@
                             @foreach ($attribution->lignesAttributions as $ligneAttrib)
                                 <tr>
                                     <td class="py-1 text-slate-800"><span class="block border-b border-dotted border-slate-400">{{ $ligneAttrib->appui->libelle }}</span></td>
-                                    <td class="py-1 text-slate-800"><span class="block border-b border-dotted border-slate-400">{{ $ligneAttrib->quantite_attribuee }}</span></td>
+                                    <td class="py-1 text-slate-800"><span class="block border-b border-dotted border-slate-400">{{ \App\Utils\Helper::quantite($ligneAttrib->quantite_attribuee) }}</span></td>
                                     <td class="py-1"><span class="block border-b border-dotted border-slate-400">{{ $ligneAttrib->remise }}</span></td>
                                 </tr>
                             @endforeach

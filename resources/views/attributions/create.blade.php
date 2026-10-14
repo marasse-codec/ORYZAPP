@@ -85,12 +85,12 @@
                             </div>
                             <div class="flex justify-between">
                                 <dt>Déjà attribué</dt>
-                                <dd class="font-medium text-slate-800">{{ $ligne['engagee'] }} {{$ligne['unite'] }}</dd>
+                                <dd class="font-medium text-slate-800">{{ \App\Utils\Helper::quantite($ligne['engagee']) }} {{$ligne['unite'] }}</dd>
                             </div>
                             <div class="flex justify-between border-t border-slate-200 pt-1">
                                 <dt class="font-semibold">Disponible</dt>
                                 <dd class="font-bold {{ $disponible <$ligne['demandee'] ? 'text-[--color-accent]' : 'text-[--color-primary]' }}">
-                                    {{ $disponible }} {{$ligne['unite'] }}
+                                    {{ \App\Utils\Helper::quantite($disponible) }} {{$ligne['unite'] }}
                                 </dd>
                             </div>
                         </dl>
@@ -247,7 +247,7 @@
                             {{-- Quantité --}}
                             <div class="sm:col-span-2">
                                 <label class="block text-xs font-medium text-[--color-text-secondary]">Quantité</label>
-                                    <input type="number" min="0" step="0.0001" required :name="`lignes[${index}][quantite_attribuee]`"
+                                    <input type="number" min="0.0001" step="0.0001" required :name="`lignes[${index}][quantite_attribuee]`"
                                        x-model="ligne.quantite_attribuee"
                                        @input="onQuantiteSaisie(index)"
                                        class="mt-1 block w-full text-sm border-gray-300 focus:border-[--color-primary] focus:ring-[--color-primary] rounded-md">

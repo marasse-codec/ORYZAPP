@@ -2,6 +2,8 @@
 
 namespace App\Http\Requests\Stock;
 
+use App\Http\Requests\Concerns\ReglesNumeriques;
+
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -21,9 +23,9 @@ class EnregistrerAppuiRequest extends FormRequest
             'libelle' => ['required', 'string', 'max:255', Rule::unique('appuis', 'libelle')->ignore($appui?->id_appui, 'id_appui')],
             'id_type_appui' => ['required', 'exists:types_appuis,id_type_appui'],
             'id_unite' => ['required', 'exists:unites_dosages,id_unite'],
-            'dose_ha' => ['required', 'numeric', 'min:0'],
-            'cout_unitaire' => ['nullable', 'numeric', 'min:0'],
-            'seuil_alerte' => ['nullable', 'integer', 'min:0'],
+            'dose_ha' => ['required', ...ReglesNumeriques::quantite()],
+            'cout_unitaire' => ['nullable', ...ReglesNumeriques::prix()],
+            'seuil_alerte' => ['nullable', ...ReglesNumeriques::quantite()],
             'systemes' => ['nullable', 'array'],
             'systemes.*' => ['exists:types_systemes_productions,id_type_systeme_production'],
         ];

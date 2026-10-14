@@ -39,10 +39,10 @@ class ConfrontationCommissionTest extends TestCase
         $ligne = $service->confrontation($service->dossiersEnAttente())->firstWhere('id_appui', $appui->id_appui);
 
         $this->assertSame(2, $ligne['nb_dossiers']);
-        $this->assertSame(90, $ligne['demandee']);
-        $this->assertSame(100, $ligne['stock']);
-        $this->assertSame(30, $ligne['engagee']);
-        $this->assertSame(70, $ligne['disponible']);
+        $this->assertEquals(90, $ligne['demandee']);
+        $this->assertEquals(100, $ligne['stock']);
+        $this->assertEquals(30, $ligne['engagee']);
+        $this->assertEquals(70, $ligne['disponible']);
         $this->assertFalse($ligne['couverte']);      // 90 demandés pour 70 disponibles
     }
 

@@ -53,15 +53,15 @@
                     <tr class="hover:bg-slate-50">
                         <td class="px-4 py-3 font-medium text-[--color-ink]">{{ $appui->libelle }}</td>
                         <td class="px-4 py-3"><x-ui.badge>{{ $appui->typeAppui?->lib_type_appui }}</x-ui.badge></td>
-                        <td class="px-4 py-3 text-right text-slate-600">{{ rtrim(rtrim(number_format($appui->dose_ha, 3, ',', ' '), '0'), ',') }} {{ $appui->uniteDosage?->lib_unite }}</td>
+                        <td class="px-4 py-3 text-right text-slate-600">{{ \App\Utils\Helper::quantite($appui->dose_ha) }} {{ $appui->uniteDosage?->lib_unite }}</td>
                         <td class="px-4 py-3 text-right text-slate-600">{{ $appui->cout_unitaire !== null ? number_format($appui->cout_unitaire, 0, ',', ' ').' F' : '-' }}</td>
                         <td class="px-4 py-3 text-right">
                             {{-- Sous le seuil : la quantité passe en rouge, comme dans les alertes. --}}
                             <span @class(['font-semibold', 'text-red-600' => $appui->seuil_alerte > 0 && $appui->quantite_en_stock <= $appui->seuil_alerte, 'text-[--color-ink]' => ! ($appui->seuil_alerte > 0 && $appui->quantite_en_stock <= $appui->seuil_alerte)])>
-                                {{ number_format($appui->quantite_en_stock, 0, ',', ' ') }}
+                                {{ \App\Utils\Helper::quantite($appui->quantite_en_stock) }}
                             </span>
                         </td>
-                        <td class="px-4 py-3 text-right text-slate-600">{{ $appui->seuil_alerte > 0 ? number_format($appui->seuil_alerte, 0, ',', ' ') : '-' }}</td>
+                        <td class="px-4 py-3 text-right text-slate-600">{{ $appui->seuil_alerte > 0 ? \App\Utils\Helper::quantite($appui->seuil_alerte) : '-' }}</td>
                         <td class="px-4 py-3 text-right">
                             <div class="flex items-center justify-end gap-3">
                                 <a href="{{ route('appuis.edit', $appui) }}" class="text-sm font-medium text-[--color-primary] hover:underline">Modifier</a>

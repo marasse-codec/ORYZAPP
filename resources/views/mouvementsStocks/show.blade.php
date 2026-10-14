@@ -17,7 +17,7 @@
             </div>
             <div>
                 <dt class="text-xs uppercase tracking-wide text-[--color-muted]">Quantité</dt>
-                <dd class="mt-0.5 text-lg font-bold text-[--color-ink]">{{ $mouvement->quantite }}</dd>
+                <dd class="mt-0.5 text-lg font-bold text-[--color-ink]">{{ \App\Utils\Helper::quantite($mouvement->quantite) }}</dd>
             </div>
             <div>
                 <dt class="text-xs uppercase tracking-wide text-[--color-muted]">Appui</dt>

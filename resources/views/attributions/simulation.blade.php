@@ -14,7 +14,10 @@
              /* Le restant se recalcule à la frappe : c'est tout l'intérêt de
                 l'écran. Le serveur, lui, n'est sollicité que pour retenir le
                 brouillon. */
-             restant(poste) { return poste.disponible - this.quantite(poste); },
+             /* Quatre décimales (précision des quantités en base) : sans arrondi, 0,3 − 0,1 s'afficherait 0,19999999999999998. */
+             arrondi(v) { return Math.round(v * 10000) / 10000; },
+             fmt(v) { return this.arrondi(v).toLocaleString('fr-FR', { maximumFractionDigits: 4 }); },
+             restant(poste) { return this.arrondi(poste.disponible - this.quantite(poste)); },
              quantite(poste) { return Number(poste.simulee) || 0; },
 
              get postesFiltres() {
@@ -139,17 +142,17 @@
                         <dl class="mt-3 space-y-1 text-sm text-slate-600">
                             <div class="flex justify-between">
                                 <dt>Demandé</dt>
-                                <dd class="font-medium" x-text="`${poste.demandee} ${poste.unite}`"></dd>
+                                <dd class="font-medium" x-text="`${fmt(poste.demandee)} ${poste.unite}`"></dd>
                             </div>
                             <div class="flex justify-between">
                                 <dt>Déjà engagé</dt>
-                                <dd class="font-medium" x-text="`${poste.engagee} ${poste.unite}`"></dd>
+                                <dd class="font-medium" x-text="`${fmt(poste.engagee)} ${poste.unite}`"></dd>
                             </div>
                             <div class="flex justify-between border-t border-slate-200 pt-1">
                                 <dt class="font-semibold">Restant</dt>
                                 <dd class="font-bold"
                                     :class="restant(poste) < 0 ? 'text-red-700' : (restant(poste) === 0 ? 'text-orange-700' : 'text-emerald-700')"
-                                    x-text="`${restant(poste)} ${poste.unite}`"></dd>
+                                    x-text="`${fmt(restant(poste))} ${poste.unite}`"></dd>
                             </div>
                         </dl>
 
@@ -158,7 +161,7 @@
                         <div class="mt-auto flex items-center justify-between gap-3 border-t border-slate-200 pt-3">
                             <label class="text-sm font-medium text-slate-700"
                                    :for="`simulee-${poste.id_appui}`">Attribué</label>
-                            <input type="number" min="0" step="1"
+                            <input type="number" min="0" step="0.0001"
                                    :id="`simulee-${poste.id_appui}`"
                                    x-model="poste.simulee"
                                    @input.debounce.400ms="noter(poste)"
@@ -170,7 +173,7 @@
                              disparaître du flux et la carte changerait de taille. --}}
                         <p class="mt-1.5 h-4 text-xs font-medium text-red-700"
                            x-text="restant(poste) < 0
-                               ? `Dépassement de ${Math.abs(restant(poste))} ${poste.unite}.`
+                               ? `Dépassement de ${fmt(Math.abs(restant(poste)))} ${poste.unite}.`
                                : ''"></p>
                     </div>
                 </template>

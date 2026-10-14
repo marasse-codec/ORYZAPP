@@ -156,7 +156,7 @@
                                 <div class="sm:col-span-3">
                                     <label class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">Quantité ajoutée *</label>
                                     <input type="number" :name="`lignes[${index}][quantite_ajoutee]`" x-model.number="ligne.quantite_ajoutee"
-                                           min="1" step="1" required
+                                           :min="ligne.appuiSelectionne && !ligne.appuiSelectionne.est_intrant ? 1 : 0.0001" :step="ligne.appuiSelectionne && !ligne.appuiSelectionne.est_intrant ? 1 : 0.0001" required
                                            class="w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-[--color-primary] focus:ring-[--color-primary]">
                                 </div>
 

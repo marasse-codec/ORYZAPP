@@ -57,12 +57,12 @@ class RetraitStockTest extends TestCase
 
         $this->retirer($attribution)->assertRedirect(route('enlevements.index'));
 
-        $this->assertSame($stockAvant - 20, Appui::find(1)->quantite_en_stock);
+        $this->assertEquals($stockAvant - 20, Appui::find(1)->quantite_en_stock);
 
         // Un mouvement de sortie rattaché à l'attribution (la base l'exige : origine unique).
         $mouvement = MouvementStock::where('id_attribution', $attribution->id_attribution)->sole();
         $this->assertSame(1, $mouvement->id_appui);
-        $this->assertSame(20, $mouvement->quantite);
+        $this->assertEquals(20, $mouvement->quantite);
         $this->assertSame($this->magasinier->agent->id_agent, $mouvement->id_agent);
         $this->assertNull($mouvement->id_approvisionnement);
 
@@ -115,7 +115,7 @@ class RetraitStockTest extends TestCase
         $this->retirer($attribution);
         $this->retirer($attribution)->assertSessionHas('error', fn ($m) => str_contains($m, 'déjà été retirée, ou ses résultats ne sont pas encore publiés'));
 
-        $this->assertSame($stockAvant - 20, Appui::find(1)->quantite_en_stock);   // déstocké une seule fois
+        $this->assertEquals($stockAvant - 20, Appui::find(1)->quantite_en_stock);   // déstocké une seule fois
         $this->assertSame(1, MouvementStock::where('id_attribution', $attribution->id_attribution)->count());
     }
 

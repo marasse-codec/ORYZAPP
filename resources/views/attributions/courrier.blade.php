@@ -71,7 +71,7 @@
             @foreach ($lignes as $ligne)
                 @php($montant = $ligne->montant())
                 <li class="list-['-'] pl-3">
-                    <strong>{{ rtrim(rtrim(number_format((float) $ligne->quantite_attribuee, 2, ',', ' '), '0'), ',') }}
+                    <strong>{{ \App\Utils\Helper::quantite($ligne->quantite_attribuee) }}
                     {{ $ligne->appui?->uniteDosage?->lib_unite }}</strong>
                     de {{ $ligne->appui?->libelle }}
                     d'une valeur de <strong>{{ number_format($montant, 0, ',', ' ') }} francs CFA</strong>{{ $loop->last ? '.' : ' ;' }}

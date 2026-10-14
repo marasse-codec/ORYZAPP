@@ -66,7 +66,7 @@
                         Quantité <span class="text-slate-400 font-normal">(Opt.)</span>
                     </label>
                     <div class="flex items-center">
-                        <x-text-input type="number" step="0.01" min="0" placeholder="Ex: 5"
+                        <x-text-input type="number" step="0.0001" min="0" placeholder="Ex: 5"
                                     x-bind:name="`lignes[${index}][quantite_demandee]`"
                                     x-model="ligne.quantite"
                                     class="block w-full text-sm bg-white rounded-r-none border-r-0" />
@@ -83,7 +83,7 @@
                         Cession <span class="text-slate-400 font-normal">(Opt.)</span>
                     </label>
                     <div class="flex items-center">
-                        <x-text-input type="number" step="0.01" min="0" placeholder="Ex: 5"
+                        <x-text-input type="number" step="0.0001" min="0" placeholder="Ex: 5"
                                     x-bind:name="`lignes[${index}][quantite_demandee]`"
                                     x-model="ligne.quantite_demandee"
                                     class="block w-full text-sm bg-white rounded-r-none border-r-0" />

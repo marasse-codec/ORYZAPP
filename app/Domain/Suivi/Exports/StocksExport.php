@@ -2,6 +2,8 @@
 
 namespace App\Domain\Suivi\Exports;
 
+use App\Utils\Helper;
+
 use App\Domain\Acces\Enums\RoleEnum;
 use App\Domain\Commission\Services\SyntheseAttributionService;
 use App\Domain\Stock\Models\Appui;
@@ -92,7 +94,7 @@ class StocksExport implements FromCollection, WithHeadings, WithMapping, ShouldA
     public function map($appui): array
     {
         $stock = $appui->quantiteeEnStock();
-        $engagee = (int) ($this->engagees[$appui->id_appui] ?? 0);
+        $engagee = Helper::arrondiQuantite($this->engagees[$appui->id_appui] ?? 0);
 
         // Seuil à 0 = pas d'alerte voulue pour cet appui (cf. StatistiqueService::stock).
         $enAlerte = $appui->seuil_alerte > 0 && $stock <= $appui->seuil_alerte;
@@ -104,11 +106,11 @@ class StocksExport implements FromCollection, WithHeadings, WithMapping, ShouldA
             'unite' => $appui->uniteDosage?->lib_unite,
             'stock' => $stock,
             'engagee' => $engagee,
-            'disponible' => $stock - $engagee,
-            'seuil_alerte' => (int) $appui->seuil_alerte,
+            'disponible' => Helper::arrondiQuantite($stock - $engagee),
+            'seuil_alerte' => Helper::arrondiQuantite($appui->seuil_alerte),
             'situation' => $enAlerte ? 'EN ALERTE' : 'Normal',
             'cout_unitaire' => (float) $appui->cout_unitaire,
-            'valeur_stock' => (float) $appui->cout_unitaire * $stock,
+            'valeur_stock' => round((float) $appui->cout_unitaire * $stock, 2),
         }, $this->colonnesSelectionnees);
     }
 

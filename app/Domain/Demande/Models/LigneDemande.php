@@ -19,7 +19,7 @@ class LigneDemande extends Model
     protected $fillable = ['id_demande', 'id_type_appui', 'cession', 'id_appui', 'quantite_demandee'];
 
     protected $casts = [
-        'quantite_demandee' => 'decimal:2',
+        'quantite_demandee' => 'decimal:4',
     ];
 
     public function demande(): BelongsTo

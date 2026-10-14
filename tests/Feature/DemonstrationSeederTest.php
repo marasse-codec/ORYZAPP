@@ -46,7 +46,7 @@ class DemonstrationSeederTest extends TestCase
         foreach ([1, 2] as $idAppui) {
             $sorties = MouvementStock::where('id_appui', $idAppui)->sum('quantite');
 
-            $this->assertSame(120 - (int) $sorties, Appui::find($idAppui)->quantite_en_stock, "Appui #$idAppui");
+            $this->assertEquals(120 - (float) $sorties, Appui::find($idAppui)->quantite_en_stock, "Appui #$idAppui");
             $this->assertGreaterThanOrEqual(0, Appui::find($idAppui)->quantite_en_stock);
         }
     }

@@ -27,7 +27,7 @@
                         <tr class="hover:bg-slate-50">
                             <td class="px-4 py-3 text-slate-600">{{ $appro->date_approvisionnement?->format('d/m/Y') }}</td>
                             <td class="px-4 py-3 font-medium text-[--color-ink]">{{ $mouvement->appui?->libelle }}</td>
-                            <td class="px-4 py-3 text-right font-semibold text-emerald-700">+{{ $mouvement->total_quantite }}</td>
+                            <td class="px-4 py-3 text-right font-semibold text-emerald-700">+{{ \App\Utils\Helper::quantite($mouvement->total_quantite) }}</td>
                             <td class="px-4 py-3 text-slate-600">{{ $appro->reference_commande ?? '-' }}</td>
                             <td class="px-4 py-3 text-slate-600">{{ $appro->origine ?? '-' }}</td>
                         </tr>

@@ -2,6 +2,8 @@
 
 namespace App\Http\Requests\Demande;
 
+use App\Http\Requests\Concerns\ReglesNumeriques;
+
 use Illuminate\Foundation\Http\FormRequest;
 
 class StoreDemandeRequest extends FormRequest
@@ -33,13 +35,13 @@ class StoreDemandeRequest extends FormRequest
 
             // Superficies par système de production
             'superficies'                 => ['nullable', 'array'],
-            'superficies.*'               => ['nullable', 'numeric', 'min:0'],
+            'superficies.*'               => ['nullable', ...ReglesNumeriques::superficie()],
 
             // Étape 4 : Appuis sollicités
             'lignes'                      => ['required', 'array', 'min:1'],
             'lignes.*.id_type_appui'      => ['required', 'exists:types_appuis,id_type_appui'],
             'lignes.*.id_appui'           => ['nullable','exists:appuis,id_appui'],
-            'lignes.*.quantite_demandee'  => ['nullable'],
+            'lignes.*.quantite_demandee'  => ['nullable', ...ReglesNumeriques::quantite(), ReglesNumeriques::entierPourEquipement()],
 
             // Pièces justificatives
             'pieces'                      => ['nullable', 'array'],

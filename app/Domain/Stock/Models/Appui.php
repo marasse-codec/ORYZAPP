@@ -2,6 +2,7 @@
 
 namespace App\Domain\Stock\Models;
 
+use App\Utils\Helper;
 use App\Domain\Acces\Enums\RoleEnum;
 use App\Domain\Commission\Models\LigneAttribution;
 use App\Domain\Demande\Models\LigneDemande;
@@ -28,28 +29,28 @@ class Appui extends Model implements EstUtilisable
     protected $fillable = ['libelle', 'id_type_appui', 'quantite_en_stock', 'seuil_alerte', 'cout_unitaire', 'dose_ha', 'id_unite'];
 
     protected $casts = [
-        'quantite_en_stock' => 'decimal:2',
-        'seuil_alerte' => 'decimal:2',
+        'quantite_en_stock' => 'decimal:4',
+        'seuil_alerte' => 'decimal:4',
         'cout_unitaire' => 'decimal:2',
-        'dose_ha' => 'decimal:3'
-        ];
+        'dose_ha' => 'decimal:4',
+    ];
 
     public function uniteDosage() : BelongsTo {
             return $this->belongsTo(UniteDosage::class,'id_unite','id_unite');
     }
 
-    public function quantiteeEnStock(): int
+    public function quantiteeEnStock(): float
     {
         // Accès dynamique à la relation typeAppui (?-> évite une erreur si typeAppui est null)
         if (! $this->typeAppui?->est_intrant) {
             // Option 1 : Si vous souhaitez compter UNIQUEMENT les équipements disponibles en stock
-            return $this->equipements()->where('en_service', false)->count();
+            return (float) $this->equipements()->where('en_service', false)->count();
 
             // Option 2 : Si vous souhaitez compter TOUS les équipements
             // return $this->equipements()->count();
         }
 
-        return (int) $this->quantite_en_stock;
+        return Helper::arrondiQuantite($this->quantite_en_stock);
     }
 
     /**
@@ -100,15 +101,15 @@ class Appui extends Model implements EstUtilisable
     /**
      * Calcule la quantité totale engagée / attribuée pour cet appui.
      */
-    public function quantiteEngagee(): int
+    public function quantiteEngagee(): float
     {
         // Si la relation est déjà chargée en mémoire (Eager Loading)
         if ($this->relationLoaded('lignesAttributions')) {
-            return (int) $this->lignesAttributions->sum('quantite_attribuee');
+            return Helper::arrondiQuantite($this->lignesAttributions->sum('quantite_attribuee'));
         }
 
         // Sinon, calcul direct en BDD
-        return (int) $this->lignesAttributions()->sum('quantite_attribuee');
+        return Helper::arrondiQuantite($this->lignesAttributions()->sum('quantite_attribuee'));
     }
 
     public function estEquipement() : bool {
