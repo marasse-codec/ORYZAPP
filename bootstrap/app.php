@@ -17,6 +17,10 @@ return Application::configure(basePath: dirname(__DIR__))
         // Derrière le proxy HTTPS de l'hébergeur (Render) : sans cela, les URL générées sont en http.
         $middleware->trustProxies(at: '*');
 
+        // Pendant l'installation au démarrage (docker/entrypoint.sh) le site est en maintenance :
+        // le contrôle de santé de l'hébergeur doit pourtant continuer à répondre.
+        $middleware->preventRequestsDuringMaintenance(except: ['up']);
+
         $middleware->alias([
             'permission' => PermissionMiddleware::class,
         ]);

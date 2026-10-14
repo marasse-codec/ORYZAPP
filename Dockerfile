@@ -25,6 +25,7 @@ ENV APACHE_DOCUMENT_ROOT=/var/www/html/public
 RUN sed -ri 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/*.conf \
     && sed -ri 's!Listen 80!Listen ${PORT}!' /etc/apache2/ports.conf \
     && sed -ri 's!<VirtualHost \*:80>!<VirtualHost *:${PORT}>!' /etc/apache2/sites-available/000-default.conf \
+    && echo 'ServerName localhost' > /etc/apache2/conf-available/servername.conf && a2enconf servername \
     && a2enmod rewrite headers \
     && cp "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini"
 
