@@ -55,6 +55,8 @@
         periode_fin_mise_en_place: '{{ old('periode_fin_mise_en_place', isset($demande) ? $demande->periode_fin_mise_en_place : '') }}',
 
         suggestionsActeurs: [],
+        // Ce que l'acteur retrouvé doit encore sur ses attributions précédentes : s'il doit, l'enregistrement sera refusé.
+        resteDu: 0,
         acteurTrouve: false,
 
         // Sauvegarde automatique de la saisie (brouillon serveur, fichiers exclus).
@@ -155,6 +157,7 @@
                 this.idTypeActeur = acteur.id_type_acteur;
             }
             this.suggestionsActeurs = [];
+            this.resteDu = Number(acteur.reste_du ?? 0);
             this.acteurTrouve = true;
         },
 
@@ -165,6 +168,7 @@
             this.telephone = '';
             this.email = '';
             this.nomStructure = '';
+            this.resteDu = 0;
             this.acteurTrouve = false;
             this.suggestionsActeurs = [];
         },
@@ -191,6 +195,12 @@
     }"
     class="mx-auto w-full max-w-4xl space-y-6"
 >
+    <div x-show="resteDu > 0" x-cloak role="alert" class="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800">
+        Cet acteur n'a pas fini de régler ses attributions précédentes
+        (reste dû : <strong x-text="new Intl.NumberFormat('fr-FR').format(resteDu) + ' F'"></strong>).
+        Une nouvelle demande sera refusée tant que le solde n'est pas réglé.
+    </div>
+
     <header class="rounded-xl border border-[--color-border] bg-white p-4 shadow-sm sm:p-6">
         <div>
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-5">

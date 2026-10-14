@@ -57,6 +57,11 @@ class Attribution extends Model
         return $this->hasMany(SuperficieAttribution::class, 'id_attribution', 'id_attribution');
     }
 
+    public function paiements(): HasMany
+    {
+        return $this->hasMany(Paiement::class, 'id_attribution', 'id_attribution');
+    }
+
     public function user() {
          return $this->belongsTo(User::class, 'id_user','id_user');
     }
@@ -74,6 +79,32 @@ class Attribution extends Model
         $this->loadMissing('lignesAttributions');
 
         return (float) $this->lignesAttributions->sum(fn (LigneAttribution $ligne) => $ligne->montant());
+    }
+
+    /** Ce que l'acteur a déjà réglé. */
+    public function totalPaye(): float
+    {
+        $this->loadMissing('paiements');
+
+        return round((float) $this->paiements->sum('montant'), 2);
+    }
+
+    /**
+     * Ce qu'il reste à régler. Rien n'est dû avant la publication des résultats :
+     * jusque-là l'attribution peut encore changer.
+     */
+    public function resteDu(): float
+    {
+        if (! $this->estPubliee()) {
+            return 0.0;
+        }
+
+        return max(0.0, round($this->montantTotal() - $this->totalPaye(), 2));
+    }
+
+    public function estReglee(): bool
+    {
+        return $this->resteDu() <= 0;
     }
 
     // ------------------------------------------------------------------ Scopes

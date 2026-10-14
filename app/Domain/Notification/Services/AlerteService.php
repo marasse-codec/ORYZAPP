@@ -2,9 +2,13 @@
 
 namespace App\Domain\Notification\Services;
 
+use App\Utils\Helper;
+
 use App\Domain\Acces\Enums\RoleEnum;
 use App\Domain\Commission\Models\Attribution;
+use App\Domain\Acces\Enums\PermissionEnum;
 use App\Domain\Commission\Models\SessionCommission;
+use App\Domain\Commission\Services\ReglementService;
 use App\Domain\Demande\Models\Demande;
 use App\Domain\Notification\Notifications\SuiviDossierNotification;
 use App\Domain\Stock\Models\Appui;
@@ -18,7 +22,8 @@ use NotificationChannels\WebPush\WebPushChannel;
  *
  *  - résultats publiés   → chaque DP concerné, et les magasiniers (bons à servir) ;
  *  - appui sous son seuil → les magasiniers, une fois, au franchissement ;
- *  - résumé quotidien    → agents de service et de commission, s'il y a de quoi dire.
+ *  - résumé quotidien    → agents de service et de commission, s'il y a de quoi dire ;
+ *  - rappels hebdomadaires → ce qui traîne : impayés, bons non retirés, brouillons oubliés, séances ouvertes.
  *
  * À appeler APRÈS la validation de la transaction qui a produit l'événement :
  * on n'annonce que ce qui est acquis. Les envois partent en file d'attente.
@@ -84,13 +89,13 @@ class AlerteService
      * Un appui vient de passer sous son seuil d'alerte (et pas seulement d'y
      * rester) : les magasiniers en sont avertis une fois.
      */
-    public function stockSousSeuil(Appui $appui, int $stock): void
+    public function stockSousSeuil(Appui $appui, float|int|string $stock): void
     {
         $unite = $appui->uniteDosage?->lib_unite;
 
         Notification::send($this->magasiniers(), new SuiviDossierNotification(
             titre: "Stock bas : {$appui->libelle}",
-            message: "Il reste {$stock}".($unite ? " {$unite}" : '')." (seuil d'alerte : {$appui->seuil_alerte}). Pensez à réapprovisionner.",
+            message: 'Il reste '.Helper::quantite($stock).($unite ? " {$unite}" : '')." (seuil d'alerte : ".Helper::quantite($appui->seuil_alerte).'). Pensez à réapprovisionner.',
             urlAction: route('approvisionnements.create'),
             type: 'warning',
             estUrgente: true,
@@ -156,6 +161,116 @@ class AlerteService
         }
 
         return $envoyes;
+    }
+
+    /**
+     * Les rappels de la semaine : chacun ne part que s'il y a quelque chose qui traîne,
+     * à celui qui peut agir. Un message par destinataire et par sujet.
+     *
+     * @return array<string, int> destinataires notifiés, par sujet
+     */
+    public function rappelsHebdomadaires(int $joursBons = 14, int $joursBrouillons = 7, int $joursSeances = 30): array
+    {
+        return [
+            'impayes' => $this->rappelImpayes(),
+            'bons' => $this->rappelBonsNonRetires($joursBons),
+            'brouillons' => $this->rappelBrouillons($joursBrouillons),
+            'seances' => $this->rappelSeancesOuvertes($joursSeances),
+        ];
+    }
+
+    /** Aux administrateurs : les acteurs qui n'ont pas fini de régler, et ce qu'il reste à encaisser. */
+    public function rappelImpayes(): int
+    {
+        $acteurs = app(ReglementService::class)->acteursEnImpaye();
+
+        if ($acteurs->isEmpty()) {
+            return 0;
+        }
+
+        $reste = number_format($acteurs->sum('reste_du'), 0, ',', ' ');
+        $destinataires = User::permission(PermissionEnum::gererReglements->value)->get();
+
+        Notification::send($destinataires, new SuiviDossierNotification(
+            titre: 'Règlements en attente',
+            message: "{$acteurs->count()} acteur(s) n'ont pas fini de régler leurs attributions : {$reste} F restent à encaisser. Ils ne peuvent pas déposer de nouvelle demande.",
+            urlAction: route('dashboard'),
+            type: 'warning',
+            canaux: self::CANAUX_RESUME,
+        ));
+
+        return $destinataires->count();
+    }
+
+    /** Aux magasiniers : les bons publiés depuis plus de $jours jours et jamais retirés. */
+    public function rappelBonsNonRetires(int $jours): int
+    {
+        $bons = Attribution::aDestocker()->where('date_publication', '<=', now()->subDays($jours))->count();
+
+        if ($bons === 0) {
+            return 0;
+        }
+
+        $magasiniers = $this->magasiniers();
+
+        Notification::send($magasiniers, new SuiviDossierNotification(
+            titre: 'Bons en attente de retrait',
+            message: "{$bons} bon(s) publié(s) depuis plus de {$jours} jours n'ont pas été retirés au magasin.",
+            urlAction: route('enlevements.index'),
+            type: 'warning',
+            canaux: self::CANAUX_RESUME,
+        ));
+
+        return $magasiniers->count();
+    }
+
+    /** À chaque DP : ses brouillons de demande restés sans suite depuis plus de $jours jours. */
+    public function rappelBrouillons(int $jours): int
+    {
+        $parDp = Demande::whereNull('date_soummission')
+            ->whereNull('motifs_rejet')
+            ->where('created_at', '<=', now()->subDays($jours))
+            ->get()
+            ->groupBy('id_user');
+
+        $envoyes = 0;
+
+        foreach (User::whereIn('id', $parDp->keys()->filter())->get() as $dp) {
+            $dp->notify(new SuiviDossierNotification(
+                titre: 'Brouillons à terminer',
+                message: "{$parDp[$dp->id]->count()} demande(s) en brouillon depuis plus de {$jours} jours n'ont pas été soumises.",
+                urlAction: route('demandes.index'),
+                type: 'info',
+                canaux: self::CANAUX_RESUME,
+            ));
+            $envoyes++;
+        }
+
+        return $envoyes;
+    }
+
+    /** À la commission : les séances ouvertes depuis plus de $jours jours, qu'il faudrait clôturer. */
+    public function rappelSeancesOuvertes(int $jours): int
+    {
+        $seances = SessionCommission::whereNull('date_fin_session')
+            ->where('date_debut_session', '<=', now()->subDays($jours))
+            ->count();
+
+        if ($seances === 0) {
+            return 0;
+        }
+
+        $agents = User::role(RoleEnum::agentCommission->value)->get();
+
+        Notification::send($agents, new SuiviDossierNotification(
+            titre: 'Séances à clôturer',
+            message: "{$seances} séance(s) de commission sont ouvertes depuis plus de {$jours} jours.",
+            urlAction: route('commissions.index'),
+            type: 'warning',
+            canaux: self::CANAUX_RESUME,
+        ));
+
+        return $agents->count();
     }
 
     private function magasiniers()

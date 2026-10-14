@@ -48,6 +48,7 @@
 
     @includeWhen($commission, 'dashboard.partials.commission', ['commission' => $commission])
     @includeWhen($stock, 'dashboard.partials.stock', ['stock' => $stock])
+    @includeWhen($reglements, 'dashboard.partials.reglements', ['reglements' => $reglements])
 
     {{-- Dernières attributions visibles par le rôle (DP : publiées uniquement) --}}
     <x-ui.card titre="Dernières attributions" sans-marge>

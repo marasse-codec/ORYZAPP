@@ -5,6 +5,7 @@ use App\Http\Controllers\Commission\AttributionController;
 use App\Http\Controllers\Commission\CommissionAttributionController;
 use App\Http\Controllers\Commission\EditionArbitrageController;
 use App\Http\Controllers\Commission\EditionAttributionController;
+use App\Http\Controllers\Commission\PaiementController;
 use App\Http\Controllers\Commission\EditionDemandeController;
 use App\Http\Controllers\Stock\EditionStockController;
 use App\Http\Controllers\Commission\SimulationSortieController;
@@ -14,6 +15,7 @@ use App\Http\Controllers\Demande\DemandeRejetController;
 use App\Http\Controllers\Demande\DemandeSerieController;
 use App\Http\Controllers\Notification\PushSubscriptionController;
 use App\Http\Controllers\Notification\ResourceSubscriptionController;
+use App\Http\Controllers\PlanificationController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Stock\ApprovisionnementController;
 use App\Http\Controllers\Stock\AppuiController;
@@ -22,12 +24,19 @@ use App\Http\Controllers\Stock\EquipementController;
 use App\Http\Controllers\Stock\EquipementRetourController;
 use App\Http\Controllers\Stock\MouvementStockController;
 use App\Http\Controllers\Suivi\DashboardController;
+use App\Http\Controllers\Suivi\SauvegardeController;
 use App\Http\Controllers\Suivi\StatistiqueController;
 use App\Http\Controllers\VitrineController;
 use Illuminate\Support\Facades\Route;
 
 // Vitrine publique : la démarche et le catalogue, sans authentification.
 Route::get('/', VitrineController::class)->name('vitrine');
+
+// Planificateur déclenché de l'extérieur (hébergement sans cron) : jeton obligatoire, sinon 404.
+Route::post('/planification/executer', PlanificationController::class)
+    ->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class)
+    ->middleware('throttle:10,1')
+    ->name('planification.executer');
 
 Route::middleware('auth')->group(function () {
 
@@ -36,6 +45,16 @@ Route::middleware('auth')->group(function () {
     Route::get('/editions/attributions', [EditionAttributionController::class, 'index'])->name('editions.attributions.index');
     Route::get('/editions/demandes', [EditionDemandeController::class, 'index'])->name('editions.demandes.index');
     Route::get('/attributions/{idAttribution}', [AttributionController::class, 'show'])->whereNumber('idAttribution')->name('attributions.show');
+    // Règlements : encaissement d'une attribution publiée par qui tient la caisse (admin).
+    Route::post('/attributions/{attribution}/paiements', [PaiementController::class, 'store'])
+        ->whereNumber('attribution')
+        ->middleware('permission:'.PermissionEnum::gererReglements->value)
+        ->name('attributions.paiements.store');
+
+    // Archives de sauvegarde : l'admin (ressources) les télécharge depuis l'administration.
+    Route::get('/sauvegardes/{disque}/{nom}', [SauvegardeController::class, 'telecharger'])
+        ->middleware('permission:'.PermissionEnum::gererRessources->value)
+        ->name('sauvegardes.telecharger');
 
     Route::post('/resources/{type}/{id}/toggle-alert', [ResourceSubscriptionController::class, 'toggle'])
             ->name('resources.toggle-alert');

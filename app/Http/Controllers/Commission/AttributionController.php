@@ -95,6 +95,7 @@ class AttributionController extends Controller
             'demande.localites.departement',
             'lignesAttributions.appui.uniteDosage',
             'session',
+            'paiements.encaissePar',
         ]);
 
         return view('attributions.show', [

@@ -2,6 +2,7 @@
 
 namespace App\Domain\Demande\Services;
 
+use App\Domain\Commission\Services\ReglementService;
 use App\Domain\Demande\Models\Acteur;
 use App\Domain\Demande\Models\Demande;
 use App\Domain\Demande\Models\LigneDemande;
@@ -16,6 +17,8 @@ use Illuminate\Support\Facades\DB;
 
 class CreationDemandeService
 {
+    public function __construct(private ReglementService $reglements) {}
+
     /**
      * Enregistre une demande et tout ce qui la constitue en une seule transaction.
      *
@@ -67,6 +70,10 @@ class CreationDemandeService
             ->whereDate('date_naissance', $donnees['date_naissance'])
             ->first()
             ?? new Acteur(['nom' => $donnees['nom'], 'date_naissance' => $donnees['date_naissance']]);
+
+        // Un acteur qui n'a pas fini de régler une attribution précédente ne redemande pas.
+        // Contrôle avant d'enregistrer quoi que ce soit : ni ses coordonnées, ni une demande.
+        $this->reglements->verifierActeurLibre($acteur);
 
         $acteur->telephone = $donnees['telephone'];
         $acteur->email = $donnees['email'] ?? $acteur->email;

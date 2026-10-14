@@ -17,6 +17,7 @@ enum PermissionEnum: string
     case voirStatistiques = 'voir-statistiques';
     case voirJournal = 'voir-journal';
     case voirStocks = 'voir-stocks';
+    case gererReglements = 'gerer-reglements';
 
     public function libelle(): string
     {
@@ -33,7 +34,8 @@ enum PermissionEnum: string
             self::gererSimulation => 'Gérer les simulations d\'attribution',
             self::voirStatistiques => 'Consulter les statistiques',
             self::voirJournal => 'Consulter le journal des actions',
-            self::voirStocks => 'Consulter et télécharger les stocks de son service'
+            self::voirStocks => 'Consulter et télécharger les stocks de son service',
+            self::gererReglements => 'Enregistrer les règlements des attributions et suivre les impayés',
         };
     }
 }

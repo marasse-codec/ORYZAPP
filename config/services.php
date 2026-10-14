@@ -35,4 +35,9 @@ return [
         ],
     ],
 
+    // Jeton du déclencheur externe du planificateur (POST /planification/executer) ; vide = route désactivée.
+    'cron' => [
+        'token' => env('CRON_TOKEN'),
+    ],
+
 ];

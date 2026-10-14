@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Suivi;
 
 use App\Domain\Acces\Enums\PermissionEnum;
 use App\Domain\Acces\Enums\RoleEnum;
+use App\Domain\Commission\Services\ReglementService;
 use App\Domain\Demande\Enums\StatutDemandeE;
 use App\Domain\Suivi\Services\StatistiqueService;
 use App\Domain\Suivi\Support\Graphique;
@@ -17,7 +18,7 @@ use Illuminate\Support\Facades\Auth;
  */
 class DashboardController extends Controller
 {
-    public function __invoke(StatistiqueService $stats)
+    public function __invoke(StatistiqueService $stats, ReglementService $reglements)
     {
         $user = Auth::user();
         $estAdmin = $user->hasRole(RoleEnum::admin->value);
@@ -54,6 +55,12 @@ class DashboardController extends Controller
             'attributions' => $stats->dernieresAttributions(),
             'commission' => $voitCommission ? $stats->commission() : null,
             'stock' => $voitStock ? $stats->stock() : null,
+            // Les impayés : le suivi de la caisse revient à qui peut enregistrer les règlements (l'admin).
+            'reglements' => $user->can(PermissionEnum::gererReglements->value) ? [
+                'synthese' => $reglements->synthese(),
+                'acteurs' => $reglements->acteursEnImpaye(),
+                'attributions' => $reglements->attributionsImpayees(),
+            ] : null,
             // Le DP émet des demandes pour les acteurs : on lui en facilite l'accès.
             'peutCreer' => $user->can(PermissionEnum::creerDemande->value),
         ]);

@@ -52,7 +52,11 @@ return new class extends Migration
             $table->timestamps();
         });
         
-        // Contrainte d'exclusivité (XOR)
+        // Contrainte d'exclusivité (XOR). SQLite (base des tests) ne sait pas l'ajouter après coup.
+        if (DB::getDriverName() === 'sqlite') {
+            return;
+        }
+
         DB::statement('ALTER TABLE mouvements_stocks ADD CONSTRAINT chk_origine_unique CHECK (
             (id_approvisionnement IS NOT NULL AND id_attribution IS NULL) OR
             (id_approvisionnement IS NULL AND id_attribution IS NOT NULL)

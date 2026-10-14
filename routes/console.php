@@ -15,3 +15,6 @@ Schedule::command('backup:monitor')->dailyAt('03:00')->onOneServer();
 
 // Résumé quotidien : à 7 h, pour les agents qui n'ont pas à être alertés en continu.
 Schedule::command('notifications:resume-quotidien')->dailyAt('07:00')->onOneServer()->withoutOverlapping();
+
+// Rappels du lundi matin : impayés, bons non retirés, brouillons oubliés, séances à clôturer.
+Schedule::command('notifications:rappels')->weeklyOn(1, '08:00')->onOneServer()->withoutOverlapping();

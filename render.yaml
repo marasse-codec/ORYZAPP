@@ -67,5 +67,8 @@ services:
         sync: false
       - key: VAPID_PRIVATE_KEY
         sync: false
+      # Jeton du déclencheur du planificateur (POST /planification/executer) : voir docs/deploiement/render.md.
+      - key: CRON_TOKEN
+        generateValue: true
       - key: SEED_ON_DEPLOY
         value: "true"

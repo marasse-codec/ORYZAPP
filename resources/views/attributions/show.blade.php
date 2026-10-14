@@ -71,7 +71,7 @@
                                 <span class="text-xs font-normal text-[--color-muted]">({{ $ligne->appui->uniteDosage->lib_unite }})</span>
                             @endif
                         </td>
-                        <td class="px-4 py-3 text-center font-semibold text-[--color-ink]">{{ $ligne->quantite_attribuee }}</td>
+                        <td class="px-4 py-3 text-center font-semibold text-[--color-ink]">{{ \App\Utils\Helper::quantite($ligne->quantite_attribuee) }}</td>
                         <td class="px-4 py-3 text-right text-slate-600">{{ number_format($ligne->cout_attribution, 0, ',', ' ') }} F</td>
                         <td class="px-4 py-3 text-center">
                             @if ($ligne->remise > 0)
@@ -98,6 +98,70 @@
     @if ($attribution->commentaires)
         <x-ui.card titre="Observations et motivations">
             <p class="rounded-lg border border-[--color-border] bg-slate-50 p-4 text-sm text-[--color-ink]">{{ $attribution->commentaires }}</p>
+        </x-ui.card>
+    @endif
+
+    {{-- Règlements : visibles dès la publication ; l'encaissement est réservé à qui tient la caisse --}}
+    @if ($attribution->estPubliee())
+        @php
+            $reste = $attribution->resteDu();
+            $peutEncaisser = auth()->user()->can(PermissionEnum::gererReglements->value);
+        @endphp
+        <x-ui.card titre="Règlement">
+            <div class="grid gap-3 sm:grid-cols-3">
+                <x-ui.stat libelle="Montant dû" :valeur="number_format($attribution->montantTotal(), 0, ',', ' ').' F'" />
+                <x-ui.stat libelle="Déjà réglé" ton="vert" :valeur="number_format($attribution->totalPaye(), 0, ',', ' ').' F'" />
+                <x-ui.stat libelle="Reste à payer" :ton="$reste > 0 ? 'rouge' : 'vert'" :valeur="$reste > 0 ? number_format($reste, 0, ',', ' ').' F' : 'Soldé'" />
+            </div>
+
+            @if ($attribution->paiements->isNotEmpty())
+                <ul class="mt-4 divide-y divide-[--color-border] rounded-lg border border-[--color-border] text-sm">
+                    @foreach ($attribution->paiements->sortBy('date_paiement') as $paiement)
+                        <li class="flex flex-wrap items-center justify-between gap-2 px-4 py-2.5">
+                            <span class="text-[--color-ink]">{{ $paiement->date_paiement->format('d/m/Y') }} · {{ $paiement->modeEnum()?->libelle() ?? $paiement->mode }}
+                                @if ($paiement->reference)<span class="text-xs text-[--color-muted]">(réf. {{ $paiement->reference }})</span>@endif
+                            </span>
+                            <span class="font-semibold text-[--color-ink]">{{ number_format($paiement->montant, 0, ',', ' ') }} F</span>
+                        </li>
+                    @endforeach
+                </ul>
+            @endif
+
+            @if ($peutEncaisser && $reste > 0)
+                <form action="{{ route('attributions.paiements.store', $attribution->id_attribution) }}" method="POST" class="mt-4 grid gap-3 sm:grid-cols-4">
+                    @csrf
+                    <div>
+                        <label for="montant" class="block text-xs font-medium text-[--color-muted]">Montant (F)</label>
+                        <input id="montant" name="montant" type="number" step="0.01" min="0.01" max="{{ $reste }}" value="{{ old('montant', $reste) }}" required
+                               class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
+                        @error('montant')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
+                    </div>
+                    <div>
+                        <label for="date_paiement" class="block text-xs font-medium text-[--color-muted]">Date</label>
+                        <input id="date_paiement" name="date_paiement" type="date" max="{{ today()->toDateString() }}" value="{{ old('date_paiement', today()->toDateString()) }}" required
+                               class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
+                        @error('date_paiement')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
+                    </div>
+                    <div>
+                        <label for="mode" class="block text-xs font-medium text-[--color-muted]">Mode</label>
+                        <select id="mode" name="mode" required class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
+                            @foreach (\App\Domain\Commission\Enums\ModePaiementEnum::cases() as $mode)
+                                <option value="{{ $mode->value }}" @selected(old('mode') === $mode->value)>{{ $mode->libelle() }}</option>
+                            @endforeach
+                        </select>
+                        @error('mode')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
+                    </div>
+                    <div>
+                        <label for="reference" class="block text-xs font-medium text-[--color-muted]">Référence (facultatif)</label>
+                        <input id="reference" name="reference" type="text" maxlength="100" value="{{ old('reference') }}"
+                               class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
+                        @error('reference')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
+                    </div>
+                    <div class="sm:col-span-4">
+                        <x-ui.bouton type="submit">Enregistrer le règlement</x-ui.bouton>
+                    </div>
+                </form>
+            @endif
         </x-ui.card>
     @endif
 

@@ -4,12 +4,13 @@ namespace App\Http\Controllers\Demande;
 
 use App\Domain\Demande\Models\Demande;
 use App\Http\Controllers\Controller;
+use App\Domain\Commission\Services\ReglementService;
 use Illuminate\Http\Request;
 
 class ActeurController extends Controller
 {
     /** Autocomplétion de la saisie d'une demande : retrouve un acteur déjà connu par son nom et sa date de naissance. */
-    public function rechercherParNomEtDate(Request $request)
+    public function rechercherParNomEtDate(Request $request, ReglementService $reglements)
     {
         $nom = $request->query('nom');
         $dateNaissance = $request->query('date_naissance');
@@ -22,13 +23,13 @@ class ActeurController extends Controller
         $demandes = Demande::with(['acteur', 'typeActeur'])
             ->whereHas('acteur', function ($query) use ($nom, $dateNaissance) {
                 $query->whereLike('nom', '%' . $nom . '%')
-                    ->where('date_naissance', $dateNaissance); // Filtrage strict sur la date de naissance
+                    ->whereDate('date_naissance', $dateNaissance); // Filtrage strict sur la date de naissance (au jour, quel que soit le format de stockage)
             })
             ->latest('date_demande')
             ->limit(10)
             ->get();
         
-        $resultats = $demandes->map(function ($demande) {
+        $resultats = $demandes->map(function ($demande) use ($reglements) {
             return [
                 'id_acteur' => $demande->acteur->id_acteur ?? null,
                 'nom' => $demande->acteur->nom ?? '',
@@ -37,6 +38,8 @@ class ActeurController extends Controller
                 'email' => $demande->acteur->email ?? '',
                 'nom_structure' => $demande->nom_structure ?? '',
                 'id_type_acteur' => $demande->id_type_acteur ?? '',
+                // Le formulaire peut ainsi prévenir avant la saisie : l'enregistrement sera refusé.
+                'reste_du' => $demande->acteur ? $reglements->resteDuActeur($demande->acteur) : 0,
             ];
         })->unique('id_acteur')->values();
 
