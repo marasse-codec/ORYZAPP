@@ -15,7 +15,7 @@ services:
     healthCheckPath: /up
     envVars:
       - key: APP_NAME
-        value: ORYZAConfiguration Render déploiement gratuit
+        value: ORYZA
       - key: APP_ENV
         value: production
       - key: APP_DEBUG
