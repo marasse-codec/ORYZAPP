@@ -68,4 +68,4 @@ services:
       - key: VAPID_PRIVATE_KEY
         sync: false
       - key: SEED_ON_DEPLOY
-        value: "false"
+        value: "true"
