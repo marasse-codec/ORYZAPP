@@ -1,8 +1,8 @@
 @props(['demande' => null]) 
 
-<section x-show="step === 2" x-cloak class="p-6 space-y-5" @click.away="suggestionsActeurs = []">
+<section x-show="step === 1" x-cloak class="p-6 space-y-5" @click.away="suggestionsActeurs = []">
     <div>
-        <h2 class="text-lg font-semibold text-[--color-primary]">2. Informations du demandeur</h2>
+        <h2 class="text-lg font-semibold text-[--color-primary]">1. Informations du demandeur</h2>
         <p class="text-sm text-slate-500">Renseignez le nom et la date de naissance pour vérifier si l'acteur existe déjà.</p>
     </div>
 

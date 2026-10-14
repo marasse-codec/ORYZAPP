@@ -2,10 +2,10 @@
 
 namespace Database\Seeders;
 
-use App\Enums\RoleEnum;
-use App\Models\Acteur;
-use App\Models\Agent;
-use App\Models\Service;
+use App\Domain\Acces\Enums\RoleEnum;
+use App\Domain\Demande\Models\Acteur;
+use App\Domain\Referentiel\Models\Service;
+use App\Domain\Stock\Models\Agent;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 

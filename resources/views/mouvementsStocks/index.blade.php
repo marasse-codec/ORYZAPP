@@ -1,71 +1,85 @@
-@extends('layouts.aderiz')
+@extends($layout ?? 'layouts.aderiz')
+
+@section('titre-page', 'Mouvements de stock')
 
 @section('content')
-<div class="p-6 bg-white rounded-xl shadow-sm space-y-6">
-    <h1 class="text-xl font-bold text-slate-800">Mouvements de stock</h1>
+<x-ui.page titre="Mouvements de stock" sous-titre="Le registre des entrées, sorties et retours du magasin.">
 
-    {{-- Formulaire de filtre --}}
-    <form method="GET" action="{{ route('mouvements-stocks.index') }}" class="grid grid-cols-1 sm:grid-cols-4 gap-4">
-        <input type="text" name="search" value="{{ request('search') }}" placeholder="Rechercher appui, agent..." class="border-slate-300 rounded-md text-sm">
-        
-        <select name="id_type_mouvement" class="border-slate-300 rounded-md text-sm">
-            <option value="">Tous les types</option>
-            @foreach($typesMouvements as $type)
-                <option value="{{ $type->id_type_mouvement_stock }}" @selected(request('id_type_mouvement') == $type->id_type_mouvement_stock)>
-                    {{ $type->libelle }}
-                </option>
-            @endforeach
-        </select>
+    <x-ui.card>
+        <form method="GET" action="{{ route('mouvements-stocks.index') }}" class="grid gap-3 sm:grid-cols-2 lg:grid-cols-[1fr_12rem_10rem_10rem_auto] lg:items-end">
+            <div>
+                <x-input-label for="search" value="Rechercher" />
+                <x-text-input id="search" name="search" type="search" class="mt-1 block w-full" :value="request('search')" placeholder="Appui ou agent…" />
+            </div>
+            <div>
+                <x-input-label for="id_type_mouvement" value="Type" />
+                <select id="id_type_mouvement" name="id_type_mouvement" class="mt-1 block w-full">
+                    <option value="">Tous les types</option>
+                    @foreach ($typesMouvements as $type)
+                        <option value="{{ $type->id_type_mouvement_stock }}" @selected((string) request('id_type_mouvement') === (string) $type->id_type_mouvement_stock)>{{ $type->libelle_type_mouvement }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div>
+                <x-input-label for="date_debut" value="Du" />
+                <x-text-input id="date_debut" name="date_debut" type="date" class="mt-1 block w-full" :value="request('date_debut')" />
+            </div>
+            <div>
+                <x-input-label for="date_fin" value="Au" />
+                <x-text-input id="date_fin" name="date_fin" type="date" class="mt-1 block w-full" :value="request('date_fin')" />
+            </div>
+            <div class="flex gap-2">
+                <x-ui.bouton type="submit" variante="secondaire">Filtrer</x-ui.bouton>
+                @if (request()->hasAny(['search', 'id_type_mouvement', 'date_debut', 'date_fin']))
+                    <x-ui.bouton :href="route('mouvements-stocks.index')" variante="discret">Effacer</x-ui.bouton>
+                @endif
+            </div>
+        </form>
+    </x-ui.card>
 
-        <input type="date" name="date_debut" value="{{ request('date_debut') }}" class="border-slate-300 rounded-md text-sm">
-        <input type="date" name="date_fin" value="{{ request('date_fin') }}" class="border-slate-300 rounded-md text-sm">
-
-        <div class="sm:col-span-4 flex justify-end gap-2">
-            <a href="{{ route('mouvements-stocks.index') }}" class="px-3 py-1.5 text-xs border rounded-md">Réinitialiser</a>
-            <button type="submit" class="px-4 py-1.5 text-xs bg-emerald-700 text-white rounded-md">Filtrer</button>
-        </div>
-    </form>
-
-    {{-- Tableau des mouvements --}}
-    <table class="w-full text-left text-sm border-collapse">
-        <thead>
-            <tr class="border-b bg-slate-50 text-xs text-slate-500 uppercase">
-                <th class="p-3">Date</th>
-                <th class="p-3">Type</th>
-                <th class="p-3">Appui / Équipement</th>
-                <th class="p-3 text-right">Quantité</th>
-                <th class="p-3">Agent</th>
-                <th class="p-3 text-center">Action</th>
-            </tr>
-        </thead>
-        <tbody class="divide-y">
-            @forelse($mouvements as $mouvement)
+    <x-ui.card sans-marge>
+        <x-ui.tableau>
+            <thead class="bg-slate-50 text-left text-xs uppercase tracking-wide text-[--color-muted]">
                 <tr>
-                    <td class="p-3">{{ $mouvement->date_mouvement ?? '-' }}</td>
-                    <td class="p-3">
-                        <span class="px-2 py-0.5 rounded text-xs font-semibold bg-slate-100">
-                            {{ $mouvement->typeMouvement?->lib_type_mouvement ?? 'Mouvement' }}
-                        </span>
-                    </td>
-                    <td class="p-3 font-medium text-slate-800">
-                        {{ $mouvement->appui?->libelle ?? $mouvement->equipement?->libelle ?? '-' }}
-                    </td>
-                    <td class="p-3 text-right font-bold">
-                        {{ $mouvement->quantite }}
-                    </td>
-                    <td class="p-3">{{ $mouvement->agent?->nom }} {{ $mouvement->agent?->prenom }}</td>
-                    <td class="p-3 text-center">
-                        <a href="{{ route('mouvements-stocks.show', $mouvement->id_mouvement_stock) }}" class="text-emerald-700 hover:underline text-xs">Détails</a>
-                    </td>
+                    <th class="px-4 py-3">Date</th>
+                    <th class="px-4 py-3">Type</th>
+                    <th class="px-4 py-3">Appui</th>
+                    <th class="px-4 py-3 text-right">Quantité</th>
+                    <th class="px-4 py-3">Agent</th>
+                    <th class="px-4 py-3 text-right">Actions</th>
                 </tr>
-            @empty
-                <tr>
-                    <td colspan="6" class="p-4 text-center text-slate-500">Aucun mouvement trouvé.</td>
-                </tr>
-            @endforelse
-        </tbody>
-    </table>
+            </thead>
+            <tbody class="divide-y divide-[--color-border]">
+                @forelse ($mouvements as $mouvement)
+                    @php
+                        $ton = match ($mouvement->typeMouvement?->code) {
+                            'ENTREE', 'RETOUR' => 'vert',
+                            'SORTIE' => 'ambre',
+                            default => 'neutre',
+                        };
+                    @endphp
+                    <tr class="hover:bg-slate-50">
+                        <td class="px-4 py-3 text-slate-600">{{ $mouvement->date_mouvement?->format('d/m/Y') ?? '-' }}</td>
+                        <td class="px-4 py-3"><x-ui.badge :ton="$ton">{{ $mouvement->typeMouvement?->libelle_type_mouvement ?? 'Mouvement' }}</x-ui.badge></td>
+                        <td class="px-4 py-3 font-medium text-[--color-ink]">
+                            {{ $mouvement->appui?->libelle ?? '-' }}
+                            @if ($mouvement->equipement)
+                                <span class="block text-xs font-normal text-[--color-muted]">{{ $mouvement->equipement->matricule_equipement }}</span>
+                            @endif
+                        </td>
+                        <td class="px-4 py-3 text-right font-semibold text-[--color-ink]">{{ $mouvement->quantite }}</td>
+                        <td class="px-4 py-3 text-slate-600">{{ $mouvement->agent?->nom }}</td>
+                        <td class="px-4 py-3 text-right">
+                            <a href="{{ route('mouvements-stocks.show', $mouvement->id_mouvement_stock) }}" class="text-sm font-medium text-[--color-primary] hover:underline">Détails</a>
+                        </td>
+                    </tr>
+                @empty
+                    <tr><td colspan="6" class="px-4 py-8 text-center text-[--color-muted]">Aucun mouvement trouvé.</td></tr>
+                @endforelse
+            </tbody>
+        </x-ui.tableau>
+    </x-ui.card>
 
     {{ $mouvements->links() }}
-</div>
+</x-ui.page>
 @endsection

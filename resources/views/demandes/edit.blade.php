@@ -1,4 +1,6 @@
-@extends($layout ?? 'layouts.app')
+@extends($layout ?? 'layouts.aderiz')
+
+@section('titre-page', 'Modifier la demande')
 
 @section('content')
 <div
@@ -91,14 +93,14 @@
         suivant() { if (this.step < this.totalSteps) this.step++; },
         precedent() { if (this.step > 1) this.step--; },
     }"
-    class="min-h-screen bg-[--color-background] text-slate-800 pb-16"
+    class="mx-auto w-full max-w-4xl space-y-6"
 >
-    <header class="bg-white border-b border-slate-200 px-6 py-5 shadow-sm">
-        <div class="max-w-4xl mx-auto">
+    <header class="rounded-xl border border-[--color-border] bg-white p-4 shadow-sm sm:p-6">
+        <div>
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-5">
                 <div>
-                    <h1 class="text-2xl font-bold text-[--color-primary]">Modification de la demande n°{{ $demande->id_demande }}</h1>
-                    <p class="text-xs text-slate-500">Agence pour le Développement de la Filière Riz (ADERIZ)</p>
+                    <h1 class="text-xl font-bold text-[--color-primary] sm:text-2xl">Modification de la demande n°{{ $demande->id_demande }}</h1>
+                    <p class="text-xs text-[--color-muted]">Agence pour le Développement de la Filière Riz (ADERIZ)</p>
                 </div>
                 <div class="text-xs font-semibold text-[--color-primary] bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-full w-fit">
                     Étape <span x-text="step"></span> sur <span x-text="totalSteps"></span>
@@ -106,7 +108,7 @@
             </div>
 
             <ol class="flex items-center gap-2">
-                @foreach (['Profil', 'Demandeur', 'Demande', 'Appuis & pièces', 'Visite terrain'] as $index => $libelle)
+                @foreach (['Demandeur', 'Profil', 'Demande', 'Appuis & pièces', 'Visite terrain'] as $index => $libelle)
                     <li class="flex-1">
                         <div class="h-1.5 rounded-full transition-colors"
                              :class="step >= {{ $index + 1 }} ? 'bg-[--color-primary]' : 'bg-slate-200'"></div>
@@ -120,7 +122,7 @@
         </div>
     </header>
 
-    <div class="max-w-4xl mx-auto px-6 mt-6">
+    <div>
         
         {{-- Motif de renvoi / observation --}}
         @if (!empty($demande->commentaire_rejet))
@@ -149,14 +151,14 @@
 
             <input type="hidden" name="id_acteur" :value="idActeurExistant">
 
-            {{-- Étape 1 : Profil --}}
+            {{-- Étape 1 : Demandeur --}}
             <div x-show="step === 1">
-                <x-demandes.demande-etape-profil :typesActeurs="$typesActeurs" :demande="$demande" />
+                <x-demandes.demande-etape-demandeur :demande="$demande" />
             </div>
 
-            {{-- Étape 2 : Demandeur --}}
+            {{-- Étape 2 : Profil --}}
             <div x-show="step === 2" x-cloak>
-                <x-demandes.demande-etape-demandeur :demande="$demande" />
+                <x-demandes.demande-etape-profil :typesActeurs="$typesActeurs" :demande="$demande" />
             </div>
 
             {{-- Étape 3 : Demande & Localités --}}

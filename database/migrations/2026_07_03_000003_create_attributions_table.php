@@ -18,6 +18,8 @@ return new class extends Migration
             // Renseignées au retrait : elles marquent le déstockage. Le scan
             // de la pièce d'identité atteste de qui a effectivement reçu.
             $table->date('date_destockage')->nullable();
+            // Personne qui se présente au magasin pour le retrait.
+            $table->string('recipiendaire')->nullable();
             $table->string('numero_piece_identite', 60)->nullable();
             $table->string('chemin_piece_identite', 250)->nullable();
             // $table->foreignId('id_statut_attribution')->constrained('statuts_attributions', 'id_statut_attribution');

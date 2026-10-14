@@ -3,12 +3,14 @@
 namespace App\Http\Controllers\Demande;
 
 
+use App\Domain\Demande\Models\Demande;
+use App\Domain\Demande\Models\Traitement;
+use App\Domain\Journal\Enums\ActionJournalEnum;
+use App\Domain\Journal\Models\JournalAction;
 use App\Http\Controllers\Controller;
-use App\Models\Demande;
-use App\Models\SessionCommission;
-use App\Models\Traitement;
 use App\Utils\Helper;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class DemandeRejetController extends Controller
 {
@@ -53,7 +55,11 @@ class DemandeRejetController extends Controller
 
         // La décision de rejet se prend en session
         
-        $demande->rejeter($idSession,$motif);
+        DB::transaction(function () use ($demande, $idSession, $motif) {
+            $demande->rejeter($idSession, $motif);
+
+            JournalAction::enregistrer(ActionJournalEnum::demandeRejetee, $demande, ['motif' => $motif, 'id_session' => $idSession]);
+        });
 
         return view('demandes.show', ['demande' => $demande, 'layout' => Helper::layout()]);
 

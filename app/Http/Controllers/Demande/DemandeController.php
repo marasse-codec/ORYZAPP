@@ -2,48 +2,45 @@
 
 namespace App\Http\Controllers\Demande;
 
-use App\Enums\PermissionEnum;
+use App\Domain\Acces\Enums\PermissionEnum;
+use App\Domain\Commission\Services\SyntheseCommissionService;
+use App\Domain\Demande\Enums\StatutDemandeE;
+use App\Domain\Demande\Models\BrouillonSaisie;
+use App\Domain\Demande\Models\Demande;
+use App\Domain\Demande\Services\CreationDemandeService;
+use App\Domain\Demande\Services\FormulaireDemandeService;
+use App\Domain\Demande\Services\SoumissionDemandeService;
+use App\Domain\Demande\Services\UpdateDemandeService;
+use App\Domain\Demande\Services\VisiteDemandeService;
 use App\Http\Controllers\Controller;
-use App\Http\Requests\DemandeMarquerVisiteRequest;
-use App\Http\Requests\StoreDemandeRequest;
-use App\Http\Requests\UpdateDemandeRequest;
-use App\Models\Campagne;
-use App\Models\Demande;
-use App\Models\Localite;
-use App\Models\Traitement;
-use App\Models\TypeActeur;
-use App\Models\TypeAppui;
-use App\Models\TypeSystemeProduction;
-use App\Services\CreationDemandeService;
-use App\Services\SyntheseCommissionService;
-use App\Services\UpdateDemandeService;
+use App\Http\Requests\Demande\DemandeMarquerVisiteRequest;
+use App\Http\Requests\Demande\StoreDemandeRequest;
+use App\Http\Requests\Demande\UpdateDemandeRequest;
 use App\Utils\Helper;
 use Barryvdh\DomPDF\Facade\Pdf;
-use Illuminate\Support\Collection;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
 
 class DemandeController extends Controller
 {
-    public function index(SyntheseCommissionService $synthese)
-{
-    $serviceId = Auth::user()->id_service;
+    /** La liste des demandes visibles par l'utilisateur, recherchable (n°, entité, représentant, téléphone), filtrable par statut et paginée. */
+    public function index(Request $request, SyntheseCommissionService $synthese)
+    {
+        $recherche = trim((string) $request->query('q', ''));
+        $statut = StatutDemandeE::tryFrom((int) $request->query('statut'));
 
-    $demandes = Demande::query()
-    ->pourUtilisateur(Auth::user())
-    ->attribuables()
-    ->with([
-        'acteur',
-        'typeActeur',
-        'localites.departement',
-        'systemesProductions.typeSystemeProduction',
-        'user',
-        'lignes',
-        'traitements' => fn ($q) => $q->where('id_service', $serviceId)->get(),
-        'attribution'
-    ])
-    ->latest('id_demande')
-    ->get();
+        $demandes = Demande::query()
+            ->pourUtilisateur(Auth::user())
+            ->attribuables()
+            ->with(['acteur', 'localites.departement', 'attribution'])
+            ->when($recherche !== '', fn ($q) => $q->where(fn ($q) => $q
+                ->when(ctype_digit(ltrim($recherche, '#')), fn ($q) => $q->orWhere('id_demande', (int) ltrim($recherche, '#')))
+                ->orWhereLike('nom_structure', "%{$recherche}%")
+                ->orWhereHas('acteur', fn ($a) => $a->whereLike('nom', "%{$recherche}%")->orWhereLike('telephone', "%{$recherche}%"))))
+            ->when($statut, fn ($q) => $q->whereRaw('('.Demande::statutSql().') = ?', [$statut->value]))
+            ->latest('id_demande')
+            ->paginate(20)
+            ->withQueryString();
 
         // La confrontation avec les stocks ne s'affiche que pour qui arbitre :
         // ailleurs, l'état des stocks n'a pas à transparaître.
@@ -52,6 +49,8 @@ class DemandeController extends Controller
 
         return view('demandes.index', [
             'demandes' => $demandes,
+            'recherche' => $recherche,
+            'statut' => $statut,
             'dossiersCommission' => $dossiers,
             'confrontation' => $peutArbitrer ? $synthese->confrontation($dossiers) : collect(),
             'layout' => Helper::layout(),
@@ -75,62 +74,17 @@ class DemandeController extends Controller
         return $pdf->stream("demande_DEM-{$demande->id_demande}.pdf");
     }
 
-    public function create()
+    public function create(FormulaireDemandeService $formulaire)
     {
-        // 1. Récupération des modèles avec leurs relations
-        $typesActeurs = TypeActeur::with('typesPieces')->get();
-        $typesAppuis = TypeAppui::with(['service', 'appuis.uniteDosage'])->get();
-        $localites = Localite::with('departement')->get();
-        $campagnes = Campagne::all();
-        $typesSystemesProductions = TypeSystemeProduction::all();
-
-        // 2. Préparation des structures JSON/Arrays pour Alpine.js
-        $piecesParTypeActeur = $typesActeurs->mapWithKeys(fn ($type) => [
-            $type->id_type_acteur => $type->typesPieces->map(fn ($piece) => [
-                'id' => $piece->id_type_piece,
-                'libelle' => $piece->lib_type_piece,
-                'obligatoire' => (bool) $piece->pivot->est_obligatoire,
-            ])->values(),
-        ]);
-
-        $typesActeursMeta = $typesActeurs->mapWithKeys(fn ($type) => [
-            $type->id_type_acteur => [
-                'libelle' => $type->lib_type_acteur,
-                'est_structure' => !in_array(
-                    mb_strtolower(trim($type->lib_type_acteur)), 
-                    ['individu', 'groupement non formel', 'producteur individuel']
-                )
-            ]
-        ]);
-
-        $appuisDisponibles = $typesAppuis->flatMap(function($type) {
-            return $type->appuis->map(fn($appui) => [
-                'id' => $appui->id_appui,
-                'libelle' => $appui->libelle,
-                'id_type_appui' => $appui->id_type_appui,
-                'unite' => $appui->uniteDosage?->lib_unite ?? '',
-                'estEquipement' => $appui->estEquipement()
-            ]);
-        })->values();
-
-        $layout = Helper::layout();
-
-        return view('demandes.create', compact(
-            'typesActeurs',
-            'typesAppuis',
-            'localites',
-            'campagnes',
-            'typesSystemesProductions',
-            'piecesParTypeActeur',
-            'typesActeursMeta',
-            'appuisDisponibles',
-            'layout'
-        ));
+        return view('demandes.create', $formulaire->donnees() + ['layout' => Helper::layout()]);
     }
 
     public function store(StoreDemandeRequest $request, CreationDemandeService $service)
     {
         $demande = $service->creer($request->validated(), $request->file('pieces', []));
+
+        // La demande est enregistrée : le brouillon de saisie n'a plus lieu d'être.
+        BrouillonSaisie::where('id_user', $request->user()->id)->where('type', BrouillonSaisie::TYPE_DEMANDE)->delete();
 
         return redirect()
             ->route('demandes.show', $demande->id_demande)
@@ -155,25 +109,22 @@ class DemandeController extends Controller
                 ->with('error', 'La demande doit contenir au moins un appui avant sa soumission.');
         }
 
-        /** @var Collection $services */
-        $services = $demande->getServices();
+        // Pas de soumission sans visite de terrain : l'écran n'offre pas le bouton, le serveur refuse aussi.
+        if (! $demande->terrainAEteVisite()) {
+            return redirect()
+                ->route('demandes.index')
+                ->with('error', 'Enregistrez d\'abord la visite de terrain de la demande n°'.$demande->id_demande.' avant de la soumettre.');
+        }
 
-        DB::transaction(function () use ($demande,$services) {
-
-            $demande->soumettre();
-            
-            Traitement::creerTraitements($demande->id_demande, $services);
-
-        });
+        app(SoumissionDemandeService::class)->soumettre($demande);
 
         return redirect()
             ->route('demandes.show', $demande->id_demande)
             ->with('success', 'La demande a été soumise avec succès.');
     }
 
-    public function edit(string $id)
+    public function edit(string $id, FormulaireDemandeService $formulaire)
     {
-        // 1. Chargement de la demande et de ses relations
         $demande = Demande::with([
             'acteur',
             'typeActeur',
@@ -182,91 +133,34 @@ class DemandeController extends Controller
             'lignes.typeAppui.service',
             'lignes.appui.uniteDosage',
             'piecesDemandes.typePiece',
-            'campagne'
+            'campagne',
         ])->findOrFail($id);
 
-        // 2. Collections de référence pour le formulaire
-        $typesActeurs = TypeActeur::with('typesPieces')->orderBy('lib_type_acteur')->get();
-        $localites = Localite::with('departement')->orderBy('lib_localite')->get();
-        $typesSystemesProductions = TypeSystemeProduction::orderBy('lib_type_systeme_production')->get();
-        $campagnes = Campagne::orderByDesc('mois_debut_campagne')->get();
-        $typesAppuis = TypeAppui::with(['service', 'appuis.uniteDosage'])->orderBy('lib_type_appui')->get();
+        $reference = $formulaire->donnees();
 
-        // -----------------------------------------------------------------
-        // MAPPINGS & PRÉPARATION DES DONNÉES POUR JS
-        // -----------------------------------------------------------------
-
-        // A. Matrice des pièces requises par type d'acteur
-        $piecesParTypeActeur = $typesActeurs->mapWithKeys(fn ($type) => [
-            $type->id_type_acteur => $type->typesPieces->map(fn ($piece) => [
-                'id' => $piece->id_type_piece,
-                'libelle' => $piece->lib_type_piece,
-                'obligatoire' => (bool) $piece->pivot->est_obligatoire,
-            ])->values(),
-        ]);
-
-        // B. Métadonnées des types d'acteurs (structure / individu)
-        $typesActeursMeta = $typesActeurs->mapWithKeys(fn ($type) => [
-            $type->id_type_acteur => [
-                'libelle' => $type->lib_type_acteur,
-                'est_structure' => !in_array(
-                    mb_strtolower(trim($type->lib_type_acteur)), 
-                    ['individu', 'groupement non formel', 'producteur individuel']
-                )
-            ]
-        ]);
-
-        // C. Catalogue complet des appuis avec l'unité de mesure
-        $appuisDisponibles = $typesAppuis->flatMap(function ($type) {
-            return $type->appuis->map(fn ($appui) => [
-                'id' => $appui->id_appui,
-                'libelle' => $appui->libelle,
-                'id_type_appui' => $appui->id_type_appui,
-                'unite' => $appui->uniteDosage?->lib_unite ?? ''
-            ]);
-        })->values();
-
-        // D. Extraction des lignes d'appuis existantes (avec gestion old())
-        $lignesDB = $demande->lignes->map(function ($ligne) {
-            return [
-                'id_type_appui' => (string) ($ligne->id_type_appui ?? $ligne->appui?->id_type_appui ?? ''),
-                'id_appui'      => (string) ($ligne->id_appui ?? ''),
-                'quantite'      => $ligne->quantite_demandee ?? '',
-            ];
-        })->toArray();
+        // Les lignes d'appuis existantes (ou la saisie qu'on vient de refuser : old()).
+        $lignesDB = $demande->lignes->map(fn ($ligne) => [
+            'id_type_appui' => (string) ($ligne->id_type_appui ?? $ligne->appui?->id_type_appui ?? ''),
+            'id_appui' => (string) ($ligne->id_appui ?? ''),
+            'quantite' => $ligne->quantite_demandee ?? '',
+        ])->toArray();
 
         $lignesInitiales = old('lignes', empty($lignesDB) ? [['id_type_appui' => '', 'id_appui' => '', 'quantite' => '']] : $lignesDB);
 
-        // E. Superficies existantes ventilées par système de production
+        // Les superficies existantes, ventilées par système de production.
         $superficiesDB = [];
-        foreach ($typesSystemesProductions as $sysType) {
-            $id = $sysType->id_type_systeme_production;
-            $sysExistant = $demande->systemesProductions->firstWhere('id_type_systeme_production', $id);
-            $valeurBdd = $sysExistant ? (float) $sysExistant->superficie : '';
-            $superficiesDB[$id] = $valeurBdd;
+        foreach ($reference['typesSystemesProductions'] as $systeme) {
+            $existant = $demande->systemesProductions->firstWhere('id_type_systeme_production', $systeme->id_type_systeme_production);
+            $superficiesDB[$systeme->id_type_systeme_production] = $existant ? (float) $existant->superficie : '';
         }
-        $superficiesInitiales = old('superficies', $superficiesDB);
 
-        // F. Premier département pour l'onglet localités
-        $premierDepartementId = $demande->localites->first()?->id_departement ?? '';
-
-        // 3. Transmission des données à la vue
-        return view('demandes.edit', [
-            'demande'                  => $demande,
-            'typesActeurs'             => $typesActeurs,
-            'localites'                => $localites,
-            'typesSystemesProductions' => $typesSystemesProductions,
-            'campagnes'                => $campagnes,
-            'typesAppuis'              => $typesAppuis,
-            'layout'                   => Helper::layout(),
-
-            // Variables JS préparées
-            'piecesParTypeActeur'      => $piecesParTypeActeur,
-            'typesActeursMeta'         => $typesActeursMeta,
-            'appuisDisponibles'        => $appuisDisponibles,
-            'lignesInitiales'          => array_values($lignesInitiales),
-            'superficiesInitiales'     => $superficiesInitiales,
-            'premierDepartementId'     => $premierDepartementId,
+        return view('demandes.edit', $reference + [
+            'demande' => $demande,
+            'layout' => Helper::layout(),
+            'lignesInitiales' => array_values($lignesInitiales),
+            'superficiesInitiales' => old('superficies', $superficiesDB),
+            // Premier département pour l'onglet des localités.
+            'premierDepartementId' => $demande->localites->first()?->id_departement ?? '',
         ]);
     }
 
@@ -334,7 +228,7 @@ class DemandeController extends Controller
 
         $demande = Demande::findOrFail($validatedData['id_demande']);
 
-        $demande->marquerVisite($validatedData['observations']);
+        app(VisiteDemandeService::class)->enregistrer($demande, $validatedData['observations']);
 
         return redirect()
             ->route('demandes.index')

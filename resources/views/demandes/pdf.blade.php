@@ -11,7 +11,7 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>Demande d'appuis — DEM-{{ $demande->id_demande }}</title>
+    <title>Demande d'appuis DEM-{{ $demande->id_demande }}</title>
     <style>
         @page {
             margin: 2.5cm 2cm;

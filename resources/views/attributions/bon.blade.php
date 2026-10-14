@@ -1,107 +1,98 @@
 {{--
-    Le bon remis au bénéficiaire : il vaut titre de retrait au magasin, d'où
-    les mentions de retrait et les deux émargements en pied.
+    Bon d'enlèvement / livraison, sur le modèle papier de l'ADERIZ : en-tête
+    républicain, deux volets (enlèvement au magasin, livraison au bénéficiaire)
+    et trois émargements. C'est la pièce qui vaut titre de retrait.
 --}}
+@php
+    $dateBon = $attribution->date_destockage ?? $attribution->session?->date_debut_session ?? now();
+    $numero = str_pad($attribution->id_attribution, 3, '0', STR_PAD_LEFT).'/'.$dateBon->format('m/Y');
+    $localites = $attribution->demande?->localites->pluck('lib_localite')->implode(', ');
+    $lignes = $attribution->lignesAttributions;
+@endphp
 @extends('layouts.impression', ['retour' => route('demandes.show', $attribution->id_demande)])
 
-@section('sur-titre', 'Pièce à conserver')
-@section('titre', "Bon d'attribution")
-@section('sous-titre', 'ATT-'.str_pad($attribution->id_attribution, 3, '0', STR_PAD_LEFT))
+@section('titre', "Bon d'enlèvement / livraison")
+@section('sous-titre', 'N° '.$numero)
+
+@section('entete')
+    <header class="insecable text-center text-[11px] uppercase leading-snug">
+        <div class="flex items-start justify-between gap-6">
+            <div class="w-1/2 text-center">
+                <p class="font-semibold">Ministère de l'Agriculture, du Développement Rural<br>et des Productions Vivrières</p>
+                <p class="mt-1">Ministère délégué en charge des<br>Productions Vivrières</p>
+                <p class="mt-1">Agence Nationale de Développement de la Filière Riz</p>
+                <p class="mt-3 text-xl font-black tracking-[0.3em] text-[--color-primary]">ADERIZ</p>
+                <p class="text-[10px] font-semibold">DAP/SM/BM</p>
+            </div>
+            <div class="w-1/2 text-center">
+                <p class="font-semibold">République de Côte d'Ivoire</p>
+                <p class="normal-case">Union - Discipline - Travail</p>
+            </div>
+        </div>
+    </header>
+
+    <h1 class="insecable mt-6 border-2 border-slate-800 py-2 text-center text-base font-bold uppercase">
+        Bon d'enlèvement / livraison : N° {{ $numero }}
+    </h1>
+@endsection
 
 @section('document')
 
-    <section class="mt-8 grid grid-cols-2 gap-8 text-sm">
+    <section class="mt-4 grid grid-cols-2 gap-6 text-sm font-semibold uppercase">
         <div>
-            <p class="text-xs uppercase tracking-wide text-slate-500">Bénéficiaire</p>
-            <p class="mt-0.5 font-semibold text-slate-800">{{ $attribution->demande?->acteur?->nom }}</p>
-            <p class="text-slate-600">{{ $attribution->demande?->typeActeur?->lib_type_acteur }}</p>
-            <p class="text-slate-600">{{ $attribution->demande?->acteur?->telephone }}</p>
+            <p>Lieu d'enlèvement : ADERIZ Yamoussoukro</p>
+            <p class="mt-1">Bénéficiaire : {{ $attribution->demande?->acteur?->nom }}</p>
         </div>
-        <div>
-            <p class="text-xs uppercase tracking-wide text-slate-500">Dossier</p>
-            <p class="mt-0.5 font-semibold text-slate-800">
-                DEM-{{ $attribution->demande?->date_demande?->format('Y') }}-{{ str_pad($attribution->id_demande, 3, '0', STR_PAD_LEFT) }}
-            </p>
-            <p class="text-slate-600">
-                {{-- Affiche toutes les localités séparées par une virgule --}}
-                {{ $attribution->demande?->localites->pluck('lib_localite')->implode(', ') ?: '—' }}
-
-                @if ($attribution->demande?->localites->isNotEmpty())
-                    ({{ $attribution->demande->localites->pluck('departement.lib_departement')->unique()->filter()->implode(', ') }})
-                @endif
-            </p>
-            <p class="text-slate-600">
-                Séance du {{ $attribution->session?->date_debut_session?->format('d/m/Y') }}
-            </p>
-        </div>
+        <p>Lieu de livraison : {{ $localites ?: '-' }}</p>
     </section>
 
-    <section class="mt-8">
-        <table class="w-full text-sm">
-            <thead>
-                <tr class="border-b border-slate-300 text-left text-xs uppercase tracking-wide text-slate-500">
-                    <th class="pb-2">Appui</th>
-                    <th class="pb-2 text-right">Quantité</th>
-                    <th class="pb-2 text-right">Coût unitaire</th>
-                    <th class="pb-2 text-right">Remise</th>
-                    <th class="pb-2 text-right">Montant</th>
-                </tr>
-            </thead>
-            <tbody class="divide-y divide-slate-100">
-                @foreach ($attribution->lignesAttributions as $ligne)
-                    <tr>
-                        <td class="py-2 text-slate-800">{{ $ligne->appui?->libelle }}</td>
-                        <td class="py-2 text-right text-slate-800">
-                            {{ $ligne->quantite_attribuee }}
-                            {{ $ligne->appui?->typeAppui?->uniteTypeAppui?->lib_unite_type_appui }}
-                        </td>
-                        <td class="py-2 text-right text-slate-600">
-                            {{ number_format((float) $ligne->cout_attribution, 0, ',', ' ') }} F
-                        </td>
-                        <td class="py-2 text-right text-slate-600">{{ rtrim(rtrim(number_format((float) $ligne->remise, 2, ',', ' '), '0'), ',') }} %</td>
-                        <td class="py-2 text-right font-medium text-slate-800">
-                            {{ number_format($ligne->montant(), 0, ',', ' ') }} F
-                        </td>
-                    </tr>
+    <section class="mt-4 insecable grid grid-cols-2 border border-slate-800 text-sm">
+        @foreach ([['Enlèvement', 'Quantité enlevée'], ['Livraison', 'Quantité livrée']] as [$volet, $colonne])
+            <div class="{{ $loop->first ? 'border-r border-slate-800' : '' }}">
+                <p class="border-b border-slate-800 py-1 text-center font-bold uppercase">{{ $volet }}</p>
+                <div class="grid grid-cols-[1fr_auto] border-b border-slate-800 text-center font-semibold">
+                    <p class="border-r border-slate-800 px-2 py-1">Désignation</p>
+                    <p class="px-2 py-1">{{ $colonne }}</p>
+                </div>
+                @foreach ($lignes as $ligne)
+                    <div class="grid grid-cols-[1fr_auto] border-b border-slate-300 font-semibold uppercase">
+                        <p class="border-r border-slate-800 px-2 py-1">{{ $ligne->appui?->libelle }}</p>
+                        <p class="min-w-20 px-2 py-1 text-center">
+                            @if ($loop->parent->first)
+                                {{ $ligne->quantite_attribuee }}
+                            @endif
+                        </p>
+                    </div>
                 @endforeach
-            </tbody>
-            <tfoot>
-                <tr class="border-t-2 border-slate-300 font-bold">
-                    <td colspan="4" class="pt-2 text-slate-700">TOTAL À RÉGLER</td>
-                    <td class="pt-2 text-right text-[--color-primary]">
-                        {{ number_format($attribution->montantTotal(), 0, ',', ' ') }} F CFA
-                    </td>
-                </tr>
-            </tfoot>
-        </table>
+                <p class="min-h-24 px-2 py-1">
+                    <span class="font-semibold">Observations :</span>
+                    @if ($loop->first)
+                        <span class="text-xs">relever pour chaque engin le numéro de châssis</span>
+                        @if ($attribution->commentaires)
+                            <br>{{ $attribution->commentaires }}
+                        @endif
+                    @endif
+                </p>
+            </div>
+        @endforeach
     </section>
 
-    @if ($attribution->commentaires)
-        <section class="mt-6 insecable border-l-4 border-slate-300 pl-4 text-sm text-slate-600">
-            <p class="text-xs uppercase tracking-wide text-slate-500">Observations de la commission</p>
-            <p class="mt-1">{{ $attribution->commentaires }}</p>
-        </section>
-    @endif
-
-    <section class="mt-8 insecable rounded border border-slate-300 bg-slate-50 p-4 text-sm">
-        @if ($attribution->date_destockage)
-            <p class="font-semibold text-slate-800">
-                Appuis servis le {{ $attribution->date_destockage->format('d/m/Y') }}.
-            </p>
-        @else
-            <p class="text-slate-600">
-                <span class="font-semibold text-slate-800">Retrait :</span>
-                centre de conditionnement de Yamoussoukro, sur présentation de ce bon et d'une pièce
-                d'identité. Le retrait par un tiers exige en outre une procuration.
-            </p>
-        @endif
+    <section class="mt-6 insecable grid grid-cols-3 gap-6 text-xs">
+        <div>
+            <p class="font-semibold underline">Pour l'ADERIZ (Chef de Service Mécanisation)</p>
+            <p class="text-[10px] italic text-slate-500">Nom et prénoms, date, signature, cachet</p>
+            <div class="mt-2 h-28"></div>
+        </div>
+        <div>
+            <p class="font-semibold underline">Pour le Service Moyens Généraux</p>
+            <p class="text-[10px] italic text-slate-500">Nom et prénoms, date, signature</p>
+            <div class="mt-2 h-28"></div>
+        </div>
+        <div>
+            <p class="font-semibold underline">Pour le bénéficiaire</p>
+            <p class="text-[10px] italic text-slate-500">Nom et prénoms, date, signature, cachet</p>
+            <div class="mt-2 h-28"></div>
+        </div>
     </section>
-
-    <section class="mt-12 insecable grid grid-cols-2 gap-12 text-xs text-slate-500">
-        <p class="border-t border-slate-400 pt-1">Le bénéficiaire</p>
-        <p class="border-t border-slate-400 pt-1">Pour l'ADERIZ</p>
-    </section>
-
-</section>
 
 @endsection

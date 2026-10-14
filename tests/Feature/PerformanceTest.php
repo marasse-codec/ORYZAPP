@@ -2,114 +2,75 @@
 
 namespace Tests\Feature;
 
-use App\Enums\RoleEnum;
-use App\Models\Appui;
-use App\Models\Localite;
-use App\Models\TypeActeur;
+use App\Domain\Demande\Models\Demande;
+use App\Domain\Demande\Services\CreationDemandeService;
+use App\Domain\Referentiel\Models\Campagne;
 use App\Models\User;
+use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
-use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
+/** Exigences de performance : SNF01 (liste) et SNF02 (enregistrement avec pièces). */
 class PerformanceTest extends TestCase
 {
     use RefreshDatabase;
 
-    /**
-     * SNF01 : Affichage d'une liste de 50 demandes en moins de 3 secondes.
-     */
-    public function test_liste_de_50_demandes_en_moins_de_3_secondes()
+    protected function setUp(): void
     {
-        Role::firstOrCreate(['name' => RoleEnum::dp]);
+        parent::setUp();
+        Notification::fake();
+        Storage::fake('public');
+        $this->withoutVite();
+        $this->seed(DatabaseSeeder::class);
+    }
 
-        $delegue = User::factory()->create();
-        $delegue->assignRole(RoleEnum::dp);
+    /** SNF01 : affichage d'une liste de 50 demandes en moins de 3 secondes. */
+    public function test_liste_de_50_demandes_en_moins_de_3_secondes(): void
+    {
+        $dp = User::role('dp')->first();
+        Demande::factory()->count(50)->soumise()->create([
+            'id_user' => $dp->id,
+            'id_campagne' => Campagne::first()->id_campagne,
+            'id_type_acteur' => 1,
+        ]);
 
-        $typeActeur = TypeActeur::factory()->create();
-        $localite = Localite::factory()->create();
-        $appui = Appui::factory()->create();
-
-        // Exécution : Insertion de 50 demandes
-        for ($i = 0; $i < 50; $i++) {
-            $this->actingAs($delegue)->postJson('/demandes', [
-                'id_type_acteur' => $typeActeur->id_type_acteur,
-                'nom' => 'Demande '.$i,
-                'telephone' => '01000000'.str_pad((string) $i, 2, '0', STR_PAD_LEFT),
-                'id_localite' => $localite->id_localite,
-                'debut_periode_mise_en_place' => now()->toDateString(),
-                'superficies' => [
-                    1 => 5.5,
-                ],
-                'lignes' => [
-                    [
-                        'id_appui' => $appui->id_appui,
-                        'quantite_demandee' => 10,
-                    ],
-                ],
-                'pieces' => [],
-            ]);
-        }
-
-        // Mesure : Temps de réponse de l'affichage de la liste
         $depart = microtime(true);
-
-        $response = $this->actingAs($delegue)->get('/demandes');
-
+        $reponse = $this->actingAs($dp)->get(route('demandes.index'));
         $duree = microtime(true) - $depart;
 
-        $response->assertStatus(200);
+        $reponse->assertOk();
         $this->assertLessThan(3, $duree, "L'affichage de la liste a pris {$duree}s, au-delà des 3s exigées (SNF01).");
     }
 
-    /**
-     * SNF02 : Enregistrement d'une demande accompagnée de 5 pièces jointes en moins de 10 secondes.
-     */
-    public function test_enregistrement_demande_avec_5_pieces_jointes_en_moins_de_10_secondes()
+    /** SNF02 : enregistrement d'une demande accompagnée de 5 pièces jointes en moins de 10 secondes. */
+    public function test_enregistrement_demande_avec_5_pieces_jointes_en_moins_de_10_secondes(): void
     {
-        Storage::fake('public');
+        $this->actingAs(User::role('dp')->first());
 
-        Role::firstOrCreate(['name' => RoleEnum::dp]);
-
-        $delegue = User::factory()->create();
-        $delegue->assignRole(RoleEnum::dp);
-
-        $typeActeur = TypeActeur::factory()->create();
-        $localite = Localite::factory()->create();
-        $appui = Appui::factory()->create();
-
-        $pieces = [
-            1 => UploadedFile::fake()->create('piece1.pdf', 500),
-            2 => UploadedFile::fake()->create('piece2.pdf', 500),
-            3 => UploadedFile::fake()->create('piece3.pdf', 500),
-            4 => UploadedFile::fake()->create('piece4.pdf', 500),
-            5 => UploadedFile::fake()->create('piece5.pdf', 500),
-        ];
+        $pieces = [];
+        foreach ([1, 2, 3, 4, 5] as $idTypePiece) {
+            $pieces[$idTypePiece] = UploadedFile::fake()->create("piece{$idTypePiece}.pdf", 500);
+        }
 
         $depart = microtime(true);
-
-        $response = $this->actingAs($delegue)->postJson('/demandes', [
-            'id_type_acteur' => $typeActeur->id_type_acteur,
+        $demande = app(CreationDemandeService::class)->creer([
+            'id_type_acteur' => 1,
             'nom' => 'Coopérative Rizicole du Sud',
             'telephone' => '0102030405',
-            'id_localite' => $localite->id_localite,
-            'debut_periode_mise_en_place' => now()->toDateString(),
-            'superficies' => [
-                1 => 5.5,
-            ],
-            'lignes' => [
-                [
-                    'id_appui' => $appui->id_appui,
-                    'quantite_demandee' => 10,
-                ],
-            ],
-            'pieces' => $pieces,
-        ]);
-
+            'date_naissance' => '1975-05-05',
+            'localites' => [1],
+            'id_campagne' => Campagne::first()->id_campagne,
+            'periode_debut_mise_en_place' => '2026-11-01',
+            'periode_fin_mise_en_place' => '2027-01-31',
+            'superficies' => [1 => 5.5],
+            'lignes' => [['id_type_appui' => 1, 'id_appui' => 1, 'quantite_demandee' => 10]],
+        ], $pieces);
         $duree = microtime(true) - $depart;
 
-        $response->assertStatus(302); // ou 201/200 selon la réponse réelle de store()
+        $this->assertCount(5, $demande->piecesDemandes);
         $this->assertLessThan(10, $duree, "L'enregistrement a pris {$duree}s, au-delà des 10s exigées (SNF02).");
     }
 }

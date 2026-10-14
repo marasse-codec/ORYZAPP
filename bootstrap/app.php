@@ -1,5 +1,6 @@
 <?php
 
+use App\Domain\Shared\Exceptions\RegleMetierViolee;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -13,6 +14,9 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // Derrière le proxy HTTPS de l'hébergeur (Render) : sans cela, les URL générées sont en http.
+        $middleware->trustProxies(at: '*');
+
         $middleware->alias([
             'permission' => PermissionMiddleware::class,
         ]);
@@ -21,4 +25,13 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->shouldRenderJsonWhen(
             fn (Request $request) => $request->is('api/*'),
         );
+
+        // Une règle du métier refuse l'opération : l'utilisateur en reçoit la raison, sur la page d'où il vient.
+        $exceptions->render(function (RegleMetierViolee $e, Request $request) {
+            if ($request->expectsJson()) {
+                return response()->json(['message' => $e->getMessage()], 409);
+            }
+
+            return back()->withInput()->with('error', $e->getMessage());
+        });
     })->create();

@@ -2,7 +2,7 @@
 
 namespace Tests\Feature\Auth;
 
-use App\Enums\RoleEnum;
+use App\Domain\Acces\Enums\RoleEnum;
 use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;

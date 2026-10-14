@@ -1,4 +1,4 @@
-@extends($layout ?? 'layouts.app')
+@extends($layout ?? 'layouts.aderiz')
 
 @php
     // Récupération sécurisée de la collection des lignes attribuées
@@ -9,6 +9,7 @@
         'quantite_attribuee' => $ligne->quantite_attribuee,
         'cout_attribution' => $ligne->cout_attribution,
         'remise' => $ligne->remise ?? 0,
+        'manuelle' => true, // une quantité déjà enregistrée n'est pas écrasée par un recalcul
     ])->toArray());
 
     $commentaireInitial = old('commentaires',$attribution->commentaires);
@@ -17,28 +18,33 @@
             'libelle' => $appui->libelle,
             'cout_unitaire' => $appui->cout_unitaire,
             'stock' => $appui->quantite_en_stock,
+            'doseParHa' => $appui->dose_ha,
+            'estEquipement' => $appui->estEquipement(),
+            'ecologies' => $appui->typesSystemesProductions->pluck('id_type_systeme_production')->all(),
         ],
     ]);
 
     $localitesStr = $demande->localites->pluck('lib_localite')->join(', ');$nomEntite = $demande->nom_structure ?? $demande->acteur?->nom;
 @endphp
 
+@section('titre-page', "Modifier l'attribution")
+
 @section('content')
-<div class="min-h-screen bg-[--color-background] px-6 py-8">
+<div>
     <div class="max-w-5xl mx-auto space-y-6">
 
         {{-- En-tête du dossier --}}
-        <div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                    <h1 class="text-2xl font-bold text-[--color-primary]">
+                    <h1 class="text-xl font-bold text-[--color-primary] sm:text-2xl">
                         Modification d'attribution : DEM-{{ $demande->date_demande?->format('Y') }}-{{ str_pad($demande->id_demande, 3, '0', STR_PAD_LEFT) }}
-                        — {{ $nomEntite }}
+                        : {{ $nomEntite }}
                     </h1>
                     <p class="text-sm text-[--color-text-secondary] mt-1">
-                        {{ $demande->typeActeur?->lib_type_acteur }} · 
-                        Localité(s) : {{ $localitesStr ?: 'Non spécifiée' }} ·
-                        {{ number_format($demande->systemesProductions->sum('superficie'), 2, ',', ' ') }} ha
+                        {{ $demande->typeActeur?->lib_type_acteur }}, 
+                        Localité(s) : {{ $localitesStr ?: 'Non spécifiée' }},
+                        {{ number_format(collect($ecologies)->sum('demandee'), 2, ',', ' ') }} ha
                     </p>
                 </div>
                 <span class="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-800 self-start sm:self-auto">
@@ -47,10 +53,9 @@
             </div>
         </div>
 
-        @include('partials.flash')
 
         {{-- Synthèse : demandé vs déjà attribué / stocks --}}
-        <div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm space-y-4">
+        <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6 space-y-4">
             <h2 class="text-base font-semibold text-[--color-primary]">Synthèse des quantités pour ce dossier</h2>
             
             <div class="grid gap-4 md:grid-cols-1">
@@ -104,6 +109,7 @@
         {{-- Formulaire de modification d'attribution --}}
         <form action="{{ route('attributions.update', $attribution->id_attribution) }}" method="POST"
               x-data="{
+                    ecologies: {{ Illuminate\Support\Js::from(collect($ecologies)->map(fn ($e) => $e + ['saisie' => (float) old('superficies.'.$e['id_type'], $e['traitee'])])->all()) }},
                     lignes: {{ Illuminate\Support\Js::from(array_values($lignesInitiales)) }},
                     catalogue: {{ Illuminate\Support\Js::from($catalogueIndex) }},
 
@@ -114,10 +120,33 @@
                         return this.lignes.some((ligne, idx) => idx !== currentIndex && String(ligne.id_appui) === String(idAppui));
                     },
 
+                    // Quantité de départ d'un appui : dose à l'hectare × superficies traitées des écologies
+                    // auxquelles il est lié (null : pas de calcul possible, la quantité reste telle quelle).
+                    quantiteSuggeree(id) {
+                        const appui = this.catalogue[id];
+                        if (!appui || appui.estEquipement || !(Number(appui.doseParHa) > 0) || !appui.ecologies.length) return null;
+                        const superficie = this.ecologies
+                            .filter(e => appui.ecologies.includes(e.id_type))
+                            .reduce((somme, e) => somme + (Number(e.saisie) || 0), 0);
+                        return Math.round(Number(appui.doseParHa) * superficie * 100) / 100;
+                    },
+
+                    recalculer(index) {
+                        const quantite = this.quantiteSuggeree(this.lignes[index].id_appui);
+                        if (quantite !== null) this.lignes[index].quantite_attribuee = quantite;
+                    },
+
+                    // Une superficie traitée change : les quantités non ajustées à la main suivent.
+                    onSuperficieChange() {
+                        this.lignes.forEach((ligne, index) => { if (!ligne.manuelle) this.recalculer(index); });
+                    },
+
                     onAppuiChange(index) {
                         const id = this.lignes[index].id_appui;
                         if (id && this.catalogue[id]) {
                             this.lignes[index].cout_attribution = this.catalogue[id].cout_unitaire ?? 0;
+                            this.lignes[index].manuelle = false;
+                            this.recalculer(index);
                         }
                     },
 
@@ -133,7 +162,7 @@
                     },
 
                     ajouter() { 
-                        this.lignes.push({ id_appui: '', quantite_attribuee: 1, cout_attribution: 0, remise: 0 }); 
+                        this.lignes.push({ id_appui: '', quantite_attribuee: 1, cout_attribution: 0, remise: 0, manuelle: false }); 
                     },
                     retirer(i) { 
                         if (this.lignes.length > 1) this.lignes.splice(i, 1); 
@@ -143,7 +172,9 @@
             @csrf
             @method('PUT')
 
-            <div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+            @include('attributions.partials.superficies')
+
+            <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
                 <h2 class="mb-4 text-base font-semibold text-[--color-primary]">Ajustement des lignes d'attribution</h2>
                 
                 <div class="space-y-3">
@@ -156,7 +187,7 @@
                                         @change="onAppuiChange(index)"
                                         required
                                         class="mt-1 block w-full text-sm border-gray-300 bg-slate-50 focus:border-[--color-primary] focus:ring-[--color-primary] rounded-md font-semibold text-slate-800">
-                                    <option value="">— Sélectionner un appui —</option>
+                                    <option value="">Sélectionner un appui</option>
                                     @foreach ($catalogue as $appui)
                                         <option value="{{ $appui->id_appui }}" 
                                                 :disabled="estSelectionne({{ $appui->id_appui }}, index)">
@@ -168,8 +199,9 @@
 
                             <div class="sm:col-span-2">
                                 <label class="block text-xs font-medium text-[--color-text-secondary]">Quantité</label>
-                                <input type="number" min="1" required :name="`lignes[${index}][quantite_attribuee]`"
+                                <input type="number" min="0" step="0.0001" required :name="`lignes[${index}][quantite_attribuee]`"
                                        x-model="ligne.quantite_attribuee"
+                                       @input="ligne.manuelle = true"
                                        class="mt-1 block w-full text-sm border-gray-300 focus:border-[--color-primary] focus:ring-[--color-primary] rounded-md">
                             </div>
 
@@ -217,7 +249,7 @@
                 </div>
             </div>
 
-            <div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+            <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
                 <x-input-label for="commentaires" value="Observations & motivations du procès-verbal d'arbitrage" />
                 <textarea id="commentaires" name="commentaires" rows="4"
                           class="mt-1 block w-full border-gray-300 focus:border-[--color-primary] focus:ring-[--color-primary] rounded-md shadow-sm"

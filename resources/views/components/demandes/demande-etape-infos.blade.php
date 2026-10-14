@@ -25,7 +25,7 @@
                 </label>
                 <select id="select_departement" x-model="selectedDepartement"
                         class="block w-full border-gray-300 focus:border-[--color-primary] focus:ring-[--color-primary] rounded-md shadow-sm text-sm bg-white">
-                    <option value="">— Choisir un département —</option>
+                    <option value="">Choisir un département</option>
                     @foreach ($localites->pluck('departement')->filter()->unique('id_departement')->sortBy('lib_departement') as $departement)
                         <option value="{{ $departement->id_departement }}">
                             {{ $departement->lib_departement }}
@@ -80,7 +80,7 @@
             <x-input-label for="id_campagne" value="Campagne" />
             <select id="id_campagne" name="id_campagne" required
                     class="mt-1 block w-full border-gray-300 focus:border-[--color-primary] focus:ring-[--color-primary] rounded-md shadow-sm">
-                <option value="">— Sélectionner —</option>
+                <option value="">Sélectionner</option>
                 @foreach ($campagnes as $campagne)
                     <option value="{{ $campagne->id_campagne }}" 
                             @selected((string) old('id_campagne', $demande?->id_campagne) === (string) $campagne->id_campagne)>
@@ -91,22 +91,41 @@
             <x-input-error :messages="$errors->get('id_campagne')" class="mt-1" />
         </div>
 
-        <div>
-            <x-input-label for="periode_debut_mise_en_place" value="Période début de mise en place" />
-            <x-text-input id="periode_debut_mise_en_place" name="periode_debut_mise_en_place" type="date"
-                          class="mt-1 block w-full"
-                          :value="old('periode_debut_mise_en_place', $demande?->periode_debut_mise_en_place ? \Carbon\Carbon::parse($demande->periode_debut_mise_en_place)->format('Y-m-d') : '')"
-                          required />
-            <x-input-error :messages="$errors->get('periode_debut_mise_en_place')" class="mt-1" />
-        </div>
+        {{-- La fin doit être strictement postérieure au début : `finMin` = début + 1 jour. --}}
+        @php
+            $debutInitial = old('periode_debut_mise_en_place', $demande?->periode_debut_mise_en_place ? \Carbon\Carbon::parse($demande->periode_debut_mise_en_place)->format('Y-m-d') : '');
+            $finInitiale = old('periode_fin_mise_en_place', $demande?->periode_fin_mise_en_place ? \Carbon\Carbon::parse($demande->periode_fin_mise_en_place)->format('Y-m-d') : '');
+        @endphp
+        <div class="sm:col-span-2 grid gap-4 sm:grid-cols-2"
+             x-data="{
+                debut: {{ \Illuminate\Support\Js::from($debutInitial) }},
+                fin: {{ \Illuminate\Support\Js::from($finInitiale) }},
+                get finMin() {
+                if (!this.debut) return null;
+                const d = new Date(this.debut + 'T00:00:00');
+                d.setDate(d.getDate() + 1);
+                return d.toLocaleDateString('sv-SE');
+            },
+             }"
+             x-effect="if (fin && finMin && fin < finMin) fin = ''">
+            <div>
+                <x-input-label for="periode_debut_mise_en_place" value="Période début de mise en place" />
+                <x-text-input id="periode_debut_mise_en_place" name="periode_debut_mise_en_place" type="date"
+                              class="mt-1 block w-full"
+                              min="{{ now()->format('Y-m-d') }}"
+                              x-model="debut"
+                              required />
+                <x-input-error :messages="$errors->get('periode_debut_mise_en_place')" class="mt-1" />
+            </div>
 
-        <div class="sm:col-span-2">
-            <x-input-label for="periode_fin_mise_en_place" value="Période fin de mise en place" />
-            <x-text-input id="periode_fin_mise_en_place" name="periode_fin_mise_en_place" type="date"
-                          class="mt-1 block w-full"
-                          :value="old('periode_fin_mise_en_place', $demande?->periode_fin_mise_en_place ? \Carbon\Carbon::parse($demande->periode_fin_mise_en_place)->format('Y-m-d') : '')"
-                          required />
-            <x-input-error :messages="$errors->get('periode_fin_mise_en_place')" class="mt-1" />
+            <div>
+                <x-input-label for="periode_fin_mise_en_place" value="Période fin de mise en place" />
+                <x-text-input id="periode_fin_mise_en_place" name="periode_fin_mise_en_place" type="date"
+                              class="mt-1 block w-full"
+                              x-model="fin" ::min="finMin"
+                              required />
+                <x-input-error :messages="$errors->get('periode_fin_mise_en_place')" class="mt-1" />
+            </div>
         </div>
     </div>
 

@@ -1,23 +1,20 @@
 {{-- Magasin : alertes de stock et sorties à effectuer --}}
-<section>
-    <h2 class="mb-3 text-base font-semibold text-slate-700">Stock</h2>
-    <div class="grid gap-4 lg:grid-cols-3">
-        <a href="{{ route('enlevements.index') }}" class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm hover:bg-slate-50">
-            <p class="text-sm text-slate-500">Sorties à effectuer</p>
-            <p class="mt-2 text-3xl font-bold text-slate-800">{{ $stock['sorties_a_effectuer'] }}</p>
-        </a>
-        <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm lg:col-span-2">
-            <p class="mb-2 text-sm text-slate-500">Alertes de stock</p>
-            @forelse ($stock['alertes'] as $ligne)
-                <div class="flex items-center justify-between border-t border-slate-100 py-2 text-sm">
-                    <span class="text-slate-700">{{ $ligne['appui']->libelle }}</span>
-                    <span class="font-semibold {{ $ligne['stock'] === 0 ? 'text-rose-600' : 'text-amber-600' }}">
-                        {{ $ligne['stock'] }} / seuil {{ $ligne['appui']->seuil_alerte }}
-                    </span>
-                </div>
-            @empty
-                <p class="text-sm text-slate-500">Aucun appui sous son seuil.</p>
-            @endforelse
-        </div>
+<section class="space-y-3">
+    <h2 class="text-base font-semibold text-[--color-ink]">Stock</h2>
+    <div class="grid gap-3 sm:gap-4 lg:grid-cols-3">
+        <x-ui.stat libelle="Sorties à effectuer" :valeur="$stock['sorties_a_effectuer']" :href="route('enlevements.index')" ton="ambre" />
+
+        <x-ui.card titre="Alertes de stock" sans-marge class="lg:col-span-2">
+            <ul class="divide-y divide-[--color-border]">
+                @forelse ($stock['alertes'] as $ligne)
+                    <li class="flex items-center justify-between gap-3 px-4 py-3 text-sm sm:px-6">
+                        <span class="min-w-0 truncate text-[--color-ink]">{{ $ligne['appui']->libelle }}</span>
+                        <x-ui.badge :ton="$ligne['stock'] === 0 ? 'rouge' : 'ambre'">{{ $ligne['stock'] }} / seuil {{ $ligne['appui']->seuil_alerte }}</x-ui.badge>
+                    </li>
+                @empty
+                    <li class="px-4 py-6 text-center text-sm text-[--color-muted] sm:px-6">Aucun appui sous son seuil.</li>
+                @endforelse
+            </ul>
+        </x-ui.card>
     </div>
 </section>

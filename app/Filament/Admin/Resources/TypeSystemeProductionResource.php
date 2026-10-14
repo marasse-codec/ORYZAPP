@@ -2,74 +2,37 @@
 
 namespace App\Filament\Admin\Resources;
 
+use App\Domain\Referentiel\Models\TypeSystemeProduction;
 use App\Filament\Admin\Resources\TypeSystemeProductionResource\Pages;
-use App\Filament\Admin\Resources\TypeSystemeProductionResource\RelationManagers;
-use App\Models\TypeSystemeProduction;
 use Filament\Forms;
-use Filament\Forms\Form;
-use Filament\Resources\Resource;
 use Filament\Tables;
-use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
 
-class TypeSystemeProductionResource extends Resource
+class TypeSystemeProductionResource extends ReferentielResource
 {
     protected static ?string $model = TypeSystemeProduction::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?string $modelLabel = "système de production";
 
-    public static function form(Form $form): Form
-    {
-        return $form
-            ->schema([
-                Forms\Components\TextInput::make('lib_type_systeme_production')
-                    ->required()
-                    ->maxLength(60),
-            ]);
-    }
+    protected static ?string $pluralModelLabel = "systèmes de production";
 
-    public static function table(Table $table): Table
-    {
-        return $table
-            ->columns([
-                Tables\Columns\TextColumn::make('lib_type_systeme_production')
-                    ->searchable(),
-                Tables\Columns\TextColumn::make('created_at')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
-                Tables\Columns\TextColumn::make('updated_at')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
-            ])
-            ->filters([
-                //
-            ])
-            ->actions([
-                Tables\Actions\EditAction::make(),
-            ])
-            ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
-                ]),
-            ]);
-    }
+    protected static ?string $navigationIcon = 'heroicon-o-squares-2x2';
 
-    public static function getRelations(): array
+    protected static function champs(): array
     {
         return [
-            //
+            Forms\Components\TextInput::make('lib_type_systeme_production')->label('Libellé')->required()->maxLength(60),
+        ];
+    }
+
+    protected static function colonnes(): array
+    {
+        return [
+            Tables\Columns\TextColumn::make('lib_type_systeme_production')->label('Système de production')->searchable()->sortable(),
         ];
     }
 
     public static function getPages(): array
     {
-        return [
-            'index' => Pages\ListTypeSystemeProductions::route('/'),
-            'create' => Pages\CreateTypeSystemeProduction::route('/create'),
-            'edit' => Pages\EditTypeSystemeProduction::route('/{record}/edit'),
-        ];
+        return ['index' => Pages\ManageTypesSystemesProductions::route('/')];
     }
 }

@@ -2,8 +2,8 @@
 
 namespace Database\Seeders;
 
-use App\Models\TypeActeur;
-use App\Models\TypePiece;
+use App\Domain\Referentiel\Models\TypeActeur;
+use App\Domain\Referentiel\Models\TypePiece;
 use Illuminate\Database\Seeder;
 
 class TypePieceSeeder extends Seeder

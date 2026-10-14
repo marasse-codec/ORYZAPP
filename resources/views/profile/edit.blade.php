@@ -1,29 +1,19 @@
-<x-app-layout>
-    <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            {{ __('Profile') }}
-        </h2>
-    </x-slot>
+@extends($layout ?? 'layouts.aderiz')
 
-    <div class="py-12">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
-            <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
-                <div class="max-w-xl">
-                    @include('profile.partials.update-profile-information-form')
-                </div>
-            </div>
+@section('titre-page', 'Mon profil')
 
-            <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
-                <div class="max-w-xl">
-                    @include('profile.partials.update-password-form')
-                </div>
-            </div>
+@section('content')
+<x-ui.page titre="Mon profil" sous-titre="Vos informations de connexion et la sécurité de votre compte." class="max-w-3xl">
+    <x-ui.card>
+        @include('profile.partials.update-profile-information-form')
+    </x-ui.card>
 
-            <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
-                <div class="max-w-xl">
-                    @include('profile.partials.delete-user-form')
-                </div>
-            </div>
-        </div>
-    </div>
-</x-app-layout>
+    <x-ui.card>
+        @include('profile.partials.update-password-form')
+    </x-ui.card>
+
+    <x-ui.card>
+        @include('profile.partials.delete-user-form')
+    </x-ui.card>
+</x-ui.page>
+@endsection

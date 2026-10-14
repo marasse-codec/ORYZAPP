@@ -1,5 +1,5 @@
 @startuml
-title Attribution des appuis par service et validation en session de commission C2A
+title Attribution des appuis en session de commission C2A
 
 skinparam defaultFontName Arial
 skinparam defaultFontSize 12
@@ -10,52 +10,53 @@ skinparam activity {
   DiamondBorderColor #333333
 }
 
-|Service|
+|Délégué de pôle|
 start
-:Enregistrer la demande
-dans le fichier Excel du service;
-:Examiner la conformité
-et la complétude du dossier;
-if (Dossier est conforme ?) then (non)
-  :Rejeter le dossier et annuler l'attribution
-  (incomplet ou non conforme);
-else (oui)
-    :Formuler une attribution 
-    pour la demande;
-endif
+:Enregistrer et soumettre
+la demande pour l'acteur;
 
-:Préparer le dossier
-pour la commission;
-:Attendre l'ouverture de la session;
-
-|C2A|
+|Commission C2A|
 :Ouvrir la session ordinaire (Janvier/Juin)
  ou extraordinaire;
 
-:Vérifier les dossiers
-et les attributions des services;
-if (Dossier recevable ?) then (non)
-  :Rejeter le dossier et annuler l'attribution
-  (incomplet ou non conforme);
-  stop
+:Examiner les demandes soumises
+(conformité, complétude);
+note right
+  Les services consultent les demandes
+  qui les concernent, sans action.
+  La simulation (brouillon partagé)
+  aide à arbitrer à tout moment.
+end note
+
+if (Demande recevable ?) then (non)
+  :Rejeter la demande
+  (motif communiqué au délégué);
 else (oui)
-    if ()
-    :Valider l'attribution de départ;
-    else ()
-    :Revoir les quantités 
-    de l'attribution de départ;
+  :Enregistrer l'attribution
+  dans la session;
+  note right
+    Modifiable ou annulable
+    tant que la session est ouverte.
+  end note
 endif
 
-|Service|
-:Reporter les décisions
-dans le fichier Excel;
-:Produire la liste des demandeurs
-acceptés et rejetés;
+:Clôturer la session;
+note right
+  La clôture vaut validation :
+  les attributions ne bougent plus.
+end note
+
+:Publier les résultats;
 
 |Délégué de pôle|
-:Recevoir les résultats;
+:Recevoir les résultats publiés;
 :Informer les demandeurs
 (motif communiqué en cas de rejet);
+:Imprimer le bon d'attribution;
+
+|Magasin|
+:Servir les appuis sur présentation du bon
+(sortie de stock, récipiendaire enregistré);
 stop
 
 @enduml

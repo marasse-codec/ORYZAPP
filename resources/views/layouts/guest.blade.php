@@ -1,7 +1,7 @@
 {{--
     Gabarit des écrans hors session : connexion, inscription, réinitialisation
-    de mot de passe. Deux colonnes sur grand écran — un panneau institutionnel
-    à gauche, le formulaire à droite — et une seule colonne sur mobile.
+    de mot de passe. Deux colonnes sur grand écran (un panneau institutionnel
+    à gauche, le formulaire à droite) et une seule colonne sur mobile.
 --}}
 <!DOCTYPE html>
 <html lang="fr" class="h-full">
@@ -10,10 +10,9 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="csrf-token" content="{{ csrf_token() }}">
 
-        <title>{{ config('app.name', 'ADERIZ') }}</title>
+        <title>{{ config('app.name', 'ORYZA') }}</title>
 
-        <link rel="preconnect" href="https://fonts.googleapis.com">
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        @include('layouts.partials.marque')
         <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
 
         @vite(['resources/css/app.css', 'resources/js/app.js'])
@@ -28,12 +27,8 @@
                 <div class="pointer-events-none absolute -bottom-32 -left-20 h-80 w-80 rounded-full bg-lime-300/10 blur-3xl"></div>
 
                 <div class="relative p-12">
-                    <a href="{{ route('vitrine') }}" class="flex items-center gap-3">
-                        <span class="flex h-10 w-10 items-center justify-center rounded-lg bg-white text-base font-bold text-[--color-primary]">A</span>
-                        <span class="leading-tight">
-                            <span class="block text-sm font-bold text-white">ADERIZ</span>
-                            <span class="block text-[11px] text-emerald-100">Filière Riz</span>
-                        </span>
+                    <a href="{{ route('vitrine') }}" class="inline-block" aria-label="Accueil ORYZA">
+                        <img src="/images/brand/ORYZA_logo_negatif.svg" alt="ORYZA, gestion des appuis de la filière riz" class="h-16 w-auto">
                     </a>
                 </div>
 
@@ -65,7 +60,7 @@
                 </div>
 
                 <p class="relative p-12 text-xs text-emerald-100/70">
-                    &copy; {{ now()->year }} ADERIZ — Agence pour le Développement de la Filière Riz
+                    &copy; {{ now()->year }} ADERIZ, Agence pour le Développement de la Filière Riz
                 </p>
             </aside>
 
@@ -74,12 +69,8 @@
 
                 {{-- En-tête compact, visible seulement sur mobile --}}
                 <div class="flex items-center gap-3 border-b border-slate-200 px-6 py-4 lg:hidden">
-                    <a href="{{ route('vitrine') }}" class="flex items-center gap-2.5">
-                        <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-[--color-primary] text-sm font-bold text-white">A</span>
-                        <span class="leading-tight">
-                            <span class="block text-sm font-bold text-slate-900">ADERIZ</span>
-                            <span class="block text-[11px] text-slate-500">Gestion des appuis</span>
-                        </span>
+                    <a href="{{ route('vitrine') }}" aria-label="Accueil ORYZA">
+                        <img src="/images/brand/ORYZA_logo_sans_slogan_couleur.svg" alt="ORYZA" class="h-9 w-auto">
                     </a>
                 </div>
 
@@ -90,7 +81,7 @@
                 </div>
 
                 <p class="px-6 pb-6 text-center text-xs text-slate-400 lg:hidden">
-                    &copy; {{ now()->year }} ADERIZ — Tous droits réservés
+                    &copy; {{ now()->year }} ADERIZ, tous droits réservés
                 </p>
             </main>
         </div>

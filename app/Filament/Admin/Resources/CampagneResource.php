@@ -2,84 +2,41 @@
 
 namespace App\Filament\Admin\Resources;
 
+use App\Domain\Referentiel\Models\Campagne;
 use App\Filament\Admin\Resources\CampagneResource\Pages;
-use App\Filament\Admin\Resources\CampagneResource\RelationManagers;
-use App\Models\Campagne;
 use Filament\Forms;
-use Filament\Forms\Form;
-use Filament\Resources\Resource;
 use Filament\Tables;
-use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
 
-class CampagneResource extends Resource
+class CampagneResource extends ReferentielResource
 {
     protected static ?string $model = Campagne::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?string $modelLabel = "campagne";
 
-    public static function form(Form $form): Form
-    {
-        return $form
-            ->schema([
-                Forms\Components\TextInput::make('lib_campagne')
-                    ->required()
-                    ->maxLength(30),
-                Forms\Components\DatePicker::make('date_debut_campagne')
-                    ->required(),
-                Forms\Components\DatePicker::make('date_fin_campagne')
-                    ->required(),
-            ]);
-    }
+    protected static ?string $pluralModelLabel = "campagnes";
 
-    public static function table(Table $table): Table
-    {
-        return $table
-            ->columns([
-                Tables\Columns\TextColumn::make('lib_campagne')
-                    ->searchable(),
-                Tables\Columns\TextColumn::make('date_debut_campagne')
-                    ->date()
-                    ->sortable(),
-                Tables\Columns\TextColumn::make('date_fin_campagne')
-                    ->date()
-                    ->sortable(),
-                Tables\Columns\TextColumn::make('created_at')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
-                Tables\Columns\TextColumn::make('updated_at')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
-            ])
-            ->filters([
-                //
-            ])
-            ->actions([
-                Tables\Actions\EditAction::make(),
-            ])
-            ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
-                ]),
-            ]);
-    }
+    protected static ?string $navigationIcon = 'heroicon-o-calendar-days';
 
-    public static function getRelations(): array
+    protected static function champs(): array
     {
         return [
-            //
+            Forms\Components\TextInput::make('lib_campagne')->label('Libellé')->required()->maxLength(30),
+            Forms\Components\DatePicker::make('mois_debut_campagne')->label('Début')->required(),
+            Forms\Components\DatePicker::make('mois_fin_campagne')->label('Fin')->required()->afterOrEqual('mois_debut_campagne'),
+        ];
+    }
+
+    protected static function colonnes(): array
+    {
+        return [
+            Tables\Columns\TextColumn::make('lib_campagne')->label('Libellé')->searchable(),
+            Tables\Columns\TextColumn::make('mois_debut_campagne')->label('Début')->date('m/Y')->sortable(),
+            Tables\Columns\TextColumn::make('mois_fin_campagne')->label('Fin')->date('m/Y')->sortable(),
         ];
     }
 
     public static function getPages(): array
     {
-        return [
-            'index' => Pages\ListCampagnes::route('/'),
-            'create' => Pages\CreateCampagne::route('/create'),
-            'edit' => Pages\EditCampagne::route('/{record}/edit'),
-        ];
+        return ['index' => Pages\ManageCampagnes::route('/')];
     }
 }

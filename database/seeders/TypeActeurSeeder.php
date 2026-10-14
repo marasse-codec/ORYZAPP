@@ -2,7 +2,7 @@
 
 namespace Database\Seeders;
 
-use App\Models\TypeActeur;
+use App\Domain\Referentiel\Models\TypeActeur;
 use Illuminate\Database\Seeder;
 
 class TypeActeurSeeder extends Seeder

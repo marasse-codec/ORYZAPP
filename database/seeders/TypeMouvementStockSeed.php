@@ -2,7 +2,7 @@
 
 namespace Database\Seeders;
 
-use App\Models\TypeMouvementStock;
+use App\Domain\Stock\Models\TypeMouvementStock;
 use Illuminate\Database\Seeder;
 
 class TypeMouvementStockSeed extends Seeder

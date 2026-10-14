@@ -2,7 +2,8 @@
 
 namespace Database\Factories;
 
-use App\Models\JournalAction;
+use App\Domain\Journal\Models\JournalAction;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 class JournalActionFactory extends Factory
@@ -12,8 +13,8 @@ class JournalActionFactory extends Factory
     public function definition(): array
     {
         return [
-            'lib_departement' => $this->faker->word(),
+            'user_id' => User::factory(),
+            'action' => $this->faker->word(),
         ];
     }
-
 }

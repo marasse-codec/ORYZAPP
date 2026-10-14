@@ -2,7 +2,7 @@
 
 namespace Database\Seeders;
 
-use App\Models\TypeAppui;
+use App\Domain\Referentiel\Models\TypeAppui;
 use Illuminate\Database\Seeder;
 
 class TypeAppuiSeeder extends Seeder

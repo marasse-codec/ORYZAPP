@@ -2,7 +2,7 @@
 
 namespace Database\Factories;
 
-use App\Models\Campagne;
+use App\Domain\Referentiel\Models\Campagne;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 class CampagneFactory extends Factory
@@ -12,9 +12,9 @@ class CampagneFactory extends Factory
     public function definition(): array
     {
         return [
-                'lib_campagne' => $this->faker->word(),
-                'date_debut_campagne' => $this->faker->date('Y-m-d'),
-                'date_fin_campagme' => $this->faker->date('Y-m-d')
-            ];
+            'lib_campagne' => $this->faker->word(),
+            'mois_debut_campagne' => today()->subMonth(),
+            'mois_fin_campagne' => today()->addMonths(3),
+        ];
     }
 }

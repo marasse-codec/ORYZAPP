@@ -2,7 +2,7 @@
 
 namespace Database\Seeders;
 
-use App\Models\TypeSystemeProduction;
+use App\Domain\Referentiel\Models\TypeSystemeProduction;
 use Illuminate\Database\Seeder;
 
 class TypeSystemeProductionSeeder extends Seeder

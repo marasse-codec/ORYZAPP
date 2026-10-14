@@ -1,21 +1,28 @@
 {
-    "name": "Deryza gestion des appuis",
-    "short_name": "Deryza",
+    "name": "ORYZA, gestion des appuis de la filière riz",
+    "short_name": "ORYZA",
+    "description": "Gestion des appuis de la filière riz",
     "start_url": "/",
-    "background_color": "#ffffff",
-    "theme_color": "#047857",
+    "background_color": "#F6F3EA",
+    "theme_color": "#1E5E3A",
     "display": "standalone",
     "orientation": "portrait",
     "icons": [
         {
-            "src": "/images/icons/icon-192x192.png",
+            "src": "/android-chrome-192x192.png",
             "sizes": "192x192",
             "type": "image/png"
         },
         {
-            "src": "/images/icons/icon-512x512.png",
+            "src": "/android-chrome-512x512.png",
             "sizes": "512x512",
             "type": "image/png"
+        },
+        {
+            "src": "/maskable-icon-512x512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "maskable"
         }
     ]
 }

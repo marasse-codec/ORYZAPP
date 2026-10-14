@@ -3,27 +3,104 @@
 @tailwind utilities;
 
 :root {
-  --color-primary: #1B4D3E;
-  --color-secondary: #d0d0d0;
+  /* Identité ORYZA (cf. resources/assets/06_Charte) : vert ORYZA, or riz en accent. */
+  --color-primary: #1E5E3A;
+  --color-primary-dark: #1a4c31;
+  --color-primary-soft: #eef7f1;
   --color-tertiary: #673831;
-  --color-neutral: #0F172A;
-  --color-accent: #FF6B6B;
-  --color-background: #d0d0d0;
-  --color-text-primary: #333333;
-  --color-text-secondary: #666666;
-  --color-red-text: #f21818;
+  --color-neutral: #111111;
+  --color-accent: #E5A93B;
+  --color-danger: #b91c1c;
 
+  /* Surfaces et texte : fond crème, cartes blanches. */
+  --color-page: #F6F3EA;
+  --color-surface: #ffffff;
+  --color-border: #e6e0cf;
+  --color-ink: #111111;
+  --color-muted: #64748b;
+
+  /* Noms hérités : les vues existantes les utilisent encore. */
+  --color-secondary: var(--color-page);
+  --color-background: var(--color-page);
+  --color-text-primary: var(--color-ink);
+  --color-text-secondary: var(--color-muted);
+  --color-red-text: var(--color-danger);
   --color-label-brouillon: #f59e0b;
-  --color-soumise: #1B4D3E;
-
-  --color-button-first: #f8a100;
+  --color-soumise: #1E5E3A;
+  --color-button-first: #E5A93B;
   --color-button-secondary: #a86e1b;
-
 
   --text-over-back-color: #ffffffd2;
   --text-in-back-color: #ffffffd2;
   --text-heading: 1.5rem;
   --text-body: 1rem;
+}
+
+@layer base {
+  html { -webkit-text-size-adjust: 100%; }
+  body { background-color: var(--color-page); color: var(--color-ink); }
+
+  /* Un champ se reconnaît partout : bord net, coin arrondi, focus vert. */
+  [type='text'], [type='email'], [type='password'], [type='number'], [type='date'], [type='tel'],
+  [type='search'], [type='url'], textarea, select {
+    border-color: #cbd5e1;
+    border-radius: 0.5rem;
+  }
+  [type='text']:focus, [type='email']:focus, [type='password']:focus, [type='number']:focus, [type='date']:focus,
+  [type='tel']:focus, [type='search']:focus, [type='url']:focus, textarea:focus, select:focus {
+    border-color: var(--color-primary);
+    --tw-ring-color: rgba(30, 94, 58, 0.25);
+  }
+  [type='checkbox'], [type='radio'] { color: var(--color-primary); }
+
+  /* Cible tactile confortable sur téléphone. */
+  @media (max-width: 639px) {
+    button, [type='submit'], a.btn { min-height: 2.5rem; }
+  }
+}
+
+@layer components {
+  /* Tableau qui se replie en cartes sur petit écran : chaque cellule porte son en-tête (cf. app.js). */
+  @media (max-width: 767px) {
+    table.tableau-carte thead { display: none; }
+    table.tableau-carte, table.tableau-carte tbody, table.tableau-carte tfoot { display: block; }
+    table.tableau-carte tr {
+      display: block;
+      margin-bottom: 0.75rem;
+      padding: 0.5rem 0.75rem;
+      border: 1px solid var(--color-border);
+      border-radius: 0.75rem;
+      background: var(--color-surface);
+    }
+    table.tableau-carte td {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+      padding: 0.35rem 0 !important;
+      border: 0 !important;
+      text-align: right !important;
+    }
+    table.tableau-carte td[data-label]::before {
+      content: attr(data-label);
+      flex-shrink: 0;
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--color-muted);
+      text-align: left;
+    }
+    table.tableau-carte td[colspan] { display: block; text-align: center !important; }
+
+    /* La carte qui porte un tableau replié s'efface : les lignes-cartes suffisent. */
+    .rounded-xl:has(> div > .overflow-x-auto > table.tableau-carte) {
+      background: transparent;
+      border-color: transparent;
+      box-shadow: none;
+    }
+    .rounded-xl:has(> div > .overflow-x-auto > table.tableau-carte) > div > .overflow-x-auto { overflow: visible; }
+  }
 }
 
 /* Les blocs pilotés par Alpine restent masqués tant qu'il n'a pas démarré,
@@ -41,67 +118,4 @@
   overflow-y: auto;
   padding: 2rem;
   background-color: var(--color-background);
-}
-
-/* ====================================================
-   PERSONNALISATION DES MODALES ET FORMULAIRES FILAMENT
-   ==================================================== */
-
-/* 1. En-tête de la modale */
-.fi-modal .fi-modal-header {
-  background-color: var(--color-primary) !important;
-  border-top-left-radius: 0.75rem;
-  border-top-right-radius: 0.75rem;
-  padding: 1.25rem;
-}
-
-.fi-modal .fi-modal-heading {
-  color: #ffffff !important;
-  font-weight: 700 !important;
-}
-
-.fi-modal .fi-modal-close-btn button {
-  color: #ffffff !important;
-}
-
-.fi-modal .fi-modal-window .fi-section{
-  background-color: var(--color-secondary);
-  border: none;
-}
-
-.fi-modal .fi-modal-window{
-  background-color: var(--color-secondary);
-}
-
-/* 2. Style des champs de saisie (Inputs, Selects, Textareas) */
-.fi-modal .fi-input-wrp {
-  background-color: #f8fafc !important; /* Fond gris/vert très clair */
-  border-color: #cbd5e1 !important;
-}
-
-.fi-modal .fi-input-wrp:focus-within {
-  border-color: var(--color-primary) !important;
-  ring-color: var(--color-primary) !important;
-  box-shadow: 0 0 0 2px rgba(27, 77, 62, 0.2) !important;
-}
-
-
-/* 3. Boutons d'action dans le pied de la modale (Footer) */
-/* Bouton principal (Enregistrer / Créer) */
-.fi-modal .fi-modal-footer button[type="submit"],
-.fi-modal .fi-modal-footer .fi-btn-color-primary {
-  background-color: var(--color-primary) !important;
-  color: #ffffff !important;
-}
-
-.fi-modal .fi-modal-footer button[type="submit"]:hover,
-.fi-modal .fi-modal-footer .fi-btn-color-primary:hover {
-  background-color: #143a2f !important;
-}
-
-/* Bouton Annuler */
-.fi-modal .fi-modal-footer .fi-btn-color-gray {
-  background-color: #f1f5f9 !important;
-  color: #475569 !important;
-  border: 1px solid #cbd5e1 !important;
 }

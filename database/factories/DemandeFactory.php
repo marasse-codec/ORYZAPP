@@ -2,14 +2,17 @@
 
 namespace Database\Factories;
 
-use App\Enums\StatutDemandeE;
-use App\Models\Acteur;
-use App\Models\Demande;
-use App\Models\Localite;
-use App\Models\TypeActeur;
+use App\Domain\Demande\Models\Acteur;
+use App\Domain\Demande\Models\Demande;
+use App\Domain\Referentiel\Models\Campagne;
+use App\Domain\Referentiel\Models\TypeActeur;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
+/**
+ * Une demande en brouillon. Son statut se déduit de ses données : voir les états
+ * soumise(), rejetee() ; une attribution la fait passer à « reçu attribution ».
+ */
 class DemandeFactory extends Factory
 {
     protected $model = Demande::class;
@@ -18,16 +21,20 @@ class DemandeFactory extends Factory
     {
         return [
             'id_acteur' => Acteur::factory(),
-            'date_demande' => $this->faker->date(),
-            'debut_periode_mise_en_place' => $this->faker->date(),
-            'id_type_acteur' => TypeActeur::factory(),
-            'id_localite' => Localite::factory(),
-            'motifs_rejet' => null,
-            'date_rejet' => null,
-            'date_attribution' => null,
             'id_user' => User::factory(),
-            'id_statut_demande' => StatutDemandeE::brouillon,
-            'id_campagne' => CampagneFactory::factory()
+            'id_type_acteur' => TypeActeur::factory(),
+            'id_campagne' => Campagne::factory(),
+            'date_demande' => $this->faker->date(),
         ];
+    }
+
+    public function soumise(): static
+    {
+        return $this->state(fn () => ['date_soummission' => now()]);
+    }
+
+    public function rejetee(string $motif = 'Dossier incomplet'): static
+    {
+        return $this->soumise()->state(fn () => ['motifs_rejet' => $motif]);
     }
 }

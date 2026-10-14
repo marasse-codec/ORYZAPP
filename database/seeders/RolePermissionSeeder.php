@@ -2,8 +2,8 @@
 
 namespace Database\Seeders;
 
-use App\Enums\PermissionEnum;
-use App\Enums\RoleEnum;
+use App\Domain\Acces\Enums\PermissionEnum;
+use App\Domain\Acces\Enums\RoleEnum;
 use Illuminate\Database\Seeder;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
@@ -25,10 +25,10 @@ class RolePermissionSeeder extends Seeder
             RoleEnum::admin->value => PermissionEnum::cases(),
             RoleEnum::acteur->value => [PermissionEnum::creerDemande],
             RoleEnum::dp->value => [PermissionEnum::creerDemande, PermissionEnum::editDemande],
-            // Lecture seule : ses demandes et attributions se filtrent par service, sans permission dédiée.
-            RoleEnum::agentService->value => [],
+            // Lecture seule : ses demandes et attributions se filtrent par service ; il télécharge les stocks de ses appuis.
+            RoleEnum::agentService->value => [PermissionEnum::voirStocks],
             RoleEnum::agentCommission->value => [PermissionEnum::gererCommission, PermissionEnum::gererSimulation, PermissionEnum::attribuerAppui],
-            RoleEnum::gestionnaireStock->value => [PermissionEnum::gererStock,PermissionEnum::gererMouvement],
+            RoleEnum::gestionnaireStock->value => [PermissionEnum::gererStock,PermissionEnum::gererMouvement, PermissionEnum::voirStocks],
         ];
 
         foreach ($attributions as $nomRole => $permissions) {

@@ -2,8 +2,8 @@
 
 namespace Database\Seeders;
 
-use App\Models\Departement;
-use App\Models\Localite;
+use App\Domain\Referentiel\Models\Departement;
+use App\Domain\Referentiel\Models\Localite;
 use Illuminate\Database\Seeder;
 
 class LocaliteSeeder extends Seeder

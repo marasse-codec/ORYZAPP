@@ -1,4 +1,4 @@
-@extends($layout ?? 'layouts.app')
+@extends($layout ?? 'layouts.aderiz')
 
 @php
     // Le formulaire est pré-rempli avec ce qui a été demandé : la commission
@@ -15,6 +15,7 @@
         'unite' => $ligne->appui?->uniteDosage->lib_unite ?? '',
         'remise' => 0,
         'montant_saisi' => $q * $c, // Initialisation
+        'manuelle' => false,
     ];
     })->all());
 
@@ -28,35 +29,37 @@
             'doseParHa' => $appui->dose_ha,
             'stock' => $appui->quantite_en_stock,
             'unite' => $appui->uniteDosage->lib_unite,
-            'estEquipement' => $estEquipement
+            'estEquipement' => $estEquipement,
+            'ecologies' => $appui->typesSystemesProductions->pluck('id_type_systeme_production')->all(),
          ]];
     });
 
     $localitesStr = $demande->localites->pluck('lib_localite')->join(', ');$nomEntite = $demande->nom_structure ?? $demande->acteur?->nom;
 @endphp
 
+@section('titre-page', "Attribuer des appuis")
+
 @section('content')
-<div class="min-h-screen bg-[--color-background] px-6 py-8">
+<div>
     <div class="max-w-5xl mx-auto space-y-6">
         {{-- En-tête du dossier --}}
-        <div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-            <h1 class="text-2xl font-bold text-[--color-primary]">
+        <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
+            <h1 class="text-xl font-bold text-[--color-primary] sm:text-2xl">
                 Demande {{ str_pad($demande->id_demande, 3, '0', STR_PAD_LEFT) }}
             </h1>
             <p class="text-sm text-[--color-text-secondary] mt-1">
                 Demandeur : {{ $nomEntite }}
             </p>
             <p class="text-sm text-[--color-text-secondary] mt-1">
-                {{ $demande->typeActeur?->lib_type_acteur }} · 
-                Localité(s) : {{ $localitesStr ?: 'Non spécifiée' }} ·
-                {{ number_format($superficieTotalDemande, 2, ',', ' ') }} ha
+                {{ $demande->typeActeur?->lib_type_acteur }}, 
+                Localité(s) : {{ $localitesStr ?: 'Non spécifiée' }},
+                {{ number_format(collect($ecologies)->sum('demandee'), 2, ',', ' ') }} ha
             </p>
         </div>
 
-        @include('partials.flash')
 
         {{-- Synthèse : demandé / en stock / déjà engagé --}}
-        <div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
             <h2 class="mb-4 text-base font-semibold text-[--color-primary]">Synthèse des quantités pour ce dossier</h2>
 
             <div class="mb-4 rounded-lg bg-slate-50 p-3 border border-slate-200">
@@ -99,7 +102,7 @@
         {{-- Formulaire d'attribution --}}
         <form action="{{ route('attributions.store', ['idDemande' => $demande->id_demande, 'idSession'=>$idSession]) }}" method="POST"
               x-data="{
-                    superficieTotalDemande: {{$superficieTotalDemande}},
+                    ecologies: {{ Illuminate\Support\Js::from(collect($ecologies)->map(fn ($e) => $e + ['saisie' => (float) old('superficies.'.$e['id_type'], $e['traitee'])])->all()) }},
                     lignes: {{ Illuminate\Support\Js::from(array_values($lignesInitiales)) }},
                     catalogue: {{ Illuminate\Support\Js::from($catalogueIndex) }},
 
@@ -124,6 +127,11 @@
                         const brut = this.montantBrut(ligne);
                         const r = Number(ligne.remise) || 0;
                         return brut * (1 - r / 100);
+                    },
+
+                    onQuantiteSaisie(index) {
+                        this.lignes[index].manuelle = true;
+                        this.onQuantiteChange(index);
                     },
 
                     onQuantiteChange(index) {
@@ -158,17 +166,37 @@
                     },
 
                     // 5. Réinitialiser le montant_saisi lors du changement d'appui ou de quantité
+                    // Quantité de départ d'un appui : dose à l'hectare × superficies traitées des écologies
+                    // auxquelles il est lié (null : pas de calcul possible, la quantité reste telle quelle).
+                    quantiteSuggeree(id) {
+                        const appui = this.catalogue[id];
+                        if (!appui || appui.estEquipement || !(Number(appui.doseParHa) > 0) || !appui.ecologies.length) return null;
+                        const superficie = this.ecologies
+                            .filter(e => appui.ecologies.includes(e.id_type))
+                            .reduce((somme, e) => somme + (Number(e.saisie) || 0), 0);
+                        return Math.round(Number(appui.doseParHa) * superficie * 100) / 100;
+                    },
+
+                    recalculer(index) {
+                        const quantite = this.quantiteSuggeree(this.lignes[index].id_appui);
+                        if (quantite === null) return;
+                        this.lignes[index].quantite_attribuee = quantite;
+                        this.onQuantiteChange(index);
+                    },
+
+                    // Une superficie traitée change : les quantités non ajustées à la main suivent.
+                    onSuperficieChange() {
+                        this.lignes.forEach((ligne, index) => { if (!ligne.manuelle) this.recalculer(index); });
+                    },
+
                     onAppuiChange(index) {
                         const id = this.lignes[index].id_appui;
                         if (id && this.catalogue[id]) {
-                            let resultat = (this.catalogue[id]?.doseParHa ?? 0) * (this.superficieTotalDemande ?? 0);
                             this.lignes[index].cout_attribution = this.catalogue[id].cout_unitaire ?? 0;
                             this.lignes[index].unite = this.catalogue[id].unite ?? '';
-
-                            if(! this.catalogue[id].estEquipement){
-                                this.lignes[index].quantite_attribuee = Math.round(resultat * 100) / 100;
-                                this.lignes[index].montant_saisi = Math.round(this.montant(this.lignes[index]));
-                                }
+                            this.lignes[index].manuelle = false;
+                            this.recalculer(index);
+                            this.lignes[index].montant_saisi = Math.round(this.montant(this.lignes[index]));
                         }
                     },
                     // Calculs et changement appui
@@ -178,7 +206,7 @@
                     },
 
                     ajouter() { 
-                        this.lignes.push({ id_appui: '', quantite_attribuee: 1, cout_attribution: 0, remise: 0 }); 
+                        this.lignes.push({ id_appui: '', quantite_attribuee: 1, cout_attribution: 0, remise: 0, manuelle: false }); 
                     },
                     retirer(i) { 
                         if (this.lignes.length > 1) this.lignes.splice(i, 1); 
@@ -187,7 +215,9 @@
               class="space-y-6">
             @csrf
 
-            <div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+            @include('attributions.partials.superficies')
+
+            <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
                 <div class="space-y-3">
                     <template x-for="(ligne, index) in lignes" :key="index">
                     {{--Lignes d'attributions--}}
@@ -202,7 +232,7 @@
                                         required
                                         class="mt-1 block w-full text-sm border-gray-300 bg-slate-50 focus:border-[--color-primary] focus:ring-[--color-primary] rounded-md font-semibold text-slate-800">
                                     {{-- Option du select--}}
-                                    <option value="">— Sélectionner un appui —</option>
+                                    <option value="">Sélectionner un appui</option>
                                     @foreach ($catalogue as $appui)
                                         <option value="{{ $appui->id_appui }}" 
                                                 :disabled="estSelectionne({{ $appui->id_appui }}, index)">
@@ -219,7 +249,7 @@
                                 <label class="block text-xs font-medium text-[--color-text-secondary]">Quantité</label>
                                     <input type="number" min="0" step="0.0001" required :name="`lignes[${index}][quantite_attribuee]`"
                                        x-model="ligne.quantite_attribuee"
-                                       @input="onQuantiteChange(index)"
+                                       @input="onQuantiteSaisie(index)"
                                        class="mt-1 block w-full text-sm border-gray-300 focus:border-[--color-primary] focus:ring-[--color-primary] rounded-md">
                             </div>
                             {{-- Quantité --}}
@@ -288,7 +318,7 @@
                 </div>
             </div>
 
-            <div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+            <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
                 <x-input-label for="commentaires" value="Observations & motivations du procès-verbal d'arbitrage" />
                 <textarea id="commentaires" name="commentaires" rows="4"
                           class="mt-1 block w-full border-gray-300 focus:border-[--color-primary] focus:ring-[--color-primary] rounded-md shadow-sm"

@@ -1,29 +1,30 @@
 @extends($layout ?? 'layouts.aderiz')
 
+@section('titre-page', 'Servir un bon')
+
 @section('content')
-<div class="min-h-screen bg-[--color-background] px-6 py-8">
+<div>
     <div class="max-w-3xl mx-auto space-y-6">
 
-        <div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-            <h1 class="text-2xl font-bold text-[--color-primary]">
+        <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
+            <h1 class="text-xl font-bold text-[--color-primary] sm:text-2xl">
                 Servir le bon ATT-{{ str_pad($attribution->id_attribution, 3, '0', STR_PAD_LEFT) }}
             </h1>
             <p class="text-sm text-slate-500">
-                {{ $attribution->demande?->acteur?->nom }} · {{ $attribution->demande?->acteur?->telephone }} ·
+                {{ $attribution->demande?->acteur?->nom }}, {{ $attribution->demande?->acteur?->telephone }},
                 Séance clôturée le {{ $attribution->session?->date_fin_session?->format('d/m/Y') }}
             </p>
         </div>
 
-        @include('partials.flash')
 
         <form action="{{ route('attributions.destocker', $attribution->id_attribution) }}" method="POST"
             enctype="multipart/form-data"
             onsubmit="return confirm('Confirmer la remise ? Le stock sera décrémenté.')">
         @csrf
         @method('PATCH')
-        <div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
             <h2 class="mb-4 text-base font-semibold text-[--color-primary]">Contenu de l'attribution</h2>
-            <table class="min-w-full divide-y divide-slate-200 text-sm">
+            <table class="tableau-carte min-w-full divide-y divide-slate-200 text-sm">
                 <thead class="text-left text-xs uppercase tracking-wide text-slate-500">
                     <tr>
                         <th class="pb-2">Appui</th>
@@ -36,7 +37,7 @@
                     @foreach ($attribution->lignesAttributions as $ligne)
                         @php
                             $appui = $ligne->appui;
-                            $unite = $ligne->appui?->uniteAppui?->lib_unite_appui;
+                            $unite = $ligne->appui?->uniteDosage?->lib_unite;
                             $suffisant = ($ligne->appui?->quantite_en_stock ?? 0) >= $ligne->quantite_attribuee;
                         @endphp
                         <tr>
@@ -109,7 +110,7 @@
             @endif
         </div>
 
-        <div class="space-y-5 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div class="space-y-5 rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
 
             <div>
                 <h2 class="text-base font-semibold text-[--color-primary]">Récipiendaire</h2>

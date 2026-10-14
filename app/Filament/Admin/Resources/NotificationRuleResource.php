@@ -2,22 +2,30 @@
 
 namespace App\Filament\Admin\Resources;
 
+use App\Domain\Notification\Models\NotificationRule;
 use App\Filament\Admin\Resources\NotificationRuleResource\Pages;
-use App\Filament\Admin\Resources\NotificationRuleResource\RelationManagers;
-use App\Models\NotificationRule;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class NotificationRuleResource extends Resource
 {
     protected static ?string $model = NotificationRule::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?string $navigationGroup = 'Système';
+
+    protected static ?string $navigationIcon = 'heroicon-o-bell-alert';
+
+    protected static ?string $modelLabel = 'règle de notification';
+
+    protected static ?string $pluralModelLabel = 'règles de notification';
+
+    public static function canViewAny(): bool
+    {
+        return auth()->user()?->can(\App\Domain\Acces\Enums\PermissionEnum::gererRessources->value) ?? false;
+    }
 
     public static function form(Form $form): Form
     {
@@ -33,10 +41,10 @@ class NotificationRuleResource extends Resource
                         Forms\Components\Select::make('resource_type')
                             ->label('Ressource à surveiller')
                             ->options([
-                                'App\Models\Appui' => 'Appui (Stock)',
-                                'App\Models\Demande' => 'Demande',
-                                'App\Models\Attribution' => 'Attribution',
-                                'App\Models\MouvementStock' => 'Mouvement de Stock',
+                                'App\Domain\Stock\Models\Appui' => 'Appui (Stock)',
+                                'App\Domain\Demande\Models\Demande' => 'Demande',
+                                'App\Domain\Commission\Models\Attribution' => 'Attribution',
+                                'App\Domain\Stock\Models\MouvementStock' => 'Mouvement de Stock',
                             ])
                             ->required(),
 

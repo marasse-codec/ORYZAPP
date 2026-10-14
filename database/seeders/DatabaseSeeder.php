@@ -2,7 +2,6 @@
 
 namespace Database\Seeders;
 
-use App\Models\Campagne;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
@@ -25,8 +24,6 @@ class DatabaseSeeder extends Seeder
             AppuiSeeder::class,
             RolePermissionSeeder::class,
             UserSeed::class,
-            StatutDemandeSeed::class,
-            StatutAttributionSeed::class,
             DemandeSeeder::class,
             SessionCommissionSeeder::class,
             TypeMouvementStockSeed::class,

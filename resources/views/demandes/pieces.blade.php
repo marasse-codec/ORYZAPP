@@ -91,9 +91,9 @@
             <section class="{{ $piece->estImage() ? 'piece' : 'sans-impression' }} mt-8">
                 <div class="flex items-baseline justify-between gap-4 border-b border-slate-200 pb-1">
                     <h2 class="text-sm font-bold uppercase tracking-wide text-[--color-primary]">
-                        Pièce n°{{ $rang + 1 }} — {{ $piece->typePiece?->lib_type_piece }}
+                        Pièce n°{{ $rang + 1 }} : {{ $piece->typePiece?->lib_type_piece }}
                     </h2>
-                    <span class="text-xs text-slate-500">{{ $reference }} · {{ $piece->nomFichier() }}</span>
+                    <span class="text-xs text-slate-500">{{ $reference }}, {{ $piece->nomFichier() }}</span>
                 </div>
 
                 @if ($piece->estImage())

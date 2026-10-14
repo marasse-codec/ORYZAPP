@@ -9,7 +9,7 @@
                  return this.tousLesAppuis.filter(a => a.id_type_appui == idType);
              },
 
-             getUniteAppui(idAppui) {
+             getUnite(idAppui) {
                     if (!idAppui) return '';
                     let appui = this.tousLesAppuis.find(a => a.id == idAppui);
                     return appui ? appui.unite : '';
@@ -32,7 +32,7 @@
                             @change="ligne.id_appui = ''" 
                             required
                             class="block w-full border-gray-300 focus:border-[--color-primary] focus:ring-[--color-primary] rounded-md shadow-sm text-sm bg-white">
-                        <option value="">— Sélectionner un type d'appui —</option>
+                        <option value="">Sélectionner un type d'appui</option>
 
                         @foreach ($typesAppuis->groupBy(fn ($typeAppui) => $typeAppui?->service->lib_service ?? 'Autres') as $serviceTypeAppui => $groupe)
                             <optgroup label="{{ $serviceTypeAppui }}">
@@ -53,7 +53,7 @@
                             x-model="ligne.id_appui"
                             :disabled="!ligne.id_type_appui"
                             class="block w-full border-gray-300 focus:border-[--color-primary] focus:ring-[--color-primary] rounded-md shadow-sm text-sm bg-white disabled:bg-slate-100 disabled:cursor-not-allowed">
-                        <option value="">— Aucun / Tous —</option>
+                        <option value="">Aucun / Tous</option>
                         <template x-for="appui in appuisPourType(ligne.id_type_appui)" :key="appui.id">
                             <option :value="appui.id" x-text="appui.libelle" :selected="ligne.id_appui == appui.id">></option>
                         </template>
@@ -72,7 +72,7 @@
                                     class="block w-full text-sm bg-white rounded-r-none border-r-0" />
                         
                         <span class="inline-flex items-center px-2.5 py-2 rounded-r-md border border-gray-300 bg-slate-100 text-slate-600 text-xs font-medium whitespace-nowrap h-10 select-none"
-                            x-text="getUniteAppui(ligne.id_appui) || '—'">
+                            x-text="getUnite(ligne.id_appui) || '-'">
                         </span>
                     </div>
                 </div>
@@ -89,7 +89,7 @@
                                     class="block w-full text-sm bg-white rounded-r-none border-r-0" />
                         
                         <span class="inline-flex items-center px-2.5 py-2 rounded-r-md border border-gray-300 bg-slate-100 text-slate-600 text-xs font-medium whitespace-nowrap h-10 select-none"
-                            x-text="getUniteAppui(ligne.id_appui) || '—'">
+                            x-text="getUnite(ligne.id_appui) || '-'">
                         </span>
                     </div>
                 </div>

@@ -2,74 +2,37 @@
 
 namespace App\Filament\Admin\Resources;
 
+use App\Domain\Referentiel\Models\Service;
 use App\Filament\Admin\Resources\ServiceResource\Pages;
-use App\Filament\Admin\Resources\ServiceResource\RelationManagers;
-use App\Models\Service;
 use Filament\Forms;
-use Filament\Forms\Form;
-use Filament\Resources\Resource;
 use Filament\Tables;
-use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
 
-class ServiceResource extends Resource
+class ServiceResource extends ReferentielResource
 {
     protected static ?string $model = Service::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?string $modelLabel = "service";
 
-    public static function form(Form $form): Form
-    {
-        return $form
-            ->schema([
-                Forms\Components\TextInput::make('lib_service')
-                    ->required()
-                    ->maxLength(250),
-            ]);
-    }
+    protected static ?string $pluralModelLabel = "services";
 
-    public static function table(Table $table): Table
-    {
-        return $table
-            ->columns([
-                Tables\Columns\TextColumn::make('lib_service')
-                    ->searchable(),
-                Tables\Columns\TextColumn::make('created_at')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
-                Tables\Columns\TextColumn::make('updated_at')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
-            ])
-            ->filters([
-                //
-            ])
-            ->actions([
-                Tables\Actions\EditAction::make(),
-            ])
-            ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
-                ]),
-            ]);
-    }
+    protected static ?string $navigationIcon = 'heroicon-o-building-office';
 
-    public static function getRelations(): array
+    protected static function champs(): array
     {
         return [
-            //
+            Forms\Components\TextInput::make('lib_service')->label('Libellé')->required()->maxLength(250),
+        ];
+    }
+
+    protected static function colonnes(): array
+    {
+        return [
+            Tables\Columns\TextColumn::make('lib_service')->label('Service')->searchable()->sortable(),
         ];
     }
 
     public static function getPages(): array
     {
-        return [
-            'index' => Pages\ListServices::route('/'),
-            'create' => Pages\CreateService::route('/create'),
-            'edit' => Pages\EditService::route('/{record}/edit'),
-        ];
+        return ['index' => Pages\ManageServices::route('/')];
     }
 }

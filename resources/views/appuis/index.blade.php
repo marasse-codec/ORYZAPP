@@ -1,57 +1,85 @@
 @extends($layout ?? 'layouts.aderiz')
 
+@section('titre-page', 'Catalogue des appuis')
+
 @section('content')
-<div class="min-h-screen bg-[--color-background] px-6 py-8">
-    <div class="max-w-5xl mx-auto">
+<x-ui.page titre="Catalogue des appuis" sous-titre="Ce que le magasin peut distribuer. Le stock ne se modifie pas ici : il bouge par les approvisionnements et les retraits.">
+    <x-slot:actions>
+        <x-ui.bouton :href="route('appuis.create')">
+            <span class="material-symbols-outlined text-base">add</span> Nouvel appui
+        </x-ui.bouton>
+    </x-slot:actions>
 
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
+    {{-- Recherche et filtre par type : un simple formulaire GET, sans JavaScript. --}}
+    <x-ui.card>
+        <form method="GET" action="{{ route('appuis.index') }}" class="grid gap-3 sm:grid-cols-[1fr_16rem_auto] sm:items-end">
             <div>
-                <h1 class="text-2xl font-bold text-[--color-primary]">Catalogue des appuis</h1>
-                <p class="text-sm text-slate-500">{{ $appuis->count() }} appui(s) référencé(s)</p>
+                <x-input-label for="q" value="Rechercher" />
+                <x-text-input id="q" name="q" type="search" class="mt-1 block w-full" :value="$recherche" placeholder="Libellé de l'appui…" />
             </div>
-            <a href="{{ route('appuis.create') }}"
-               class="inline-flex items-center gap-1.5 rounded-md bg-[--color-primary] px-4 py-2 text-sm font-semibold text-white hover:opacity-90">
-                <span class="material-symbols-outlined text-base">add</span> Nouvel appui
-            </a>
-        </div>
-
-        @if (session('success'))
-            <div class="mb-5 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
-                {{ session('success') }}
+            <div>
+                <x-input-label for="type" value="Type d'appui" />
+                <select id="type" name="type" class="mt-1 block w-full">
+                    <option value="">Tous les types</option>
+                    @foreach ($types as $type)
+                        <option value="{{ $type->id_type_appui }}" @selected((string) $idType === (string) $type->id_type_appui)>{{ $type->lib_type_appui }}</option>
+                    @endforeach
+                </select>
             </div>
-        @endif
+            <div class="flex gap-2">
+                <x-ui.bouton type="submit" variante="secondaire">Filtrer</x-ui.bouton>
+                @if ($recherche !== '' || $idType)
+                    <x-ui.bouton :href="route('appuis.index')" variante="discret">Effacer</x-ui.bouton>
+                @endif
+            </div>
+        </form>
+    </x-ui.card>
 
-        <div class="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
-            <table class="min-w-full divide-y divide-slate-200 text-sm">
-                <thead class="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
-                    <tr>
-                        <th class="px-4 py-3">Appui</th>
-                        <th class="px-4 py-3">Type</th>
-                        <th class="px-4 py-3">Service</th>
-                        <th class="px-4 py-3 text-right">Stock</th>
-                        <th class="px-4 py-3 text-right">Coût unitaire</th>
+    <x-ui.card sans-marge>
+        <x-ui.tableau>
+            <thead class="bg-slate-50 text-left text-xs uppercase tracking-wide text-[--color-muted]">
+                <tr>
+                    <th class="px-4 py-3">Appui</th>
+                    <th class="px-4 py-3">Type</th>
+                    <th class="px-4 py-3 text-right">Dose / ha</th>
+                    <th class="px-4 py-3 text-right">Coût unitaire</th>
+                    <th class="px-4 py-3 text-right">En stock</th>
+                    <th class="px-4 py-3 text-right">Seuil d'alerte</th>
+                    <th class="px-4 py-3 text-right">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-[--color-border]">
+                @forelse ($appuis as $appui)
+                    <tr class="hover:bg-slate-50">
+                        <td class="px-4 py-3 font-medium text-[--color-ink]">{{ $appui->libelle }}</td>
+                        <td class="px-4 py-3"><x-ui.badge>{{ $appui->typeAppui?->lib_type_appui }}</x-ui.badge></td>
+                        <td class="px-4 py-3 text-right text-slate-600">{{ rtrim(rtrim(number_format($appui->dose_ha, 3, ',', ' '), '0'), ',') }} {{ $appui->uniteDosage?->lib_unite }}</td>
+                        <td class="px-4 py-3 text-right text-slate-600">{{ $appui->cout_unitaire !== null ? number_format($appui->cout_unitaire, 0, ',', ' ').' F' : '-' }}</td>
+                        <td class="px-4 py-3 text-right">
+                            {{-- Sous le seuil : la quantité passe en rouge, comme dans les alertes. --}}
+                            <span @class(['font-semibold', 'text-red-600' => $appui->seuil_alerte > 0 && $appui->quantite_en_stock <= $appui->seuil_alerte, 'text-[--color-ink]' => ! ($appui->seuil_alerte > 0 && $appui->quantite_en_stock <= $appui->seuil_alerte)])>
+                                {{ number_format($appui->quantite_en_stock, 0, ',', ' ') }}
+                            </span>
+                        </td>
+                        <td class="px-4 py-3 text-right text-slate-600">{{ $appui->seuil_alerte > 0 ? number_format($appui->seuil_alerte, 0, ',', ' ') : '-' }}</td>
+                        <td class="px-4 py-3 text-right">
+                            <div class="flex items-center justify-end gap-3">
+                                <a href="{{ route('appuis.edit', $appui) }}" class="text-sm font-medium text-[--color-primary] hover:underline">Modifier</a>
+                                <form method="POST" action="{{ route('appuis.destroy', $appui) }}"
+                                      onsubmit="return confirm('Retirer « {{ addslashes($appui->libelle) }} » du catalogue ?')">
+                                    @csrf @method('DELETE')
+                                    <button type="submit" class="text-sm font-medium text-red-600 hover:underline">Supprimer</button>
+                                </form>
+                            </div>
+                        </td>
                     </tr>
-                </thead>
-                <tbody class="divide-y divide-slate-100">
-                    @forelse ($appuis as $appui)
-                        <tr class="hover:bg-slate-50">
-                            <td class="px-4 py-3 font-medium text-slate-800">{{ $appui->libelle }}</td>
-                            <td class="px-4 py-3 text-slate-600">{{ $appui->typeAppui?->libelle }}</td>
-                            <td class="px-4 py-3 text-slate-600">{{ $appui->typeAppui?->service?->lib_service }}</td>
-                            <td class="px-4 py-3 text-right text-slate-800">
-                                {{ $appui->quantite_en_stock }}
-                                <span class="text-slate-500">{{ $appui->uniteAppui?->lib_unite_appui }}</span>
-                            </td>
-                            <td class="px-4 py-3 text-right text-slate-800">
-                                {{ $appui->cout_unitaire ? number_format($appui->cout_unitaire, 0, ',', ' ').' F' : '—' }}
-                            </td>
-                        </tr>
-                    @empty
-                        <tr><td colspan="5" class="px-4 py-8 text-center text-slate-500">Aucun appui référencé.</td></tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
-    </div>
-</div>
+                @empty
+                    <tr><td colspan="7" class="px-4 py-8 text-center text-[--color-muted]">Aucun appui ne correspond.</td></tr>
+                @endforelse
+            </tbody>
+        </x-ui.tableau>
+    </x-ui.card>
+
+    {{ $appuis->links() }}
+</x-ui.page>
 @endsection

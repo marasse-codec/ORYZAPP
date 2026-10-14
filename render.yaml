@@ -1,0 +1,71 @@
+# Blueprint Render : un service web gratuit (Docker) + une base PostgreSQL gratuite.
+# Attention : la base gratuite de Render expire après 30 jours (à recréer pour des tests prolongés).
+databases:
+  - name: oryza-db
+    plan: free
+    databaseName: oryza
+    user: oryza
+
+services:
+  - type: web
+    name: oryza
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /up
+    envVars:
+      - key: APP_NAME
+        value: ORYZAConfiguration Render déploiement gratuit
+      - key: APP_ENV
+        value: production
+      - key: APP_DEBUG
+        value: "false"
+      - key: APP_KEY
+        sync: false
+      - key: APP_URL
+        sync: false
+      - key: APP_LOCALE
+        value: fr
+      - key: LOG_CHANNEL
+        value: stderr
+      - key: DB_CONNECTION
+        value: pgsql
+      - key: DB_HOST
+        fromDatabase:
+          name: oryza-db
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: oryza-db
+          property: port
+      - key: DB_DATABASE
+        fromDatabase:
+          name: oryza-db
+          property: database
+      - key: DB_USERNAME
+        fromDatabase:
+          name: oryza-db
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: oryza-db
+          property: password
+      - key: DB_SSLMODE
+        value: require
+      - key: SESSION_DRIVER
+        value: database
+      - key: CACHE_STORE
+        value: database
+      # Pas de worker gratuit sur Render : les notifications partent pendant la requête.
+      - key: QUEUE_CONNECTION
+        value: sync
+      - key: FILESYSTEM_DISK
+        value: local
+      - key: MAIL_MAILER
+        value: log
+      - key: VAPID_PUBLIC_KEY
+        sync: false
+      - key: VAPID_PRIVATE_KEY
+        sync: false
+      - key: SEED_ON_DEPLOY
+        value: "false"

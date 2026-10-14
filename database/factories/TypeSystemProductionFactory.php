@@ -2,7 +2,7 @@
 
 namespace Database\Factories;
 
-use App\Models\TypeSystemeProduction;
+use App\Domain\Referentiel\Models\TypeSystemeProduction;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 class TypeSystemProductionFactory extends Factory

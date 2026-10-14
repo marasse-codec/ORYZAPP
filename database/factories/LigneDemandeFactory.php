@@ -2,9 +2,9 @@
 
 namespace Database\Factories;
 
-use App\Models\Appui;
-use App\Models\Demande;
-use App\Models\LigneDemande;
+use App\Domain\Demande\Models\Demande;
+use App\Domain\Demande\Models\LigneDemande;
+use App\Domain\Referentiel\Models\TypeAppui;
 
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -16,7 +16,8 @@ class LigneDemandeFactory extends Factory
     {
         return [
             'id_demande' => Demande::factory(),
-            'id_appui' => Appui::factory()
+            'id_type_appui' => TypeAppui::factory(),
+            'quantite_demandee' => $this->faker->numberBetween(1, 50),
         ];
     }
 }

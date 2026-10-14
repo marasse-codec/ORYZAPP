@@ -5,10 +5,10 @@
     $piecesExistantes =$demande?->piecesDemandes->pluck('id_type_piece')->toArray() ?? [];
 @endphp
 
-<section x-show="step === 1" x-cloak class="p-6 space-y-5" 
+<section x-show="step === 2" x-cloak class="p-6 space-y-5" 
          x-data="{ piecesExistantes: {{ Illuminate\Support\Js::from($piecesExistantes) }} }">
     <div>
-        <h2 class="text-lg font-semibold text-[--color-primary]">1. Profil du demandeur</h2>
+        <h2 class="text-lg font-semibold text-[--color-primary]">2. Profil du demandeur</h2>
         <p class="text-sm text-slate-500">Ce choix détermine les pièces justificatives à fournir.</p>
     </div>
 

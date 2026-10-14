@@ -2,10 +2,10 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Appui;
-use App\Models\TypeActeur;
-use App\Models\TypeAppui;
-use App\Models\TypeSystemeProduction;
+use App\Domain\Referentiel\Models\TypeActeur;
+use App\Domain\Referentiel\Models\TypeAppui;
+use App\Domain\Referentiel\Models\TypeSystemeProduction;
+use App\Domain\Stock\Models\Appui;
 use Illuminate\Contracts\View\View;
 
 /**

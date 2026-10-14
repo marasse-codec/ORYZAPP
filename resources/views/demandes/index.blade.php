@@ -1,273 +1,180 @@
-@use('App\Enums\PermissionEnum')
-@use('App\Enums\RoleEnum')
-@use('Illuminate\Support\Str')
+@use('App\Domain\Acces\Enums\PermissionEnum')
+@use('App\Domain\Demande\Enums\StatutDemandeE')
 
-@extends($layout ?? 'layouts.app')
+@extends($layout ?? 'layouts.aderiz')
+
+@section('titre-page', 'Demandes')
 
 @section('content')
-<div class="min-h-screen bg-[--color-background] px-6 py-8">
-    <div class="max-w-7xl mx-auto space-y-6">
+<x-ui.page titre="Demandes d'appui" :sous-titre="$demandes->total().' dossier(s)'">
+    @can(PermissionEnum::creerDemande->value)
+        <x-slot:actions>
+            <x-ui.bouton :href="route('demandes.serie.create')" variante="secondaire">Saisie en série</x-ui.bouton>
+            <x-ui.bouton :href="route('demandes.create')">
+                <span class="material-symbols-outlined text-base">add</span> Nouvelle demande
+            </x-ui.bouton>
+        </x-slot:actions>
+    @endcan
 
-        {{-- En-tête de page --}}
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div>
-                <h1 class="text-2xl font-bold text-[--color-primary]">Demandes d'appui</h1>
-                <p class="text-sm text-[--color-text-secondary]">{{ $demandes->count() }} dossier(s) enregistré(s)</p>
-            </div>
-            @can(PermissionEnum::creerDemande->value)
-                <a href="{{ route('demandes.create') }}"
-                   class="inline-flex items-center gap-1.5 rounded-md bg-[--color-button-first] px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-[--color-button-secondary] transition-colors">
-                    <span class="material-symbols-outlined text-base">add</span> Nouvelle demande
-                </a>
-            @endcan
-        </div>
-
-        @include('partials.flash')
-
-        {{-- Section Arbitrage Commission (Attributeur) --}}
-        @can(PermissionEnum::gererCommission->value)
-            <section class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-                <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                        <h2 class="text-base font-semibold text-[--color-primary]">
-                            À traiter en commission
-                        </h2>
-                        <p class="text-sm text-[--color-text-secondary]">
-                            {{ $dossiersCommission->count() }} dossier(s) instruit(s) favorablement, en attente d'arbitrage.
-                        </p>
-                    </div>
-                    @if ($dossiersCommission->isNotEmpty())
-                        <a href="{{ route('commissions.synthese') }}" target="_blank"
-                           class="inline-flex items-center gap-1.5 rounded-md border border-[--color-primary] px-4 py-2 text-sm font-semibold text-[--color-primary] hover:bg-emerald-50">
-                            <span class="material-symbols-outlined text-base">print</span>
-                            Imprimer la synthèse
-                        </a>
-                    @endif
-                </div>
-
-                @if ($confrontation->isEmpty())
-                    <p class="rounded-lg bg-slate-50 px-4 py-6 text-center text-sm text-[--color-text-secondary]">
-                        Aucun dossier n'attend d'arbitrage pour le moment.
-                    </p>
-                @else
-                    <div class="overflow-x-auto rounded-lg border border-slate-200">
-                        <table class="min-w-full divide-y divide-slate-200 text-sm">
-                            <thead class="bg-slate-50 text-left text-xs uppercase tracking-wide text-[--color-text-secondary]">
-                                <tr>
-                                    <th class="px-4 py-2.5">Appui</th>
-                                    <th class="px-4 py-2.5 text-center">Dossiers</th>
-                                    <th class="px-4 py-2.5 text-right">Demandé</th>
-                                    <th class="px-4 py-2.5 text-right">En stock</th>
-                                    <th class="px-4 py-2.5 text-right">Engagé</th>
-                                    <th class="px-4 py-2.5 text-right">Disponible</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-slate-100">
-                                @foreach ($confrontation as $ligne)
-                                    <tr class="{{ $ligne['couverte'] ? '' : 'bg-[--color-accent]/10' }}">
-                                        <td class="px-4 py-2.5">
-                                            <span class="font-medium text-[--color-text-primary]">{{ $ligne['libelle'] }}</span>
-                                            <span class="block text-xs text-[--color-text-secondary]">{{ $ligne['service'] }}</span>
-                                        </td>
-                                        <td class="px-4 py-2.5 text-center text-[--color-text-secondary]">{{ $ligne['nb_dossiers'] }}</td>
-                                        <td class="px-4 py-2.5 text-right font-semibold text-[--color-text-primary]">
-                                            {{ $ligne['demandee'] }}
-                                            <span class="font-normal text-[--color-text-secondary]">{{ $ligne['unite'] }}</span>
-                                        </td>
-                                        <td class="px-4 py-2.5 text-right text-[--color-text-secondary]">{{ $ligne['stock'] }}</td>
-                                        <td class="px-4 py-2.5 text-right text-[--color-text-secondary]">{{ $ligne['engagee'] }}</td>
-                                        <td class="px-4 py-2.5 text-right">
-                                            <span class="font-bold {{ $ligne['couverte'] ? 'text-[--color-primary]' : 'text-[--color-accent]' }}">
-                                                {{ $ligne['disponible'] }}
-                                            </span>
-                                            @unless ($ligne['couverte'])
-                                                <span class="block text-xs text-[--color-accent]">
-                                                    manque {{ $ligne['demandee'] - $ligne['disponible'] }}
-                                                </span>
-                                            @endunless
-                                        </td>
-                                    </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
-                    </div>
+    {{-- Arbitrage de la commission : ce qui est demandé face à ce qui reste disponible, appui par appui. --}}
+    @can(PermissionEnum::gererCommission->value)
+        <x-ui.card titre="À traiter en commission">
+            <x-slot:entete>
+                @if ($dossiersCommission->isNotEmpty())
+                    <x-ui.bouton :href="route('commissions.synthese')" variante="secondaire" target="_blank" class="px-3 py-1.5 text-xs">
+                        <span class="material-symbols-outlined text-sm">print</span> Imprimer la synthèse
+                    </x-ui.bouton>
                 @endif
-            </section>
-        @endcan
+            </x-slot:entete>
 
-        {{-- Tableau avec les colonnes spécifiées --}}
-        @if ($demandes->isEmpty())
-            <div class="rounded-xl border border-dashed border-slate-300 bg-white px-6 py-12 text-center shadow-sm">
-                <p class="text-sm text-[--color-text-secondary]">Aucune demande à afficher pour le moment.</p>
+            <p class="mb-4 text-sm text-[--color-muted]">{{ $dossiersCommission->count() }} dossier(s) soumis, en attente d'arbitrage.</p>
+
+            @if ($confrontation->isEmpty())
+                <p class="rounded-lg bg-slate-50 px-4 py-6 text-center text-sm text-[--color-muted]">
+                    {{ $dossiersCommission->isEmpty()
+                        ? "Aucun dossier n'attend d'arbitrage pour le moment."
+                        : "Les dossiers en attente ne précisent aucun appui : il n'y a rien à confronter aux stocks." }}
+                </p>
+            @else
+                <div class="overflow-hidden rounded-lg border border-[--color-border]">
+                    <x-ui.tableau>
+                        <thead class="bg-slate-50 text-left text-xs uppercase tracking-wide text-[--color-muted]">
+                            <tr>
+                                <th class="px-4 py-2.5">Appui</th>
+                                <th class="px-4 py-2.5 text-center">Dossiers</th>
+                                <th class="px-4 py-2.5 text-right">Demandé</th>
+                                <th class="px-4 py-2.5 text-right">En stock</th>
+                                <th class="px-4 py-2.5 text-right">Engagé</th>
+                                <th class="px-4 py-2.5 text-right">Disponible</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-[--color-border]">
+                            @foreach ($confrontation as $ligne)
+                                <tr @class(['bg-rose-50/60' => ! $ligne['couverte']])>
+                                    <td class="px-4 py-2.5">
+                                        <span class="font-medium text-[--color-ink]">{{ $ligne['libelle'] }}</span>
+                                        <span class="block text-xs text-[--color-muted]">{{ $ligne['service'] }}</span>
+                                    </td>
+                                    <td class="px-4 py-2.5 text-center text-slate-600">{{ $ligne['nb_dossiers'] }}</td>
+                                    <td class="px-4 py-2.5 text-right font-semibold text-[--color-ink]">
+                                        {{ $ligne['demandee'] }} <span class="font-normal text-[--color-muted]">{{ $ligne['unite'] }}</span>
+                                    </td>
+                                    <td class="px-4 py-2.5 text-right text-slate-600">{{ $ligne['stock'] }}</td>
+                                    <td class="px-4 py-2.5 text-right text-slate-600">{{ $ligne['engagee'] }}</td>
+                                    <td class="px-4 py-2.5 text-right">
+                                        <span @class(['font-bold', 'text-[--color-primary]' => $ligne['couverte'], 'text-rose-600' => ! $ligne['couverte']])>{{ $ligne['disponible'] }}</span>
+                                        @unless ($ligne['couverte'])
+                                            <span class="block text-xs text-rose-600">manque {{ $ligne['demandee'] - $ligne['disponible'] }}</span>
+                                        @endunless
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </x-ui.tableau>
+                </div>
+            @endif
+        </x-ui.card>
+    @endcan
+
+    {{-- Recherche et filtre par statut : un formulaire GET, sans JavaScript. --}}
+    <x-ui.card>
+        <form method="GET" action="{{ route('demandes.index') }}" class="grid gap-3 sm:grid-cols-[1fr_14rem_auto] sm:items-end">
+            <div>
+                <x-input-label for="q" value="Rechercher" />
+                <x-text-input id="q" name="q" type="search" class="mt-1 block w-full" :value="$recherche" placeholder="N°, entité, représentant ou téléphone…" />
             </div>
-        @else
-            <div class="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
-                <table class="min-w-full divide-y divide-slate-200 text-xs text-left">
-                    <thead class="bg-slate-100 uppercase tracking-wider font-semibold text-[--color-primary]">
-                        <tr>
-                            <th class="px-3 py-3">Num</th>
-                            <th class="px-3 py-3">Département</th>
-                            <th class="px-3 py-3">Localité</th>
-                            <th class="px-3 py-3">Nom de l'entité</th>
-                            <th class="px-3 py-3">Contacts</th>
-                            {{-- <th class="px-3 py-3 whitespace-nowrap">Date d'enregistrement</th>
-                            <th class="px-3 py-3">Source</th> --}}
-                            {{-- <th class="px-3 py-3 text-right whitespace-nowrap">Sup en plat (ha)</th>
-                            <th class="px-3 py-3 text-right whitespace-nowrap">Sup en BF pluv (ha)</th>
-                            <th class="px-3 py-3 text-right whitespace-nowrap">Sup en irri (ha)</th> --}}
-                            <th class="px-3 py-3">Statut</th>
-                            <th class="px-3 py-3">Observations</th>
-                            <th class="px-3 py-3 text-right">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-slate-100 text-[--color-text-primary]">
-                        @foreach ($demandes as $demande)
-                            @php
-                                // Extraction des superficies par système
-                                $supPlat = $demande->systemesProductions->first(
-                                    fn($s) => Str::contains(mb_strtolower($s->typeSystemeProduction?->lib_type_systeme_production ?? ''), ['plat', 'plateau'])
-                                )?->superficie;
+            <div>
+                <x-input-label for="statut" value="Statut" />
+                <select id="statut" name="statut" class="mt-1 block w-full">
+                    <option value="">Tous les statuts</option>
+                    @foreach (StatutDemandeE::cases() as $cas)
+                        <option value="{{ $cas->value }}" @selected($statut === $cas)>{{ $cas->libelle() }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="flex gap-2">
+                <x-ui.bouton type="submit" variante="secondaire">Filtrer</x-ui.bouton>
+                @if ($recherche !== '' || $statut)
+                    <x-ui.bouton :href="route('demandes.index')" variante="discret">Effacer</x-ui.bouton>
+                @endif
+            </div>
+        </form>
+    </x-ui.card>
 
-                                $supBfPluv = $demande->systemesProductions->first(
-                                    fn($s) => Str::contains(mb_strtolower($s->typeSystemeProduction?->lib_type_systeme_production ?? ''), ['bf', 'bas-fond', 'pluvial'])
-                                )?->superficie;
+    @if ($demandes->isEmpty())
+        <x-ui.card>
+            <p class="py-6 text-center text-sm text-[--color-muted]">Aucune demande à afficher.</p>
+        </x-ui.card>
+    @else
+        <x-ui.card sans-marge>
+            <x-ui.tableau>
+                <thead class="bg-slate-50 text-left text-xs uppercase tracking-wide text-[--color-muted]">
+                    <tr>
+                        <th class="px-4 py-3">N°</th>
+                        <th class="px-4 py-3">Entité</th>
+                        <th class="px-4 py-3">Localité</th>
+                        <th class="px-4 py-3">Contact</th>
+                        <th class="px-4 py-3 text-center">Statut</th>
+                        <th class="px-4 py-3">Observations</th>
+                        <th class="px-4 py-3 text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-[--color-border]">
+                    @foreach ($demandes as $demande)
+                        <tr class="hover:bg-slate-50">
+                            <td class="px-4 py-3 font-medium text-[--color-ink]">{{ $demande->id_demande }}</td>
+                            <td class="px-4 py-3">
+                                <span class="block font-semibold text-[--color-primary]">{{ $demande->nom_structure ?? $demande->acteur?->nom }}</span>
+                                @if ($demande->nom_structure && $demande->acteur?->nom)
+                                    <span class="text-xs text-[--color-muted]">Rep : {{ $demande->acteur->nom }}</span>
+                                @endif
+                            </td>
+                            <td class="px-4 py-3 text-slate-600">
+                                {{ $demande->localites->pluck('lib_localite')->join(', ') ?: '-' }}
+                                @if ($departements = $demande->localites->pluck('departement.lib_departement')->filter()->unique()->join(', '))
+                                    <span class="block text-xs text-[--color-muted]">{{ $departements }}</span>
+                                @endif
+                            </td>
+                            <td class="px-4 py-3 text-slate-600">
+                                {{ $demande->acteur?->telephone ?? '-' }}
+                                @if ($demande->acteur?->email)
+                                    <span class="block break-all text-xs text-[--color-muted]">{{ $demande->acteur->email }}</span>
+                                @endif
+                            </td>
+                            <td class="px-4 py-3 text-center">
+                                <x-ui.badge :ton="$demande->statut->ton()">{{ $demande->statut->libelle() }}</x-ui.badge>
+                            </td>
+                            <td class="px-4 py-3 text-slate-600">{{ $demande->observations }}</td>
+                            <td class="px-4 py-3 text-right">
+                                <div class="flex flex-wrap items-center justify-end gap-x-3 gap-y-1">
+                                    <a href="{{ route('demandes.show', $demande->id_demande) }}" class="text-sm font-medium text-[--color-primary] hover:underline">Consulter</a>
 
-                                $supIrri = $demande->systemesProductions->first(
-                                    fn($s) => Str::contains(mb_strtolower($s->typeSystemeProduction?->lib_type_systeme_production ?? ''), ['irri', 'irrigué'])
-                                )?->superficie;
+                                    @can(PermissionEnum::creerDemande->value)
+                                        @unless ($demande->estSoumise())
+                                            <a href="{{ route('demandes.edit', $demande->id_demande) }}" class="text-sm font-medium text-[--color-button-secondary] hover:underline">Modifier</a>
 
-                                // Départements uniques
-                                $departements = $demande->localites->pluck('departement.lib_departement')->filter()->unique()->join(', ');
-                                // Localités uniques
-                                $localitesStr = $demande->localites->pluck('lib_localite')->join(', ');
-                            @endphp
-                            <tr class="hover:bg-slate-50 transition-colors">
-
-                                {{-- O. Demande --}}
-                                <td class="px-3 py-3 font-medium">
-                                    {{ $demande -> id_demande ?: '—' }}
-                                </td>
-
-                                {{-- 1. Département --}}
-                                <td class="px-3 py-3 font-medium">
-                                    {{ $departements ?: '—' }}
-                                </td>
-
-                                {{-- 2. Localité --}}
-                                <td class="px-3 py-3">
-                                    {{ $localitesStr ?: '—' }}
-                                </td>
-
-                                {{-- 3. Nom de l'entité --}}
-                                <td class="px-3 py-3">
-                                    <span class="font-semibold text-[--color-primary] block">
-                                        {{ $demande->nom_structure ?? $demande->acteur?->nom }}
-                                    </span>
-                                    @if ($demande->nom_structure && $demande->acteur?->nom)
-                                        <span class="text-[10px] text-[--color-text-secondary]">Rep : {{ $demande->acteur->nom }}</span>
-                                    @endif
-                                </td>
-
-                                {{-- 4. Contacts --}}
-                                <td class="px-3 py-3 whitespace-nowrap">
-                                    <div>{{ $demande->acteur?->telephone ?? '—' }}</div>
-                                    @if ($demande->acteur?->email)
-                                        <div class="text-[10px] text-[--color-text-secondary]">{{ $demande->acteur->email }}</div>
-                                    @endif
-                                </td>
-
-                                {{-- 5. Date d'enregistrement --}}
-                                {{-- <td class="px-3 py-3 whitespace-nowrap">
-                                    {{ $demande->date_demande?->format('d/m/Y') ?? '—' }}
-                                </td> --}}
-
-                                {{-- 6. Source --}}
-                                {{-- <td class="px-3 py-3 whitespace-nowrap">
-                                    <span class="px-2 py-0.5 rounded text-[10px] font-medium bg-slate-100 text-slate-700">
-                                        {{ $demande->user?->name ?? 'Agent' }}
-                                    </span>
-                                </td> --}}
-
-                                {{-- 7. Sup en plat (ha)
-                                <td class="px-3 py-3 text-right font-medium whitespace-nowrap">
-                                    {{ $supPlat !== null ? number_format($supPlat, 2, ',', ' ') : '—' }}
-                                </td>
-
-                                {{-- 8. Sup en BF pluv (ha) --}}
-                                {{-- <td class="px-3 py-3 text-right font-medium whitespace-nowrap">
-                                    {{ $supBfPluv !== null ? number_format($supBfPluv, 2, ',', ' ') : '—' }}
-                                </td> --}}
-
-                                {{-- 9. Sup en irri (ha) --}}
-                                {{-- <td class="px-3 py-3 text-right font-medium whitespace-nowrap">
-                                    {{ $supIrri !== null ? number_format($supIrri, 2, ',', ' ') : '—' }}
-                                </td> --}}
-
-                                {{-- 10. Statut --}}
-                                <td class="px-3 py-3">
-                                    <div class="flex items-center gap-1.5">
-                                        <span class="inline-block rounded-full px-2 py-0.5 text-[8px] font-semibold text-[--text-in-back-color] {{ $demande->estSoumise() ? 'bg-[--color-soumise]' : 'bg-[--color-label-brouillon]' }}">
-                                            {{ $demande->estSoumise() ? 'Soumise' : 'En cours' }}
-                                        </span>
-                                    </div>
-                                </td>
-
-                                {{-- 11. Observations --}}
-                                <td class="px-3 py-3">
-                                    <div class="flex items-center gap-1.5">
-                                        <span class="inline-block rounded-full px-2 py-0.5 text-[12px] font-semibold">
-                                            {{$demande?->observations}}
-                                        </span>
-                                    </div>
-                                </td>
-
-                                {{-- Actions --}}
-                                <td class="px-3 py-3 text-right whitespace-nowrap">
-                                    <div class="flex items-center justify-end gap-2">
-                                        <a href="{{ route('demandes.show', $demande->id_demande) }}"
-                                           class="text-xs font-semibold text-[--color-primary] hover:underline">
-                                            Consulter
-                                        </a>
-
-                                        @can(PermissionEnum::creerDemande->value)
-                                            @if(!$demande->estSoumise())
-                                            
-                                            {{--Modifier--}}
-                                                <a href="{{ route('demandes.edit', $demande->id_demande) }}"
-                                                   class="text-xs font-semibold text-[--color-button-first] hover:underline">
-                                                    Modifier
-                                                </a>
-
-                                            @if($demande->terrainAEteVisite())
-                                            {{--Soumettre--}}
-                                                <form action="{{ route('demandes.soumettre', $demande->id_demande) }}"
-                                                      method="POST"
-                                                      class="inline">
+                                            @if ($demande->terrainAEteVisite())
+                                                <form action="{{ route('demandes.soumettre', $demande->id_demande) }}" method="POST" class="inline">
                                                     @csrf
-                                                    <button type="submit"
-                                                            class="text-xs font-semibold text-[--color-primary] hover:underline"
-                                                            onclick="return confirm('Confirmer la soumission ?')">
-                                                        Soumettre
-                                                    </button>
+                                                    <button type="submit" class="text-sm font-medium text-[--color-primary] hover:underline"
+                                                            onclick="return confirm('Confirmer la soumission ?')">Soumettre</button>
                                                 </form>
                                             @else
-                                            {{-- Appel du composant réutilisable --}}
-                                                <x-modals.visite-terrain 
-                                                    :id="$demande->id_demande" 
-                                                    :action="route('demandes.visite.valider')" 
-                                                    :title="'Visite de terrain - Demande n°' . $demande->id_demande" 
-                                                />
+                                                <x-modals.visite-terrain :id="$demande->id_demande"
+                                                                         :action="route('demandes.visite.valider')"
+                                                                         :title="'Visite de terrain - Demande n°'.$demande->id_demande" />
                                             @endif
-                                            @endif
-                                        @endcan
-                                    </div>
-                                </td>
-                            </tr>
-                        @endforeach
-                    </tbody>
-                </table>
-            </div>
-        @endif
-    </div>
-</div>
+                                        @endunless
+                                    @endcan
+                                </div>
+                            </td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </x-ui.tableau>
+        </x-ui.card>
+
+        {{ $demandes->links() }}
+    @endif
+</x-ui.page>
 @endsection

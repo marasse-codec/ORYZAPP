@@ -9,7 +9,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>@yield('titre', 'Document') — ADERIZ</title>
+    <title>@yield('titre', 'Document') | ADERIZ</title>
+    @include('layouts.partials.marque')
     @vite(['resources/css/app.css'])
     <style>
         /* ------------------------------------------------------------- Écran */
@@ -32,7 +33,7 @@
 
         @media print {
             /* Tailwind dimensionne en rem : abaisser la base recale d'un seul
-               geste toute la typographie — et les espacements — sur la mesure
+               geste toute la typographie (et les espacements) sur la mesure
                d'une colonne A4. C'est ce qui fait tenir la fiche sur un feuillet. */
             html { font-size: 13px; }
 
@@ -90,14 +91,18 @@
 
     <main class="feuille mx-auto flex flex-col bg-white shadow-lg ring-1 ring-slate-300">
 
-        {{-- L'en-tête : le papier à lettre de l'agence. --}}
+        {{-- L'en-tête : le papier à lettre de l'agence, sauf pour un document
+             qui impose le sien (section « entete »). --}}
+        @hasSection('entete')
+            @yield('entete')
+        @else
         <header class="insecable">
             <div class="flex items-end justify-between gap-8">
                 <div>
                     <p class="text-xl font-black uppercase tracking-[0.3em] text-[--color-primary]">ADERIZ</p>
                     <p class="mt-1 text-[11px] leading-tight text-slate-500">
                         Agence pour le Développement de la Filière Riz<br>
-                        Plateforme de gestion des appuis
+                        Plateforme ORYZA de gestion des appuis
                     </p>
                 </div>
                 <div class="text-right">
@@ -114,13 +119,14 @@
             <div class="mt-3 h-[3px] bg-[--color-primary]"></div>
             <div class="mt-px h-px bg-slate-300"></div>
         </header>
+        @endif
 
         <div class="flex-1">
             @yield('document')
         </div>
 
         <footer class="insecable mt-10 flex items-center justify-between gap-4 border-t border-slate-300 pt-2 text-[10px] text-slate-400">
-            <span>ADERIZ · @yield('titre')@hasSection('sous-titre') · @yield('sous-titre')@endif</span>
+            <span class="flex items-center gap-1.5"><img src="/images/brand/ORYZA_embleme_couleur.svg" alt="" class="h-3.5 w-3.5"> ORYZA, ADERIZ : @yield('titre')@hasSection('sous-titre'), @yield('sous-titre')@endif</span>
             <span>Édité le {{ now()->format('d/m/Y à H:i') }}</span>
         </footer>
     </main>

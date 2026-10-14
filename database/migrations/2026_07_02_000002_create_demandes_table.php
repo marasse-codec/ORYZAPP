@@ -15,6 +15,9 @@ return new class extends Migration
             $table->string('nom_structure')->nullable();
             $table->boolean('terrain_visite')->default(false);
 
+            // Récupération du nombre de personne sur liste
+            $table->integer('nombre_personne_liste')->nullable();
+
             $table->string('motifs_rejet')->nullable();
             
             $table->date('periode_debut_mise_en_place')->nullable();

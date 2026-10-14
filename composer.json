@@ -14,7 +14,6 @@
         "laravel/tinker": "^3.0",
         "livewire/livewire": "^3.5",
         "maatwebsite/excel": "^4.0",
-        "power-components/livewire-powergrid": "^6.11",
         "spatie/laravel-backup": "^10.3",
         "spatie/laravel-permission": "^8.3"
     },

@@ -2,7 +2,7 @@
 
 namespace Database\Seeders;
 
-use App\Models\SessionCommission;
+use App\Domain\Commission\Models\SessionCommission;
 use Illuminate\Database\Seeder;
 
 class SessionCommissionSeeder extends Seeder

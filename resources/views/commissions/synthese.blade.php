@@ -91,13 +91,13 @@
                     <div>
                         <p class="font-bold text-slate-800">
                             DEM-{{ $demande->date_demande?->format('Y') }}-{{ str_pad($demande->id_demande, 3, '0', STR_PAD_LEFT) }}
-                            — {{ $demande->acteur?->nom }}
+                            : {{ $demande->acteur?->nom }}
                         </p>
                         <p class="text-xs text-slate-600">
-                            {{ $demande->typeActeur?->lib_type_acteur }} ·
+                            {{ $demande->typeActeur?->lib_type_acteur }},
                             {{ $demande->localite?->lib_localite }}
-                            ({{ $demande->localite?->departement?->lib_departement }}) ·
-                            {{ number_format($demande->systemesProductions?->sum('superficie'), 2, ',', ' ') }} ha ·
+                            ({{ $demande->localite?->departement?->lib_departement }}),
+                            {{ number_format($demande->systemesProductions?->sum('superficie'), 2, ',', ' ') }} ha,
                             {{ $demande->acteur?->telephone }}
                         </p>
                     </div>
@@ -139,7 +139,7 @@
                         <span class="inline-block h-3 w-3 border border-slate-400"></span> Accordé
                     </span>
                     <span class="flex items-center gap-1.5">
-                        <span class="inline-block h-3 w-3 border border-slate-400"></span> Rejeté — motif :
+                        <span class="inline-block h-3 w-3 border border-slate-400"></span> Rejeté, motif :
                     </span>
                     <span class="flex-1 border-b border-dotted border-slate-400">&nbsp;</span>
                 </div>

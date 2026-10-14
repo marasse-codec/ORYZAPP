@@ -13,6 +13,30 @@ services:
     volumes:
       - ../:/var/www/laravel-aderiz-app
 
+  # Envoie les notifications (file « database ») : sans lui, elles restent en attente.
+  queue:
+    image: laravel-homemade:latest
+    container_name: aderiz-queue
+    restart: unless-stopped
+    working_dir: /var/www/laravel-aderiz-app
+    command: php artisan queue:work --tries=3 --sleep=3 --max-time=3600
+    volumes:
+      - ../:/var/www/laravel-aderiz-app
+    depends_on:
+      - db
+
+  # Lance les tâches planifiées (sauvegarde de 2 h, résumé quotidien de 7 h).
+  scheduler:
+    image: laravel-homemade:latest
+    container_name: aderiz-scheduler
+    restart: unless-stopped
+    working_dir: /var/www/laravel-aderiz-app
+    command: php artisan schedule:work
+    volumes:
+      - ../:/var/www/laravel-aderiz-app
+    depends_on:
+      - db
+
   nginx:
     image: nginx:latest
     container_name: aderiz-nginx

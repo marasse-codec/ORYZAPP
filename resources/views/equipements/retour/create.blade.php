@@ -1,5 +1,7 @@
 @extends($layout ?? 'layouts.aderiz')
 
+@section('titre-page', 'Restitution de matériel')
+
 @section('content')
 <div
     x-data="{
@@ -8,7 +10,7 @@
                 $e->id_equipement => [
                     'matricule' => $e->matricule_equipement,
                     'etat'      => $e->etat,
-                    'appui'     => $e->appui?->libelle ?? '—',
+                    'appui'     => $e->appui?->libelle ?? '-',
                 ]
             ])
         ) }},
@@ -43,12 +45,12 @@
             return this.lignes.length > 0 && this.lignes.every(l => l.id_equipement && l.etat);
         }
     }"
-    class="min-h-screen bg-[--color-background] text-slate-800 pb-16"
+    class="mx-auto w-full max-w-4xl space-y-6"
 >
-    <header class="bg-white border-b border-slate-200 px-6 py-5 shadow-sm">
-        <div class="max-w-4xl mx-auto flex items-center justify-between">
+    <header class="rounded-xl border border-[--color-border] bg-white p-4 shadow-sm sm:p-6">
+        <div class="flex flex-wrap items-center justify-between gap-2">
             <div>
-                <h1 class="text-2xl font-bold text-[--color-primary]">Retour multiple d'équipements</h1>
+                <h1 class="text-xl font-bold text-[--color-primary] sm:text-2xl">Retour multiple d'équipements</h1>
                 <p class="text-xs text-slate-500">Agence pour le Développement de la Filière Riz (ADERIZ)</p>
             </div>
             <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">
@@ -57,7 +59,7 @@
         </div>
     </header>
 
-    <div class="max-w-4xl mx-auto px-6 mt-6">
+    <div>
 
         @if ($errors->any())
             <div class="mb-5 rounded-lg border border-red-200 bg-red-50 px-4 py-3">
@@ -105,11 +107,11 @@
                                             required
                                             x-model="ligne.id_equipement"
                                             class="mt-1 block w-full border-gray-300 focus:border-[--color-primary] focus:ring-[--color-primary] rounded-md shadow-sm text-sm">
-                                        <option value="">— Sélectionner un équipement —</option>
+                                        <option value="">Sélectionner un équipement</option>
                                         @foreach ($equipements as $equipement)
                                             <option value="{{ $equipement->id_equipement }}"
                                                     :disabled="estEpuise('{{ $equipement->id_equipement }}', index)">
-                                                {{ $equipement->matricule_equipement }} — {{ $equipement->appui?->libelle ?? '—' }}
+                                                {{ $equipement->matricule_equipement }} : {{ $equipement->appui?->libelle ?? '-' }}
                                             </option>
                                         @endforeach
                                     </select>
@@ -120,11 +122,11 @@
                                      class="rounded-lg border border-slate-200 bg-slate-50 p-3 grid grid-cols-2 gap-2 text-xs">
                                     <div>
                                         <p class="text-slate-400 font-medium uppercase">Appui associé</p>
-                                        <p class="font-semibold text-slate-700 mt-0.5" x-text="infosEquipement(ligne.id_equipement)?.appui ?? '—'"></p>
+                                        <p class="font-semibold text-slate-700 mt-0.5" x-text="infosEquipement(ligne.id_equipement)?.appui ?? '-'"></p>
                                     </div>
                                     <div>
                                         <p class="text-slate-400 font-medium uppercase">État au départ</p>
-                                        <p class="font-semibold text-slate-700 mt-0.5" x-text="infosEquipement(ligne.id_equipement)?.etat ?? '—'"></p>
+                                        <p class="font-semibold text-slate-700 mt-0.5" x-text="infosEquipement(ligne.id_equipement)?.etat ?? '-'"></p>
                                     </div>
                                 </div>
                             </div>

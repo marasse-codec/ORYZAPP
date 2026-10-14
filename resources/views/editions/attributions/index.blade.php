@@ -1,7 +1,7 @@
 @php
-    use App\Enums\PermissionEnum;
-    use App\Enums\RoleEnum;
-    use App\Exports\AttributionsExport;
+    use App\Domain\Acces\Enums\PermissionEnum;
+    use App\Domain\Acces\Enums\RoleEnum;
+    use App\Domain\Suivi\Exports\AttributionsExport;
 
     // Colonnes à choisir pour exports
     $catalogueColonnes = AttributionsExport::catalogueColonnes();
@@ -9,12 +9,12 @@
 @extends($layout ?? 'layouts.aderiz')
 
 @section('content')
-<div class="min-h-screen bg-[--color-background] px-6 py-8" x-data="{ modalExport: false }">
+<div x-data="{ modalExport: false }">
     <div class="max-w-6xl mx-auto">
 
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
             <div>
-                <h1 class="text-2xl font-bold text-[--color-primary]">Attributions</h1>
+                <h1 class="text-xl font-bold text-[--color-primary] sm:text-2xl">Attributions</h1>
                 <p class="text-sm text-slate-500">{{ $attributions->count() }} bon(s) d'attribution</p>
             </div>
 
@@ -26,7 +26,6 @@
             </button>
         </div>
 
-        @include('partials.flash')
 
         {{-- Modal de Configuration de l'Exportation Excel --}}
         <div x-show="modalExport" x-cloak
@@ -112,7 +111,7 @@
 
         {{-- Tableau d'affichage classique --}}
         <div class="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
-            <table class="min-w-full divide-y divide-slate-200 text-sm">
+            <table class="tableau-carte min-w-full divide-y divide-slate-200 text-sm">
                 <thead class="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
                     <tr>
                         <th class="px-4 py-3">Bon</th>

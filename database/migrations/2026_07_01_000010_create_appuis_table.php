@@ -11,9 +11,9 @@ return new class extends Migration
         Schema::create('appuis', function (Blueprint $table) {
             $table->id('id_appui');
             $table->string('libelle');
-            $table->integer('quantite_en_stock')->default(0);
+            $table->decimal('quantite_en_stock', 12, 2)->default(0);
             // En dessous de ce seuil, l'appui apparaît dans les alertes de stock du tableau de bord.
-            $table->unsignedInteger('seuil_alerte')->default(0);
+            $table->decimal('seuil_alerte', 12, 2)->default(0);
             $table->decimal('cout_unitaire', 12, 2)->nullable();
             $table->decimal('dose_ha',12,3);
             $table->foreignId('id_type_appui')->constrained('types_appuis', 'id_type_appui');

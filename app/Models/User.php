@@ -4,7 +4,15 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 
-use App\Enums\RoleEnum;
+use App\Domain\Acces\Enums\RoleEnum;
+use App\Domain\Commission\Models\Attribution;
+use App\Domain\Demande\Models\Acteur;
+use App\Domain\Demande\Models\Demande;
+use App\Domain\Journal\Models\JournalAction;
+use App\Domain\Referentiel\Models\Service;
+use App\Domain\Shared\Contracts\EstUtilisable;
+use App\Domain\Shared\Exceptions\RegleMetierViolee;
+use App\Domain\Stock\Models\Agent;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
@@ -20,7 +28,7 @@ use Spatie\Permission\Traits\HasRoles;
 
 #[Fillable(['name', 'email', 'password', 'id_service'])]
 #[Hidden(['password', 'remember_token'])]
-class User extends Authenticatable
+class User extends Authenticatable implements EstUtilisable
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, HasRoles, Notifiable,HasPushSubscriptions;
@@ -71,6 +79,21 @@ class User extends Authenticatable
         return $this->pushSubscriptions;
     }
 
+    /**
+     * L'agent de stock rattaché à ce compte : un mouvement de stock est signé
+     * par un agent. Sans lui, on refuse plutôt que d'attribuer le mouvement à un autre.
+     */
+    public function idAgent(): int
+    {
+        $idAgent = $this->agent?->id_agent;
+
+        if ($idAgent === null) {
+            throw new RegleMetierViolee("Votre compte n'est lié à aucun agent : impossible d'enregistrer un mouvement de stock.");
+        }
+
+        return $idAgent;
+    }
+
     public function getAgentsCommissions() : Collection
     {
         // Si votre enum retourne le nom du rôle (ex: RoleEnum::agentCommission->value) 
@@ -87,5 +110,14 @@ class User extends Authenticatable
         if(! auth()->user()->hasRole(RoleEnum::agentCommission->value)) return false;
 
         return true;
+    }
+
+    /**
+     * Un compte qui a agi (demandes, journal) ne se supprime pas : les demandes
+     * partiraient avec lui, et le journal perdrait son auteur.
+     */
+    public function estUtilise(): bool
+    {
+        return $this->demandes()->exists() || JournalAction::where('user_id', $this->id)->exists();
     }
 }

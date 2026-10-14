@@ -2,9 +2,8 @@
 
 namespace Database\Seeders;
 
-use App\Models\Campagne;
+use App\Domain\Referentiel\Models\Campagne;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\Date;
 
 class CampagneSeeder extends Seeder
 {

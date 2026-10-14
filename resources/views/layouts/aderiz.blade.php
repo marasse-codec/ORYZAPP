@@ -1,176 +1,133 @@
 @php
-    use App\Enums\PermissionEnum;
+    use App\Domain\Acces\Enums\PermissionEnum;
     use Illuminate\Support\Facades\Gate;
-    use App\Enums\RoleEnum;
+    use App\Domain\Acces\Enums\RoleEnum;
 @endphp
 
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    @livewireStyles
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Oryzapp - Systeme de Gestion des appuis ADERIZ</title>
+    <title>@yield('titre-page', 'Gestion des appuis') | {{ config('app.name') }}</title>
     
     {{-- Balises PWA --}}
     <link rel="manifest" href="/manifest.json">
-    <meta name="theme-color" content="#047857">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <link rel="apple-touch-icon" href="/images/icons/icon-192x192.png">
-
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    @include('layouts.partials.marque')
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
-    {{-- Livewire & Filament Styles --}}
+    {{-- Livewire : seul l'assistant IA du tableau de bord en dépend. --}}
     @livewireStyles
-    @filamentStyles
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-{{-- Remplacez votre balise <body> par ceci : --}}
-<body class="fi-body fi-panel-admin bg-gray-100 h-screen lg:flex">
-    <aside class="lg:w-45 bg-[--color-primary] text-white flex flex-col">
-        <a href="{{config('app.backoffice_dashboard_url')}}" class="p-6 justify-center text-lg font-bold border-b border-slate-700">
-            <p>{{config('app.name')}} </p>
-            <p>Gestion des appuis</p>
-        </a>
+<body class="min-h-screen bg-[--color-page] text-[--color-ink] antialiased"
+      x-data="{ menu: false }" @keydown.escape.window="menu = false">
 
-        <a href="{{ route('dashboard') }}"
-           class="flex items-center border-b border-slate-700 w-full p-3 text-white hover:bg-slate-700">
-            Tableau de bord
-        </a>
+<div class="min-h-screen lg:flex">
 
-        {{-- Demandes --}}
-        <x-menu-groupe titre="Demandes">
-            @can(PermissionEnum::creerDemande->value)
-                <a href="{{ route('demandes.create') }}" class="block p-2 text-sm text-gray-300 hover:text-white">Nouvelle demande</a>
-            @endcan
-            <a href="{{ route('demandes.index') }}" class="block p-2 text-sm text-gray-300 hover:text-white">Voir les demandes</a>
-        </x-menu-groupe>
+    {{-- Fond sombre derrière le menu, sur téléphone et tablette seulement. --}}
+    <div x-show="menu" x-cloak x-transition.opacity @click="menu = false"
+         class="fixed inset-0 z-30 bg-slate-900/50 lg:hidden"></div>
 
-        @can(PermissionEnum::gererCommission->value)
-            <x-menu-groupe titre="Commissions">
-                <a href="{{ route('commissions.index') }}" class="block p-2 text-sm text-gray-300 hover:text-white">Voir les sessions</a>
-                {{-- <a href="{{ route('commissions.create') }}" class="block p-2 text-sm text-gray-300 hover:text-white">Ouvrir une session</a> --}}
-                {{-- <a href="{{ route('commissions.synthese') }}" target="_blank" class="block p-2 text-sm text-gray-300 hover:text-white">Synthèse à imprimer</a> --}}
-            </x-menu-groupe>
-        @endcan
+    {{-- Menu : tiroir sur petit écran, colonne fixe à partir de lg. --}}
+    <aside :class="menu ? 'translate-x-0' : '-translate-x-full'"
+           class="fixed inset-y-0 left-0 z-40 flex w-72 max-w-[85vw] flex-col bg-[--color-primary] text-white shadow-xl transition-transform duration-200 lg:sticky lg:top-0 lg:h-screen lg:w-64 lg:max-w-none lg:shrink-0 lg:translate-x-0 lg:shadow-none"
+           aria-label="Navigation principale">
 
-        {{--Attributions--}}
-        <x-menu-groupe titre="Attributions">
-            <a href="{{ route('attributions.index') }}" class="block p-2 text-sm text-gray-300 hover:text-white">Voir les attributions</a>
+        <div class="flex items-center justify-between gap-3 border-b border-white/10 px-5 py-4">
+            <a href="{{ route('dashboard') }}" class="min-w-0" aria-label="Tableau de bord ORYZA">
+                {{-- Sur fond vert : version « négatif » (blanc + or), cf. charte. --}}
+                <img src="/images/brand/ORYZA_logo_negatif.svg" alt="ORYZA, gestion des appuis de la filière riz" class="h-12 w-auto">
+            </a>
+            <button type="button" @click="menu = false" class="rounded-md p-1 text-white/80 hover:bg-white/10 lg:hidden" aria-label="Fermer le menu">
+                <span class="material-symbols-outlined">close</span>
+            </button>
+        </div>
 
-            @can(PermissionEnum::attribuerAppui->value)
+        <nav class="flex-1 space-y-1 overflow-y-auto px-3 py-4 text-sm">
+            @include('layouts.partials.menu')
+        </nav>
 
-                @can(PermissionEnum::gererSimulation->value)
-
-                    <a href="{{ route('attributions.simulation') }}" class="block p-2 text-sm text-gray-300 hover:text-white">Simuler les sorties</a>
-
-                @endcan
-
-                {{-- <a href="{{ route('attributions.createDirect') }}" class="block p-2 text-sm text-gray-300 hover:text-white">Attribution Directe</a> --}}
-            @endcan
-        </x-menu-groupe>
-
-        {{--Mouvements--}}
-        @can(PermissionEnum::gererStock->value)
-            <x-menu-groupe titre="Mouvements">
-                <a href="{{ route('approvisionnements.index') }}" class="block p-2 text-sm text-gray-300 hover:text-white">Approvisionnements</a>
-                <a href="{{ route('enlevements.index') }}" class="block p-2 text-sm text-gray-300 hover:text-white">Enlèvements</a>
-                <a href="{{ route('equipements.retour.create') }}" class="block p-2 text-sm text-gray-300 hover:text-white">Restitutions</a>
-            </x-menu-groupe>
-        @endcan
-
-        @can(PermissionEnum::gererStock->value)
-            <x-menu-groupe titre="Equipements">
-        <a href="{{ route('equipements.index') }}" class="block p-2 text-sm text-gray-300 hover:text-white">Equipements</a>
-            </x-menu-groupe>
-        @endcan
-
-        @hasrole(RoleEnum::admin->value)
-            <x-menu-groupe titre="Ressources">
-                <a href="/ressources" class="block p-2 text-sm text-gray-300 hover:text-white">Accéder aux ressources</a>
-            </x-menu-groupe>
-        @endhasrole
-
-        {{--Editions--}}
-        <x-menu-groupe titre="Editions">
-            <a href="{{ route('editions.attributions.index') }}" class="block p-2 text-sm text-gray-300 hover:text-white">Demandes</a>
-            <a href="{{ route('editions.attributions.index') }}" class="block p-2 text-sm text-gray-300 hover:text-white">Attributions</a>
-            <a href="{{ route('editions.arbitrages.index') }}" class="block p-2 text-sm text-gray-300 hover:text-white">Arbitrages</a>
-        </x-menu-groupe>
-
-        <div class="mt-auto w-full p-4 border-t border-slate-700">
+        <div class="border-t border-white/10 p-4">
+            <p class="truncate text-sm font-medium">{{ auth()->user()->name }}</p>
+            <p class="mb-3 truncate text-xs text-emerald-100/70">{{ auth()->user()->getRoleNames()->map(fn ($r) => \App\Domain\Acces\Enums\RoleEnum::tryFrom($r)?->libelle() ?? $r)->join(', ') }}</p>
             <form action="{{ route('logout') }}" method="POST">
                 @csrf
-                <button type="submit" class="text-red-400 text-sm hover:underline">Se déconnecter</button>
+                <button type="submit" class="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-red-200 hover:bg-white/10">
+                    <span class="material-symbols-outlined text-base">logout</span> Se déconnecter
+                </button>
             </form>
         </div>
     </aside>
 
-    <div class="flex-1 flex flex-col overflow-hidden">
-        <header class="flex h-16 bg-white border-b items-center justify-between px-8">
-            <span class="font-semibold text-gray-700">Bienvenue {{ auth()->user()->name }}</span>
+    <div class="flex min-w-0 flex-1 flex-col">
 
-            {{-- Zone des Notifications & Action Push --}}
-            <div class="flex items-center gap-4">
-                
+        {{-- Barre supérieure : reste en vue quand on fait défiler. --}}
+        <header class="sticky top-0 z-20 flex h-14 items-center gap-3 border-b border-[--color-border] bg-white/95 px-4 backdrop-blur sm:px-6">
+            <button type="button" @click="menu = true" class="-ml-1 rounded-md p-2 text-slate-600 hover:bg-slate-100 lg:hidden" aria-label="Ouvrir le menu">
+                <span class="material-symbols-outlined">menu</span>
+            </button>
+
+            <span class="min-w-0 truncate text-sm font-semibold text-slate-700">@yield('titre-page', 'Bienvenue '.auth()->user()->name)</span>
+
+            <div class="ml-auto flex items-center gap-2 sm:gap-4">
+
                 {{-- Bouton d'activation des Push --}}
-                <button id="btn-push-notif" 
-                        onclick="enablePushNotifications()" 
-                        class="hidden text-xs bg-emerald-700 hover:bg-emerald-800 text-white font-medium px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 shadow-sm">
+                <button id="btn-push-notif"
+                        onclick="enablePushNotifications()"
+                        class="hidden items-center gap-1.5 rounded-lg bg-emerald-700 px-3 py-1.5 text-xs font-medium text-white shadow-sm transition-colors hover:bg-emerald-800">
                     <span class="material-symbols-outlined text-sm">notifications_active</span>
-                    Activer les notifs
+                    <span class="hidden sm:inline">Activer les notifs</span>
                 </button>
 
-                {{-- Composant Cloche / Notifications In-App --}}
+                {{-- Cloche : notifications non lues --}}
                 <div x-data="{ open: false }" class="relative">
-                    <button @click="open = !open" class="relative p-2 text-slate-600 hover:text-emerald-700 focus:outline-none">
+                    <button @click="open = !open" class="relative rounded-md p-2 text-slate-600 hover:bg-slate-100 hover:text-emerald-700 focus:outline-none" aria-label="Notifications">
                         <span class="material-symbols-outlined text-2xl">notifications</span>
-                        @if (auth()->check() && auth()->user()->unreadNotifications->count() > 0)
-                            <span class="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">
+                        @if (auth()->user()->unreadNotifications->count() > 0)
+                            <span class="absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
                                 {{ auth()->user()->unreadNotifications->count() }}
                             </span>
                         @endif
                     </button>
 
                     <div x-show="open" @click.outside="open = false" x-cloak
-                         class="absolute right-0 mt-2 w-80 rounded-xl border border-slate-200 bg-white p-4 shadow-xl z-50">
-                        <div class="flex items-center justify-between border-b pb-2 mb-2">
+                         class="fixed inset-x-3 top-16 z-50 rounded-xl border border-slate-200 bg-white p-4 shadow-xl sm:absolute sm:inset-x-auto sm:right-0 sm:top-auto sm:mt-2 sm:w-80">
+                        <div class="mb-2 flex items-center justify-between border-b pb-2">
                             <h3 class="text-sm font-bold text-slate-800">Notifications</h3>
-                            <span class="text-xs text-slate-400">Oryzapp</span>
+                            <span class="text-xs text-slate-400">{{ config('app.name') }}</span>
                         </div>
 
-                        <div class="max-h-60 overflow-y-auto divide-y divide-slate-100">
-                            @if(auth()->check())
-                                @forelse (auth()->user()->unreadNotifications as $notification)
-                                    <div class="py-2 text-xs">
-                                        <p class="font-semibold text-slate-800">{{ $notification->data['titre'] ?? 'Notification' }}</p>
-                                        <p class="text-slate-600">{{ $notification->data['message'] ?? '' }}</p>
-                                        <div class="mt-1 flex justify-between items-center">
-                                            <span class="text-[10px] text-slate-400">{{ $notification->created_at->diffForHumans() }}</span>
-                                            @if(!empty($notification->data['url']))
-                                                <a href="{{ $notification->data['url'] }}" class="text-emerald-700 font-semibold hover:underline">Voir</a>
-                                            @endif
-                                        </div>
+                        <div class="max-h-72 divide-y divide-slate-100 overflow-y-auto">
+                            @forelse (auth()->user()->unreadNotifications as $notification)
+                                <div class="py-2 text-xs">
+                                    <p class="font-semibold text-slate-800">{{ $notification->data['titre'] ?? 'Notification' }}</p>
+                                    <p class="text-slate-600">{{ $notification->data['message'] ?? '' }}</p>
+                                    <div class="mt-1 flex items-center justify-between">
+                                        <span class="text-[10px] text-slate-400">{{ $notification->created_at->diffForHumans() }}</span>
+                                        @if (! empty($notification->data['url']))
+                                            <a href="{{ $notification->data['url'] }}" class="font-semibold text-emerald-700 hover:underline">Voir</a>
+                                        @endif
                                     </div>
-                                @empty
-                                    <p class="text-xs text-slate-500 py-4 text-center">Aucune nouvelle notification</p>
-                                @endforelse
-                            @endif
+                                </div>
+                            @empty
+                                <p class="py-4 text-center text-xs text-slate-500">Aucune nouvelle notification</p>
+                            @endforelse
                         </div>
                     </div>
                 </div>
-
-                <div class="text-sm text-gray-500 border-l pl-4">Oryzapp</div>
             </div>
         </header>
 
-        <main class="flex-1 bg-[--color-secondary] overflow-y-auto">
+        <main class="min-w-0 flex-1 px-4 py-6 sm:px-6 lg:px-8">
+            @include('partials.flash')
+
             @yield('content')
         </main>
     </div>
+</div>
 
     {{-- Composant Modal Plein Écran --}}
     <div x-data="fullScreenAlertManager()" 
@@ -205,10 +162,7 @@
         </div>
     </div>
 
-    {{-- Scripts Livewire & Filament --}}
     @livewireScripts
-    @filamentScripts
-    @livewire('notifications')
 
     {{-- Configuration PWA & Push Notifications --}}
     <script>

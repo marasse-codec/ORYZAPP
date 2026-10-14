@@ -9,7 +9,8 @@ RUN apk add --no-cache \
     bash \
     curl \
     zip \
-    unzip
+    unzip \
+    mariadb-client
 
 # Installation propre de toutes les extensions PHP (inclut zip et pcntl)
 RUN install-php-extensions \

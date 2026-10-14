@@ -62,18 +62,8 @@ return [
             'options' => extension_loaded('pdo_mysql') ? array_filter([
                 Mysql::ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
             ]) : [],
-        ],
-
-        // config/database.php
-        'mysql_readonly' => [
-            'driver' => 'mysql',
-            'host' => env('DB_HOST', '127.0.0.1'),
-            'database' => env('DB_DATABASE', 'varyza'),
-            'username' => env('DB_READONLY_USERNAME', 'varyza_ai_ro'),
-            'password' => env('DB_READONLY_PASSWORD'),
-            'options' => [
-                PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-            ],
+            // mysqldump (sauvegarde) : ex. DB_DUMP_EXTRA_OPTION="--skip-ssl" si le serveur MySQL a un certificat auto-signé.
+            'dump' => ['add_extra_option' => env('DB_DUMP_EXTRA_OPTION')],
         ],
 
         'mariadb' => [

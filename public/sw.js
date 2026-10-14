@@ -32,8 +32,8 @@ self.addEventListener('push', function (event) {
             event.waitUntil(
                 self.registration.showNotification(payload.title || 'Varyza', {
                     body: payload.body || '',
-                    icon: payload.icon || '/images/icons/icon-192x192.png',
-                    badge: payload.badge || '/images/icons/icon-192x192.png',
+                    icon: payload.icon || '/android-chrome-192x192.png',
+                    badge: payload.badge || '/images/icons/badge-96x96.png',
                     data: payload.data || {}
                 })
             );

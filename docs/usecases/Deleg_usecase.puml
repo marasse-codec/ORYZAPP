@@ -1,5 +1,4 @@
 @startuml uc_delegue
-title <b>Cas d'utilisation Délégué de pôle</b>
 
 left to right direction
 skinparam shadowing false
@@ -29,23 +28,29 @@ skinparam rectangle {
     FontColor #2B6CB0
 }
 
-actor "Agent" as Agent
-actor "Délégué de pôle" as Delegue
+!$COLOR_DELEGUE  = DodgerBlue
+!$COLOR_VALID    = ForestGreen
 
-Delegue --|> Agent
+actor "Délégué de pôle" as Delegue #$COLOR_DELEGUE
+actor "Agent de commission" as AgentCommission #$COLOR_VALID
 
-rectangle "<b>Plateforme de gestion des appuis</b>" {
-  usecase "<b>UC02</b>\nS'authentifier" as UC02
-  usecase "<b>UC03</b>\nEnregistrer une demande d'appui" as UC03
-  usecase "<b>UC04</b>\nSuivre ses demandes déposées" as UC04
-  usecase "<b>UC05</b>\nConsulter les décisions publiées" as UC05
-  usecase "<b>UCa</b>\nImprimer une demande" as UCa
+rectangle "<b>Plateforme de gestion des appuis ORYZA</b>" {
+    usecase "Enregistrer et Soumettre une demande d'appui" as UC_Demande
+    usecase "Suivre les demandes déposées" as UC_SuiviDemande
+    usecase "Enregistrer une session de commission" as UC_SessionComm
+    usecase "Enregistrer une attribution" as UC_ValiderAttr
+    usecase "Imprimer formulaire d’arbitrage" as UC_ImpForm
+    usecase "Imprimer l'état des stocks" as UC_ImpStocks
+    usecase "Simuler des attributions" as UC_SimulAttr
+
 }
 
-Agent --> UC02
-Delegue --> UC03
-Delegue --> UC04
-Delegue --> UC05
+Delegue --> UC_Demande
+Delegue --> UC_SuiviDemande
 
-UCa ..> UC03 : <<extend>>
+AgentCommission -u-> UC_SessionComm #$COLOR_VALID
+AgentCommission -u-> UC_ValiderAttr #$COLOR_VALID
+AgentCommission -u-> UC_ImpForm #$COLOR_VALID
+AgentCommission -u-> UC_ImpStocks #$COLOR_VALID
+AgentCommission -u-> UC_SimulAttr #$COLOR_VALID
 @enduml

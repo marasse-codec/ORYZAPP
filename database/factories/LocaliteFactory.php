@@ -2,8 +2,8 @@
 
 namespace Database\Factories;
 
-use App\Models\Departement;
-use App\Models\Localite;
+use App\Domain\Referentiel\Models\Departement;
+use App\Domain\Referentiel\Models\Localite;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 class LocaliteFactory extends Factory

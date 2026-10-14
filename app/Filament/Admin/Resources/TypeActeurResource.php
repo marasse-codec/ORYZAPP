@@ -2,79 +2,39 @@
 
 namespace App\Filament\Admin\Resources;
 
+use App\Domain\Referentiel\Models\TypeActeur;
 use App\Filament\Admin\Resources\TypeActeurResource\Pages;
-use App\Filament\Admin\Resources\TypeActeurResource\RelationManagers;
-use App\Models\TypeActeur;
 use Filament\Forms;
-use Filament\Forms\Form;
-use Filament\Resources\Resource;
 use Filament\Tables;
-use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
 
-class TypeActeurResource extends Resource
+class TypeActeurResource extends ReferentielResource
 {
     protected static ?string $model = TypeActeur::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?string $modelLabel = "type d'acteur";
 
-    public static function form(Form $form): Form
-    {
-        return $form
-            ->schema([
-                Forms\Components\TextInput::make('code_type_acteur')
-                    ->required()
-                    ->maxLength(3),
-                Forms\Components\TextInput::make('lib_type_acteur')
-                    ->required()
-                    ->maxLength(60),
-            ]);
-    }
+    protected static ?string $pluralModelLabel = "types d'acteurs";
 
-    public static function table(Table $table): Table
-    {
-        return $table
-            ->columns([
-                Tables\Columns\TextColumn::make('code_type_acteur')
-                    ->searchable(),
-                Tables\Columns\TextColumn::make('lib_type_acteur')
-                    ->searchable(),
-                Tables\Columns\TextColumn::make('created_at')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
-                Tables\Columns\TextColumn::make('updated_at')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
-            ])
-            ->filters([
-                //
-            ])
-            ->actions([
-                Tables\Actions\EditAction::make(),
-            ])
-            ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
-                ]),
-            ]);
-    }
+    protected static ?string $navigationIcon = 'heroicon-o-users';
 
-    public static function getRelations(): array
+    protected static function champs(): array
     {
         return [
-            //
+            Forms\Components\TextInput::make('code_type_acteur')->label('Code')->required()->maxLength(3),
+            Forms\Components\TextInput::make('lib_type_acteur')->label('Libellé')->required()->maxLength(60),
+        ];
+    }
+
+    protected static function colonnes(): array
+    {
+        return [
+            Tables\Columns\TextColumn::make('code_type_acteur')->label('Code')->sortable(),
+            Tables\Columns\TextColumn::make('lib_type_acteur')->label("Type d'acteur")->searchable()->sortable(),
         ];
     }
 
     public static function getPages(): array
     {
-        return [
-            'index' => Pages\ListTypeActeurs::route('/'),
-            'create' => Pages\CreateTypeActeur::route('/create'),
-            'edit' => Pages\EditTypeActeur::route('/{record}/edit'),
-        ];
+        return ['index' => Pages\ManageTypesActeurs::route('/')];
     }
 }

@@ -47,6 +47,14 @@ return [
             'report' => false,
         ],
 
+        // Archives de sauvegarde (spatie/laravel-backup), hors de l'arborescence servie.
+        'sauvegardes' => [
+            'driver' => 'local',
+            'root' => storage_path('app/backups'),
+            'throw' => false,
+            'report' => false,
+        ],
+
         's3' => [
             'driver' => 's3',
             'key' => env('AWS_ACCESS_KEY_ID'),

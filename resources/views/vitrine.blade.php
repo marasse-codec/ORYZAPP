@@ -1,6 +1,6 @@
 {{--
     Page publique destinée aux acteurs de la filière. Elle explique la démarche
-    et présente le catalogue — sans jamais exposer l'état des stocks, qui ne
+    et présente le catalogue, sans jamais exposer l'état des stocks, qui ne
     regarde que la commission et le magasin. Aucun accès à la connexion n'y
     figure : les agents ADERIZ rejoignent la plateforme par /login.
 --}}
@@ -9,10 +9,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ADERIZ Appuis à la filière riz</title>
+    <title>ORYZA, appuis à la filière riz (ADERIZ)</title>
     <meta name="description" content="Comment solliciter un appui auprès de l'ADERIZ : la démarche, les pièces à fournir et le catalogue des appuis disponibles pour les acteurs de la filière riz.">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    @include('layouts.partials.marque')
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
@@ -22,12 +21,8 @@
 <header x-data="{ ouvert: false }"
         class="sticky top-0 z-40 border-b border-slate-200/80 bg-white/85 backdrop-blur-md">
     <nav class="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-        <a href="#" class="flex items-center gap-2.5">
-            <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-[--color-primary] text-sm font-bold text-white">A</span>
-            <span class="leading-tight">
-                <span class="block text-sm font-bold text-slate-900">ADERIZ</span>
-                <span class="block text-[11px] text-slate-500">Filière Riz</span>
-            </span>
+        <a href="#" aria-label="Accueil ORYZA">
+            <img src="/images/brand/ORYZA_logo_couleur.svg" alt="ORYZA, gestion des appuis de la filière riz" class="h-11 w-auto">
         </a>
 
         <div class="hidden items-center gap-8 text-sm font-medium text-slate-600 md:flex">
@@ -62,7 +57,7 @@
         <div class="max-w-3xl">
             <span class="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs font-medium text-emerald-50 ring-1 ring-inset ring-white/20">
                 <span class="h-1.5 w-1.5 rounded-full bg-lime-300"></span>
-                Campagne {{ now()->year }}–{{ now()->year + 1 }}
+                Campagne {{ now()->year }}-{{ now()->year + 1 }}
             </span>
 
             <h1 class="mt-6 text-4xl font-bold leading-tight tracking-tight text-white sm:text-5xl lg:text-6xl">
@@ -110,7 +105,7 @@
 {{-- ════════════════════════════════ Démarche ═══════════════════════════════ --}}
 <section id="demarche" class="mx-auto max-w-6xl scroll-mt-20 px-6 py-20 sm:py-24">
     <div class="max-w-2xl">
-        <p class="text-sm font-semibold uppercase tracking-widest text-[--color-secondary]">La démarche</p>
+        <p class="text-sm font-semibold uppercase tracking-widest text-or-600">La démarche</p>
         <h2 class="mt-3 text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
             Quatre étapes, du dépôt au retrait
         </h2>
@@ -124,7 +119,7 @@
         @foreach ([
             ['description', 'Vous déposez votre dossier', "Vous indiquez votre localité, vos superficies par système de production et les appuis souhaités avec leurs quantités, pièces justificatives à l'appui."],
             ['fact_check', 'Les services instruisent', "Chaque service fournisseur examine la part de la demande qui le concerne, se déplace si nécessaire, et rend un avis motivé."],
-            ['gavel', 'La commission arbitre', "Une fois tous les avis favorables réunis, la commission décide des quantités accordées — ou rejette le dossier en motivant sa décision."],
+            ['gavel', 'La commission arbitre', "Une fois tous les avis favorables réunis, la commission décide des quantités accordées, ou rejette le dossier en motivant sa décision."],
             ['local_shipping', 'Vous retirez vos appuis', "Un bon d'attribution vous est remis. Vous retirez les appuis au centre de conditionnement sur présentation du bon et de votre pièce d'identité."],
         ] as $index => [$icone, $titre, $texte])
             <li class="group relative rounded-2xl border border-slate-200 bg-white p-6 transition hover:-translate-y-1 hover:border-[--color-primary]/30 hover:shadow-lg hover:shadow-slate-200/60">
@@ -142,8 +137,8 @@
         @endforeach
     </ol>
 
-    <div class="mt-10 flex items-start gap-3 rounded-xl border-l-4 border-[--color-secondary] bg-amber-50 p-5">
-        <span class="material-symbols-outlined text-[--color-secondary]">info</span>
+    <div class="mt-10 flex items-start gap-3 rounded-xl border-l-4 border-or-400 bg-amber-50 p-5">
+        <span class="material-symbols-outlined text-or-600">info</span>
         <p class="text-sm leading-relaxed text-amber-900">
             <span class="font-semibold">Retrait par un tiers.</span>
             Si vous ne pouvez pas vous déplacer, la personne mandatée devra présenter sa propre
@@ -156,7 +151,7 @@
 <section id="pieces" class="scroll-mt-20 border-y border-slate-200 bg-slate-50 py-20 sm:py-24">
     <div class="mx-auto max-w-6xl px-6">
         <div class="max-w-2xl">
-            <p class="text-sm font-semibold uppercase tracking-widest text-[--color-secondary]">Préparer son dossier</p>
+            <p class="text-sm font-semibold uppercase tracking-widest text-or-600">Préparer son dossier</p>
             <h2 class="mt-3 text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
                 Les pièces à fournir
             </h2>
@@ -188,7 +183,7 @@
                                     <span class="{{ $piece->pivot->est_obligatoire ? 'text-slate-700' : 'text-slate-500' }}">
                                         {{ $piece->lib_type_piece }}
                                         @unless ($piece->pivot->est_obligatoire)
-                                            <span class="text-xs italic text-slate-400">— facultatif</span>
+                                            <span class="text-xs italic text-slate-400">(facultatif)</span>
                                         @endunless
                                     </span>
                                 </li>
@@ -204,7 +199,7 @@
 {{-- ════════════════════════════════ Catalogue ══════════════════════════════ --}}
 <section id="appuis" class="mx-auto max-w-6xl scroll-mt-20 px-6 py-20 sm:py-24">
     <div class="max-w-2xl">
-        <p class="text-sm font-semibold uppercase tracking-widest text-[--color-secondary]">Catalogue</p>
+        <p class="text-sm font-semibold uppercase tracking-widest text-or-600">Catalogue</p>
         <h2 class="mt-3 text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
             Les appuis que vous pouvez demander
         </h2>
@@ -295,7 +290,10 @@
 
 <footer class="border-t border-slate-200 bg-white">
     <div class="mx-auto flex max-w-6xl flex-col items-center justify-between gap-3 px-6 py-8 text-sm text-slate-500 sm:flex-row">
-        <p>&copy; {{ now()->year }} ADERIZ — Agence pour le Développement de la Filière Riz</p>
+        <div class="flex items-center gap-3">
+            <img src="/images/brand/ORYZA_embleme_couleur.svg" alt="" class="h-7 w-7">
+            <p>&copy; {{ now()->year }} ORYZA, une plateforme de l'ADERIZ (Agence pour le Développement de la Filière Riz)</p>
+        </div>
         <p>Tous droits réservés</p>
     </div>
 </footer>

@@ -2,12 +2,12 @@
 
 namespace Database\Seeders;
 
-use App\Models\Acteur;
-use App\Models\Campagne;
-use App\Models\Demande;
-use App\Models\LigneDemande;
-use App\Models\SystemeProduction;
-use App\Models\Traitement;
+use App\Domain\Demande\Models\Acteur;
+use App\Domain\Demande\Models\Demande;
+use App\Domain\Demande\Models\LigneDemande;
+use App\Domain\Demande\Models\SystemeProduction;
+use App\Domain\Demande\Models\Traitement;
+use App\Domain\Referentiel\Models\Campagne;
 use Illuminate\Database\Seeder;
 
 class DemandeSeeder extends Seeder

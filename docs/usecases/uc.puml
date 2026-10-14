@@ -85,8 +85,6 @@ rectangle "<b>Plateforme de gestion des appuis</b>" as systeme {
         usecase "Suivre les demandes déposées" as UC_SuiviDemande
         usecase "Consulter les décisions publiées" as UC_DecisionPublique
     
-        usecase "Enregistrer et soumettre une attribution" as UC_AttrService
-
         usecase "Enregistrer un approvisionnement d'appuis" as UC_Appro
         usecase "Enregistrer l'enlèvement d'appuis" as UC_Enlevement
         usecase "Consulter les matériels confiés en cours" as UC_MatosCours
@@ -144,7 +142,6 @@ AgentCommission -u-> UC_PublierComm #$COLOR_VALID
 AgentCommission -u-> UC_ImpRes #$COLOR_VALID
 AgentCommission -u-> UC_ImpBon #$COLOR_VALID
 
-AgentCommission --> UC_AttrService #$COLOR_VALID
 
 AgentCentre --> UC_Appro #$COLOR_CENTRE
 AgentCentre --> UC_Enlevement #$COLOR_CENTRE

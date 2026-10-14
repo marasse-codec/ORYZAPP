@@ -1,22 +1,105 @@
 @startuml
-title Diagramme de déploiement « Plateforme de gestion des appuis »
-skinparam componentStyle rectangle
+' Charte ORYZA : vert #1E5E3A, or riz #E5A93B, crème #F6F3EA, brun #673831.
+' Fonds clairs + texte foncé + traits épais : lisible en présentation comme en document imprimé.
+
 skinparam shadowing false
-left to right direction
+skinparam dpi 150
+skinparam defaultFontName "DejaVu Sans"
+skinparam defaultFontSize 18
+skinparam defaultTextAlignment center
+skinparam roundCorner 14
+skinparam nodesep 60
+skinparam ranksep 110
+skinparam backgroundColor #FFFFFF
 
-node "Poste agent" <<Ordinateur>> as poste {
-  artifact "Navigateur web" as nav
+skinparam TitleFontSize 26
+skinparam TitleFontStyle bold
+skinparam TitleFontColor #1E5E3A
+
+skinparam ArrowColor #1a4c31
+skinparam ArrowThickness 2.5
+skinparam ArrowFontSize 16
+skinparam ArrowFontColor #111111
+
+skinparam NodeFontColor #111111
+skinparam NodeFontSize 20
+skinparam NodeFontStyle bold
+skinparam NodeBackgroundColor #F6F3EA
+skinparam NodeBorderColor #1E5E3A
+skinparam NodeBorderThickness 3
+
+skinparam ComponentFontColor #111111
+skinparam ComponentBackgroundColor #FFFFFF
+skinparam ComponentBorderColor #1E5E3A
+skinparam ComponentBorderThickness 2.5
+skinparam ComponentStereotypeFontSize 14
+skinparam ComponentStereotypeFontColor #673831
+
+skinparam ArtifactFontColor #111111
+skinparam ArtifactBackgroundColor #FFFFFF
+skinparam ArtifactBorderColor #1E5E3A
+skinparam ArtifactBorderThickness 2.5
+
+skinparam DatabaseFontColor #111111
+skinparam DatabaseBackgroundColor #FBEFCF
+skinparam DatabaseBorderColor #B77F12
+skinparam DatabaseBorderThickness 2.5
+
+skinparam FolderFontColor #111111
+skinparam FolderBackgroundColor #FBEFCF
+skinparam FolderBorderColor #B77F12
+skinparam FolderBorderThickness 2.5
+
+skinparam PackageFontColor #111111
+skinparam PackageBackgroundColor #EEF7F1
+skinparam PackageBorderColor #1E5E3A
+skinparam PackageBorderThickness 2
+
+skinparam CloudFontColor #111111
+skinparam CloudBackgroundColor #F1E4E1
+skinparam CloudBorderColor #673831
+skinparam CloudBorderThickness 3
+
+title Diagramme de déploiement « Plateforme de gestion des appuis »
+
+node "Poste Agent" <<Ordinateur>> as poste {
+  artifact "Navigateur Web" as nav
 }
 
-node "Serveur VPS (Linux)" <<serveur>> as vps {
-  node "Nginx\n(certificat SSL)" <<environnement d'exécution>> as nginx
-  node "PHP 8 / Laravel\n(MVC en 3 couches)" <<environnement d'exécution>> as app
-  database "MySQL" <<SGBD>> as db
-  folder "Stockage pièces" as files
+node "Serveur VPS (Linux)" <<Serveur>> as vps {
+
+  node "Couche Web" <<Frontal>> as couche_web #EEF7F1 {
+    component "Nginx\n(Certificat SSL)" <<Équilibreur de charge>> as nginx
+  }
+
+  node "Couche Applicative" <<Application>> as couche_app #EEF7F1 {
+    component "PHP 8 / Laravel\n(Architecture MVC)" <<Environnement d'exécution>> as app
+  }
+
+  node "Couche Arrière-plan" <<Traitements différés>> as couche_bg #EEF7F1 {
+    component "Queue Worker\n(queue:work)" <<Processus asynchrone>> as worker
+    component "Scheduler\n(schedule:work)" <<Planificateur>> as scheduler
+  }
+
+  node "Couche Données" <<Persistance>> as couche_data #FFF8E6 {
+    database "MySQL\n(Données, Cache, Jobs)" <<SGBD>> as db
+    folder "Stockage\n(Fichiers & Backups)" as files
+  }
 }
 
-nav --> nginx : HTTPS (TLS)
-nginx --> app
-app --> db
-app --> files
+cloud "Serveur de messagerie\n(SMTP)" as smtp
+cloud "Service Web Push\n(Navigateur)" as push
+
+' Chemins de communication : associations simples (pas de flèches en UML de déploiement).
+nav -down- nginx : HTTPS (TLS)
+nginx -down- app : Requêtes HTTP
+app -down- db : Requêtes SQL
+app -right- files : Lecture /\nÉcriture
+
+scheduler -right- app : Déclenche\nles tâches
+worker -down- db : Lit la file\nd'attente
+worker -down- smtp : Envoi des emails
+worker -down- push : Envoi des\nnotifications
+
+push -up- nav : Notifications push
 @enduml

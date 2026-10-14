@@ -2,89 +2,93 @@
 
 namespace App\Filament\Admin\Resources;
 
+use App\Domain\Acces\Enums\PermissionEnum;
+use App\Domain\Journal\Enums\ActionJournalEnum;
+use App\Domain\Journal\Models\JournalAction;
 use App\Filament\Admin\Resources\JournalActionResource\Pages;
-use App\Filament\Admin\Resources\JournalActionResource\RelationManagers;
-use App\Models\JournalAction;
-use Filament\Forms;
-use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
 
+/**
+ * Le journal des actions, en lecture seule : une trace qu'on pourrait corriger
+ * ou effacer n'en serait pas une.
+ */
 class JournalActionResource extends Resource
 {
     protected static ?string $model = JournalAction::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?string $navigationGroup = 'Système';
 
-    public static function form(Form $form): Form
+    protected static ?string $navigationIcon = 'heroicon-o-clipboard-document-list';
+
+    protected static ?string $modelLabel = 'action';
+
+    protected static ?string $pluralModelLabel = 'journal des actions';
+
+    public static function canViewAny(): bool
     {
-        return $form
-            ->schema([
-                Forms\Components\TextInput::make('user_id')
-                    ->required()
-                    ->numeric(),
-                Forms\Components\TextInput::make('action')
-                    ->required()
-                    ->maxLength(255),
-                Forms\Components\TextInput::make('cible_type')
-                    ->maxLength(255),
-                Forms\Components\TextInput::make('cible_id')
-                    ->numeric(),
-            ]);
+        return auth()->user()?->can(PermissionEnum::voirJournal->value) ?? false;
+    }
+
+    public static function canCreate(): bool
+    {
+        return false;
+    }
+
+    public static function canEdit($record): bool
+    {
+        return false;
+    }
+
+    public static function canDelete($record): bool
+    {
+        return false;
     }
 
     public static function table(Table $table): Table
     {
         return $table
+            ->defaultSort('created_at', 'desc')
             ->columns([
-                Tables\Columns\TextColumn::make('user_id')
-                    ->numeric()
+                Tables\Columns\TextColumn::make('created_at')
+                    ->label('Date')
+                    ->dateTime('d/m/Y H:i:s')
                     ->sortable(),
+                Tables\Columns\TextColumn::make('user.name')
+                    ->label('Auteur')
+                    ->searchable(),
                 Tables\Columns\TextColumn::make('action')
+                    ->label('Action')
+                    ->formatStateUsing(fn (string $state) => ActionJournalEnum::tryFrom($state)?->libelle() ?? $state)
                     ->searchable(),
                 Tables\Columns\TextColumn::make('cible_type')
-                    ->searchable(),
+                    ->label('Objet')
+                    ->formatStateUsing(fn (?string $state) => $state ? class_basename($state) : '-'),
                 Tables\Columns\TextColumn::make('cible_id')
-                    ->numeric()
+                    ->label('N°')
                     ->sortable(),
-                Tables\Columns\TextColumn::make('created_at')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
-                Tables\Columns\TextColumn::make('updated_at')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
+                Tables\Columns\TextColumn::make('details')
+                    ->label('Détails')
+                    ->formatStateUsing(fn ($state) => is_array($state) ? collect($state)->map(fn ($v, $k) => "{$k} : {$v}")->implode(', ') : $state)
+                    ->wrap(),
             ])
             ->filters([
-                //
+                Tables\Filters\SelectFilter::make('action')
+                    ->label('Action')
+                    ->options(collect(ActionJournalEnum::cases())->mapWithKeys(fn (ActionJournalEnum $a) => [$a->value => $a->libelle()])->all()),
+                Tables\Filters\SelectFilter::make('user_id')
+                    ->label('Auteur')
+                    ->relationship('user', 'name'),
             ])
-            ->actions([
-                Tables\Actions\EditAction::make(),
-            ])
-            ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
-                ]),
-            ]);
-    }
-
-    public static function getRelations(): array
-    {
-        return [
-            //
-        ];
+            ->actions([])
+            ->bulkActions([]);
     }
 
     public static function getPages(): array
     {
         return [
             'index' => Pages\ListJournalActions::route('/'),
-            'create' => Pages\CreateJournalAction::route('/create'),
-            'edit' => Pages\EditJournalAction::route('/{record}/edit'),
         ];
     }
 }

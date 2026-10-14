@@ -2,9 +2,9 @@
 
 namespace Database\Factories;
 
-use App\Models\Demande;
-use App\Models\SystemeProduction;
-use App\Models\TypeSystemeProduction;
+use App\Domain\Demande\Models\Demande;
+use App\Domain\Demande\Models\SystemeProduction;
+use App\Domain\Referentiel\Models\TypeSystemeProduction;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 class SystemeProductionFactory extends Factory

@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('notifications_rules', function (Blueprint $table) {
             $table->id();
             $table->string('name');                         // Ex: "Stock critique Appui"
-            $table->string('resource_type');                // Ex: "App\Models\Appui"
+            $table->string('resource_type');                // Ex: "App\Domain\Stock\Models\Appui"
             $table->string('event');                        // "updated" ou "created"
             $table->string('field')->nullable();            // Ex: "quantite"
             $table->string('operator')->nullable();         // "<", ">", "=", "changed"
