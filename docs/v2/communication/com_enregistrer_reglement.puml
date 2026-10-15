@@ -1,0 +1,20 @@
+@startuml com_enregistrer_reglement
+title Communication : le comptable enregistre un règlement
+!include style_communication.puml
+left to right direction
+
+actor "Comptable" as Comptable
+rectangle "<u>:PaiementController</u>" as Controleur
+rectangle "<u>:EnregistrerPaiementRequest</u>" as Requete
+rectangle "<u>:ReglementService</u>" as Service
+rectangle "<u>attribution:Attribution</u>" as Attribution
+rectangle "<u>:Paiement</u>" as Paiement
+rectangle "<u>:JournalAction</u>" as Journal
+
+Comptable --> Controleur : 1: POST /attributions/{id}/paiements
+Controleur --> Requete : 1.1: valider(montant, date, mode)
+Controleur --> Service : 1.2: enregistrerPaiement(attribution, données)
+Service --> Attribution : 1.2.1: relire sous verrou\nestPubliee(), resteDu()
+Service --> Paiement : 1.2.2: create(montant ≤ reste dû)
+Service --> Journal : 1.2.3: enregistrer(PAIEMENT_ENREGISTRE, reste_du)
+@enduml

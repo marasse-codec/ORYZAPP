@@ -1,0 +1,35 @@
+' Style commun des diagrammes v2 (repris des diagrammes de docs/usecases).
+skinparam shadowing false
+skinparam defaultFontName "Segoe UI"
+skinparam backgroundColor #FFFFFF
+skinparam linetype ortho
+
+skinparam actor {
+    BackgroundColor #EDF2F7
+    BorderColor #2D3748
+    BorderThickness 2
+    FontStyle bold
+}
+
+skinparam usecase {
+    BackgroundColor #F7FAFC
+    BorderColor #1A202C
+    BorderThickness 2
+    FontStyle bold
+}
+
+skinparam rectangle {
+    BackgroundColor #FFFFFF
+    BorderColor #2B6CB0
+    BorderThickness 2
+    FontStyle bold
+    FontColor #2B6CB0
+}
+
+skinparam note {
+    BackgroundColor #FFFBEA
+    BorderColor #B7791F
+}
+
+' Les cas d'utilisation ajoutés par la v2 sont en vert.
+!$NOUVEAU = "#E6F4EA"

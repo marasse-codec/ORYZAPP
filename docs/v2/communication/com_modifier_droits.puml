@@ -1,0 +1,18 @@
+@startuml com_modifier_droits
+title Communication : modifier les droits d'un rôle
+!include style_communication.puml
+left to right direction
+
+actor "Administrateur" as Admin
+rectangle "<u>:RoleResource\n(Rôles et droits)</u>" as Ecran
+rectangle "<u>:DroitService</u>" as Service
+rectangle "<u>role:Role</u>" as Role
+rectangle "<u>:Permission</u>" as Permission
+rectangle "<u>:JournalAction</u>" as Journal
+
+Admin --> Ecran : 1: cocher / décocher des droits
+Ecran --> Service : 1.1: modifier(role, droits)
+Service --> Role : 1.1.1: estModifiable() (pas l'administrateur)\n1.1.3: syncPermissions(droits)
+Service --> Permission : 1.1.2: garder les droits connus
+Service --> Journal : 1.1.4: enregistrer(DROITS_MODIFIES,\najoutés, retirés)
+@enduml

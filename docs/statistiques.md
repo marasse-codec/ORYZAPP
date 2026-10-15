@@ -1,7 +1,9 @@
 # Fiche : les statistiques de campagne
 
-Page **Statistiques** (réservée à qui a la permission « voir-statistiques », l'admin en pratique).
-Tous les chiffres portent sur **une campagne**, choisie en haut de page (la campagne en cours par défaut).
+Page **Statistiques** (permission « voir-statistiques » : administrateur et directeur).
+Tous les chiffres portent sur **une campagne**, choisie en haut de page (la campagne en cours par défaut),
+éventuellement restreinte par des **filtres** (département, localité, type d'appui, type d'acteur, période de soumission).
+Voir aussi la comparaison entre campagnes, le rapport PDF et les objectifs : [`roadmap-gestion.md`](roadmap-gestion.md).
 Code : `StatistiqueCampagneService` (calculs), `StatistiqueController` (mise en forme), `statistiques/index.blade.php` (affichage).
 
 ## Règles communes
@@ -13,6 +15,8 @@ Code : `StatistiqueCampagneService` (calculs), `StatistiqueController` (mise en 
   2. sinon elle a un motif de rejet → *Rejetée* ;
   3. sinon elle n'est pas soumise → *En cours* (brouillon) ;
   4. sinon → *Soumise*.
+- **Filtres :** posés sur la même population par `FiltreStatistique` (`WHERE EXISTS` pour localité, département et type d'appui : une demande n'est comptée qu'une fois).
+- **Attributions annulées :** suppression douce (`deleted_at`), exclues de tous les calculs.
 - **Agrégats en SQL** (COUNT, SUM, GROUP BY). Seuls les délais se calculent en PHP.
 - Une valeur sans donnée s'affiche « - », jamais 0 trompeur.
 
@@ -30,6 +34,16 @@ Code : `StatistiqueCampagneService` (calculs), `StatistiqueController` (mise en 
 | **Délai arbitrage → retrait** | Moyenne, en jours de calendrier, entre la création de l'attribution et la date de sortie du magasin. |
 
 Les délais ne comptent que les dossiers qui ont les deux dates. On compare des jours, pas des heures.
+
+## Finances et objectifs (v2)
+
+| Bloc | Calcul |
+|---|---|
+| **Valeur attribuée** | Somme, sur les attributions non annulées, de quantité × coût × (1 − remise %). |
+| **Montant dû** | La même somme, limitée aux attributions publiées. |
+| **Encaissé** | Somme des paiements des attributions publiées (requête séparée, pour ne pas multiplier les lignes). |
+| **Taux de recouvrement** | Encaissé ÷ dû × 100. |
+| **Objectifs** | Fixés sur la campagne (Administration → Campagnes). Comparés au réalisé : vert (atteint), ambre (à moins de 10 %), rouge. |
 
 ## Les graphiques
 

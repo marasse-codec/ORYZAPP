@@ -1,0 +1,36 @@
+@startuml uc_delegue_pole
+title Cas d'utilisation : Délégué de pôle
+!include ../style.puml
+left to right direction
+
+actor "Délégué de pôle" as DP
+
+rectangle "<b>Plateforme ORYZA</b>" {
+    usecase "S'authentifier" as UC_Auth
+    usecase "Enregistrer une demande" as UC_Demande
+    usecase "Saisir hors ligne\n(brouillon sur l'appareil)" as UC_HorsLigne $NOUVEAU
+    usecase "Saisir une série\nde demandes" as UC_Serie
+    usecase "Enregistrer la visite\nde terrain" as UC_Visite
+    usecase "Soumettre une demande" as UC_Soumettre
+    usecase "Suivre ses demandes" as UC_Suivre
+    usecase "Consulter la chronologie\nd'un dossier" as UC_Chrono $NOUVEAU
+    usecase "Transmettre les rendements" as UC_Rendement
+}
+
+DP --> UC_Demande
+DP --> UC_Serie
+DP --> UC_Visite
+DP --> UC_Soumettre
+DP --> UC_Suivre
+DP --> UC_Rendement
+
+UC_HorsLigne .> UC_Demande : <<extend>>
+UC_Chrono .> UC_Suivre : <<extend>>
+UC_Soumettre ..> UC_Visite : <<include>>
+UC_Demande ..> UC_Auth : <<include>>
+
+note bottom of UC_Demande
+  Refusé si la campagne est clôturée
+  ou si l'acteur est en impayé.
+end note
+@enduml

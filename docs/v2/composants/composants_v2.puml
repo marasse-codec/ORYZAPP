@@ -1,0 +1,66 @@
+@startuml composants_v2
+title Diagramme de composants — ORYZA v2 (composants ajoutés en vert)
+
+skinparam componentStyle uml2
+skinparam shadowing false
+skinparam defaultFontName "Segoe UI"
+skinparam defaultFontSize 11
+skinparam packageStyle rectangle
+skinparam linetype polyline
+skinparam nodesep 30
+skinparam ranksep 45
+skinparam component {
+    BackgroundColor #FFFFFF
+    BorderColor #333333
+}
+!$NOUVEAU = "#E6F4EA"
+top to bottom direction
+
+package "Navigateur (poste ou téléphone)" as Navigateur {
+    [Pages Blade + Alpine] as Pages
+    [Service worker\n(cache hors-ligne)] as SW $NOUVEAU
+    [Brouillon local] as BrouillonLocal $NOUVEAU
+}
+
+package "Présentation et contrôle" as Controle {
+    [Contrôleurs web] as Controleurs
+    [Administration (Filament)] as Filament
+    [Garde « compte actif »] as GardeCompte $NOUVEAU
+    [Trace des exports] as TraceExport $NOUVEAU
+}
+
+package "Domaine métier (app/Domain)" as Domaine {
+    [Demande] as Demande
+    [Commission] as Commission
+    [Stock] as Stock
+    [Référentiel\n+ clôture de campagne] as Referentiel
+    [Accès\n+ rôles et droits] as Acces
+    [Administration\n(paramètres, santé)] as Administration $NOUVEAU
+    [Suivi\n(stats, filtres, comparaison,\npilotage, rapport)] as Suivi
+    [Journal\n(avant/après, connexions)] as Journal
+}
+
+package "Infrastructure" as Infra {
+    database "Base de données" as BD
+    [Fichiers\n(pièces, sauvegardes)] as Fichiers
+    [Planificateur] as Planificateur
+    [PDF / Excel] as Documents
+}
+
+() "HTTPS" as I_HTTP
+
+Pages -down- I_HTTP
+SW .> I_HTTP : met en cache
+Pages .> BrouillonLocal : sans réseau
+I_HTTP -down-> Controle
+
+Controle -down-> Domaine : appelle les cas d'usage
+Domaine -down-> Infra : lit / écrit
+
+Demande .> Journal
+Commission .> Journal
+Acces .> Journal
+Acces .> Administration : politique de\nmot de passe
+Suivi .> Documents : rapport PDF
+Administration .> Planificateur : vérifie\nson passage
+@enduml

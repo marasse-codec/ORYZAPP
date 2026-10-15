@@ -1,0 +1,28 @@
+@startuml uc_comptable
+title Cas d'utilisation : Comptable (nouveau rôle)
+!include ../style.puml
+left to right direction
+
+actor "Comptable" as Comptable
+
+rectangle "<b>Plateforme ORYZA</b>" {
+    usecase "S'authentifier" as UC_Auth
+    usecase "Consulter la caisse\n(dû, encaissé, reste)" as UC_Caisse $NOUVEAU
+    usecase "Enregistrer un règlement" as UC_Reglement
+    usecase "Suivre les acteurs\nen impayé" as UC_Impayes
+    usecase "Télécharger le rapport\nde campagne (PDF)" as UC_Rapport $NOUVEAU
+}
+
+Comptable --> UC_Caisse
+Comptable --> UC_Reglement
+Comptable --> UC_Impayes
+Comptable --> UC_Rapport
+
+UC_Reglement ..> UC_Auth : <<include>>
+UC_Caisse ..> UC_Auth : <<include>>
+
+note bottom of UC_Reglement
+  Possible même sur une campagne clôturée :
+  une somme due ne disparaît pas.
+end note
+@enduml

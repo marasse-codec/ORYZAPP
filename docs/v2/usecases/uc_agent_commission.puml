@@ -1,0 +1,31 @@
+@startuml uc_agent_commission
+title Cas d'utilisation : Agent de commission
+!include ../style.puml
+left to right direction
+
+actor "Agent de commission" as Commission
+
+rectangle "<b>Plateforme ORYZA</b>" {
+    usecase "S'authentifier" as UC_Auth
+    usecase "Ouvrir / clôturer\nune séance" as UC_Seance
+    usecase "Attribuer des appuis" as UC_Attribuer
+    usecase "Modifier une attribution" as UC_Modifier
+    usecase "Annuler une attribution\n(suppression douce)" as UC_Annuler $NOUVEAU
+    usecase "Rejeter une demande" as UC_Rejeter
+    usecase "Publier les résultats" as UC_Publier
+    usecase "Simuler les sorties" as UC_Simuler
+    usecase "Imprimer les fiches\nd'arbitrage" as UC_Fiches
+}
+
+Commission --> UC_Seance
+Commission --> UC_Attribuer
+Commission --> UC_Rejeter
+Commission --> UC_Publier
+Commission --> UC_Simuler
+Commission --> UC_Fiches
+
+UC_Modifier .> UC_Attribuer : <<extend>>
+UC_Annuler .> UC_Attribuer : <<extend>>
+UC_Attribuer ..> UC_Auth : <<include>>
+UC_Seance ..> UC_Auth : <<include>>
+@enduml

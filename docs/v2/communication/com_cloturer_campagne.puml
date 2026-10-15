@@ -1,0 +1,23 @@
+@startuml com_cloturer_campagne
+title Communication : clôturer une campagne
+!include style_communication.puml
+left to right direction
+
+actor "Administrateur" as Admin
+rectangle "<u>:CampagneResource\n(écran Filament)</u>" as Ecran
+rectangle "<u>:ClotureCampagneService</u>" as Service
+rectangle "<u>campagne:Campagne</u>" as Campagne
+rectangle "<u>:Demande</u>" as Demande
+rectangle "<u>:JournalAction</u>" as Journal
+
+Admin --> Ecran : 1: cliquer « Clôturer »
+Ecran --> Service : 1.1: enCours(campagne)\n2: cloturer(campagne) [après confirmation]
+Service --> Demande : 1.1.1: compter brouillons\net demandes à arbitrer
+Service --> Campagne : 2.1: relire sous verrou\npuis update(cloturee_le, id_user_cloture)
+Service --> Journal : 2.2: enregistrer(CAMPAGNE_CLOTUREE)
+
+note bottom of Campagne
+  Ensuite, exigerOuverte() refuse toute nouvelle
+  demande, attribution ou rendement sur cette campagne.
+end note
+@enduml

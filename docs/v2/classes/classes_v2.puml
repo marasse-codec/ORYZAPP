@@ -1,0 +1,141 @@
+@startuml classes_v2
+title Diagramme de classes — ajouts de la v2 (attributs et opérations ajoutés en vert)
+
+skinparam shadowing false
+skinparam defaultFontName "Segoe UI"
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+hide empty members
+
+package "Accès" {
+    class User {
+        name : string
+        email : string
+        <color:green>actif : bool</color>
+        <color:green>desactive_le : datetime</color>
+        <color:green>motif_desactivation : string</color>
+        <color:green>derniere_connexion_le : datetime</color>
+        --
+        <color:green>estActif() : bool</color>
+        <color:green>roleEnum() : RoleEnum</color>
+    }
+    class Role <<spatie>> {
+        name : string
+    }
+    class Permission <<spatie>> {
+        name : string
+    }
+    enum RoleEnum {
+        admin
+        dp
+        acteur
+        agentService
+        agentCommission
+        gestionnaireStock
+        <color:green>directeur</color>
+        <color:green>comptable</color>
+        --
+        <color:green>droitsParDefaut()</color>
+        <color:green>peutSaisirDesDemandes()</color>
+    }
+}
+
+package "Administration" #E6F4EA {
+    class Parametre {
+        cle : string
+        valeur : string
+    }
+    enum ParametreEnum {
+        motDePasseLongueurMin
+        motDePasseMajusculesMinuscules
+        motDePasseChiffres
+        motDePasseSymboles
+        connexionTentativesMax
+        rappelBonsJours
+        rappelBrouillonsJours
+        rappelSeancesJours
+        --
+        libelle() / defaut() / bornes()
+    }
+}
+
+package "Référentiel" {
+    class Campagne {
+        lib_campagne : string
+        mois_debut_campagne : date
+        mois_fin_campagne : date
+        <color:green>objectif_taux_attribution : decimal</color>
+        <color:green>objectif_taux_traitement : decimal</color>
+        <color:green>objectif_taux_recouvrement : decimal</color>
+        <color:green>objectif_delai_arbitrage : int</color>
+        <color:green>cloturee_le : datetime</color>
+        --
+        <color:green>estCloturee() : bool</color>
+        <color:green>exigerOuverte(operation)</color>
+    }
+}
+
+package "Demande / Commission" {
+    class Demande {
+        date_soummission : datetime
+        motifs_rejet : string
+        --
+        statut (déduit)
+    }
+    class Attribution {
+        date_publication : datetime
+        date_destockage : date
+        <color:green>deleted_at : datetime</color>
+        --
+        montantTotal() / resteDu()
+    }
+    class Paiement {
+        montant : decimal
+        date_paiement : date
+        mode : string
+    }
+}
+
+package "Journal" {
+    class JournalAction {
+        action : string
+        cible_type / cible_id
+        details : json
+        <color:green>adresse_ip : string</color>
+        --
+        enregistrer(action, cible, details)
+        <color:green>consigner(action, cible?, details, auteur?)</color>
+        <color:green>detailsLisibles() : string</color>
+    }
+}
+
+package "Suivi (objets de calcul)" #E6F4EA {
+    class FiltreStatistique <<valeur>> {
+        idDepartement / idLocalite
+        idTypeAppui / idTypeActeur
+        du / au
+        --
+        appliquer(requête)
+    }
+    class Objectif <<valeur>> {
+        libelle : string
+        cible : float
+        realise : float
+        auMoins : bool
+        --
+        atteint() / ecart() / ton()
+    }
+}
+
+User "0..*" -- "1" Role : a un seul >
+Role "0..*" -- "0..*" Permission : accorde >
+Role ..> RoleEnum
+User "0..1" -- "0..*" JournalAction : auteur (facultatif) <
+Parametre ..> ParametreEnum : clé
+Campagne "1" -- "0..*" Demande
+Campagne "0..*" -- "0..1" User : clôturée par >
+Demande "1" -- "0..1" Attribution : attribution active
+Attribution "1" -- "0..*" Paiement
+Campagne ..> Objectif : comparée au réalisé
+FiltreStatistique ..> Demande : restreint
+@enduml
