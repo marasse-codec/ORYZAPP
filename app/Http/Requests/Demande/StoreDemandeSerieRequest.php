@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Demande;
 
 use App\Domain\Demande\Models\Acteur;
+use App\Domain\Demande\Support\ReglesDemande;
 
 use App\Domain\Stock\Models\Appui;
 use App\Http\Requests\Concerns\ReglesNumeriques;
@@ -50,7 +51,7 @@ class StoreDemandeSerieRequest extends FormRequest
             'localites' => ['required', 'array', 'min:1'],
             'localites.*' => ['integer', 'exists:localites,id_localite'],
             'periode_debut_mise_en_place' => ['required', 'date'],
-            'periode_fin_mise_en_place' => ['required', 'date', 'after:periode_debut_mise_en_place'],
+            'periode_fin_mise_en_place' => ReglesDemande::periodeFin($this->input('periode_debut_mise_en_place')),
             'soumettre' => ['nullable', 'boolean'],
 
             'appuis' => ['required', 'array', 'min:1'],
@@ -60,7 +61,7 @@ class StoreDemandeSerieRequest extends FormRequest
 
             'acteurs' => ['required', 'array', 'min:1', 'max:'.self::MAX_ACTEURS],
             'acteurs.*.nom' => ['required', 'string', 'max:60'],
-            'acteurs.*.date_naissance' => ['required', 'date', 'before:today'],
+            'acteurs.*.date_naissance' => ReglesDemande::dateNaissance(),   // majeur : 18 ans révolus
             'acteurs.*.telephone' => ['required', 'digits:10'],
             'acteurs.*.nom_structure' => ['nullable', 'string', 'max:150'],
             'acteurs.*.quantites.*' => ['nullable', ...ReglesNumeriques::quantite()],
@@ -78,7 +79,6 @@ class StoreDemandeSerieRequest extends FormRequest
             'localites.min' => 'Choisissez au moins une localité.',
             'periode_debut_mise_en_place.required' => 'La date de début de mise en place est obligatoire.',
             'periode_fin_mise_en_place.required' => 'La date de fin de mise en place est obligatoire.',
-            'periode_fin_mise_en_place.after' => 'La date de fin doit être postérieure à la date de début.',
             'appuis.required' => 'Ajoutez au moins un appui demandé.',
             'appuis.min' => 'Ajoutez au moins un appui demandé.',
             'appuis.*.id_type_appui.required' => "Appui n°:position : choisissez le type d'appui.",
@@ -90,7 +90,7 @@ class StoreDemandeSerieRequest extends FormRequest
             'acteurs.*.nom.max' => 'Ligne :position : le nom ne peut pas dépasser 60 caractères.',
             'acteurs.*.date_naissance.required' => 'Ligne :position : la date de naissance est obligatoire.',
             'acteurs.*.date_naissance.date' => 'Ligne :position : la date de naissance est invalide.',
-            'acteurs.*.date_naissance.before' => 'Ligne :position : la date de naissance doit être passée.',
+            'acteurs.*.date_naissance.before_or_equal' => 'Ligne :position : '.lcfirst(ReglesDemande::messageMajorite()),
             'acteurs.*.telephone.required' => 'Ligne :position : le téléphone est obligatoire.',
             'acteurs.*.telephone.digits' => 'Ligne :position : le téléphone doit comporter 10 chiffres.',
             'acteurs.*.quantites.*.numeric' => 'Ligne :position : une quantité est invalide.',

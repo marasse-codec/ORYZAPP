@@ -86,7 +86,8 @@ class CommissionAttributionController extends Controller
     {
         $seances->cloturer(SessionCommission::findOrFail($id));
 
-        return redirect()->route('commissions.index')
+        // On revient sur la séance qu'on vient de clôturer : son bilan et la publication sont là.
+        return redirect()->route('commissions.show', $id)
             ->with('success', 'Séance clôturée.');
     }
 }

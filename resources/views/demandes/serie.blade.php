@@ -30,8 +30,9 @@
             fin: '',
             get finMin() {
                 if (!this.debut) return null;
+                // Au moins 3 mois de mise en place (cf. ReglesDemande).
                 const d = new Date(this.debut + 'T00:00:00');
-                d.setDate(d.getDate() + 1);
+                d.setMonth(d.getMonth() + {{ \App\Domain\Demande\Support\ReglesDemande::DUREE_MINIMALE_MOIS }});
                 return d.toLocaleDateString('sv-SE');
             },
             collerOuvert: false,
@@ -155,13 +156,14 @@
 
         <form method="POST" action="{{ route('demandes.serie.store') }}" class="space-y-6" @submit.prevent="envoyer($el)">
             @csrf
+            <p class="text-xs text-slate-500">Les champs marqués <span class="text-red-600">*</span> sont obligatoires.</p>
 
             {{-- 1. Ce qui est commun au lot --}}
             <section class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
                 <h2 class="mb-4 text-base font-semibold text-slate-800">1. Ce qui est commun au lot</h2>
                 <div class="grid gap-4 md:grid-cols-3">
                     <div>
-                        <label for="id_campagne" class="block text-sm font-medium text-slate-700">Campagne</label>
+                        <label for="id_campagne" class="block text-sm font-medium text-slate-700">Campagne<span class="ml-0.5 text-red-600" aria-hidden="true">*</span></label>
                         <select id="id_campagne" name="id_campagne" required class="mt-1 block w-full rounded-lg border-slate-300 text-sm">
                             @foreach ($campagnes as $campagne)
                                 <option value="{{ $campagne->id_campagne }}" @selected((int) old('id_campagne', $campagneParDefaut) === $campagne->id_campagne)>
@@ -172,7 +174,7 @@
                     </div>
 
                     <div>
-                        <label for="id_type_acteur" class="block text-sm font-medium text-slate-700">Type d'acteur</label>
+                        <label for="id_type_acteur" class="block text-sm font-medium text-slate-700">Type d'acteur<span class="ml-0.5 text-red-600" aria-hidden="true">*</span></label>
                         <select id="id_type_acteur" name="id_type_acteur" required class="mt-1 block w-full rounded-lg border-slate-300 text-sm">
                             <option value="">Choisir</option>
                             @foreach ($typesActeurs as $type)
@@ -182,7 +184,7 @@
                     </div>
 
                     <div class="md:row-span-2">
-                        <label for="localites" class="block text-sm font-medium text-slate-700">Localité(s)</label>
+                        <label for="localites" class="block text-sm font-medium text-slate-700">Localité(s)<span class="ml-0.5 text-red-600" aria-hidden="true">*</span></label>
                         <select id="localites" name="localites[]" multiple size="6" required class="mt-1 block w-full rounded-lg border-slate-300 text-sm" style="background-image: none;">
                             @foreach ($localites->groupBy(fn ($l) => $l->departement?->lib_departement ?? 'Autres') as $departement => $groupe)
                                 <optgroup label="{{ $departement }}">
@@ -196,11 +198,11 @@
                     </div>
 
                     <div>
-                        <label for="periode_debut_mise_en_place" class="block text-sm font-medium text-slate-700">Mise en place : début</label>
+                        <label for="periode_debut_mise_en_place" class="block text-sm font-medium text-slate-700">Mise en place : début<span class="ml-0.5 text-red-600" aria-hidden="true">*</span></label>
                         <input id="periode_debut_mise_en_place" name="periode_debut_mise_en_place" type="date" required x-model="debut" class="mt-1 block w-full rounded-lg border-slate-300 text-sm">
                     </div>
                     <div>
-                        <label for="periode_fin_mise_en_place" class="block text-sm font-medium text-slate-700">Mise en place : fin</label>
+                        <label for="periode_fin_mise_en_place" class="block text-sm font-medium text-slate-700">Mise en place : fin (au moins 3 mois après le début)<span class="ml-0.5 text-red-600" aria-hidden="true">*</span></label>
                         <input id="periode_fin_mise_en_place" name="periode_fin_mise_en_place" type="date" required x-model="fin" :min="finMin" class="mt-1 block w-full rounded-lg border-slate-300 text-sm">
                     </div>
                 </div>
@@ -217,7 +219,7 @@
                     <template x-for="(appui, k) in appuis" :key="appui.cle">
                         <div class="grid items-end gap-3 rounded-lg border border-slate-200 bg-slate-50/60 p-3 md:grid-cols-12">
                             <div class="md:col-span-5">
-                                <label class="block text-xs font-semibold uppercase tracking-wide text-slate-500" x-text="'Type d\'appui n°' + (k + 1)"></label>
+                                <label class="block text-xs font-semibold uppercase tracking-wide text-slate-500"><span x-text="'Type d\'appui n°' + (k + 1)"></span><span class="ml-0.5 text-red-600" aria-hidden="true">*</span></label>
                                 <select :name="`appuis[${k}][id_type_appui]`" x-model="appui.id_type_appui" @change="typeChange(appui)"
                                         required class="mt-1 block w-full rounded-lg border-slate-300 text-sm">
                                     <option value="">Choisir</option>
@@ -279,9 +281,9 @@
                         <thead class="text-left text-xs uppercase tracking-wide text-slate-500">
                             <tr>
                                 <th class="w-10 px-2 py-2">N°</th>
-                                <th class="px-2 py-2">Nom *</th>
-                                <th class="px-2 py-2">Naissance *</th>
-                                <th class="px-2 py-2">Téléphone *</th>
+                                <th class="px-2 py-2">Nom<span class="ml-0.5 text-red-600" aria-hidden="true">*</span></th>
+                                <th class="px-2 py-2">Naissance (18 ans révolus)<span class="ml-0.5 text-red-600" aria-hidden="true">*</span></th>
+                                <th class="px-2 py-2">Téléphone<span class="ml-0.5 text-red-600" aria-hidden="true">*</span></th>
                                 <th class="px-2 py-2">Structure</th>
                                 <template x-for="(appui, k) in appuis" :key="appui.cle">
                                     <th class="px-2 py-2 text-right" x-text="'Qté : ' + libelleAppui(appui) + (uniteDe(appui) ? ' (' + uniteDe(appui) + ')' : '')"></th>
@@ -295,7 +297,7 @@
                                 <tr class="border-t border-slate-100">
                                     <td class="px-2 py-1 text-slate-400" x-text="i + 1"></td>
                                     <td class="px-1 py-1"><input type="text" maxlength="60" x-model="ligne.nom" :name="`acteurs[${i}][nom]`" :data-cellule="`${i}-0`" @keydown.enter.prevent="suivante(i, 0)" class="w-full min-w-40 rounded-md border-slate-300 text-sm"></td>
-                                    <td class="px-1 py-1"><input type="date" x-model="ligne.date_naissance" :name="`acteurs[${i}][date_naissance]`" :data-cellule="`${i}-1`" @keydown.enter.prevent="suivante(i, 1)" class="rounded-md border-slate-300 text-sm"></td>
+                                    <td class="px-1 py-1"><input type="date" x-model="ligne.date_naissance" :name="`acteurs[${i}][date_naissance]`" max="{{ \App\Domain\Demande\Support\ReglesDemande::dateNaissanceMax()->toDateString() }}" :data-cellule="`${i}-1`" @keydown.enter.prevent="suivante(i, 1)" class="rounded-md border-slate-300 text-sm"></td>
                                     <td class="px-1 py-1"><input type="tel" inputmode="numeric" x-model="ligne.telephone" :name="`acteurs[${i}][telephone]`" :data-cellule="`${i}-2`" @keydown.enter.prevent="suivante(i, 2)" class="w-36 rounded-md border-slate-300 text-sm"></td>
                                     <td class="px-1 py-1"><input type="text" maxlength="150" x-model="ligne.nom_structure" :name="`acteurs[${i}][nom_structure]`" :data-cellule="`${i}-3`" @keydown.enter.prevent="suivante(i, 3)" class="w-full min-w-36 rounded-md border-slate-300 text-sm"></td>
                                     <template x-for="(appui, k) in appuis" :key="appui.cle">

@@ -1,3 +1,4 @@
+import './formulaire-etapes';
 import './hors-ligne';
 
 /*

@@ -12,8 +12,8 @@ Pour régénérer les SVG : `java -jar plantuml.jar -tsvg docs/v2/**/*.puml` (Gr
 |---|---|
 | `uc_administrateur` | Administrateur : comptes, droits, paramètres, clôture, santé |
 | `uc_directeur` | Directeur (nouveau) : pilotage, statistiques filtrées, comparaison, rapport |
-| `uc_comptable` | Comptable (nouveau) : caisse, règlements, impayés |
-| `uc_delegue_pole` | Délégué de pôle : demandes (y compris hors ligne), visite, rendements |
+| `uc_comptable` | Comptable : recherche d'attribution, règlement en brouillon puis soumis, caisse |
+| `uc_delegue_pole` | Délégué de pôle, responsable de ses départements : suivi, notifications, demandes, rendements |
 | `uc_agent_service` | Agent de service |
 | `uc_agent_commission` | Agent de commission |
 | `uc_gestionnaire_stock` | Gestionnaire de stock |
@@ -27,7 +27,7 @@ Les objets sont reliés par des liens ; les messages sont numérotés dans leur 
 | Fichier | Scénario |
 |---|---|
 | `com_cloturer_campagne` | L'administrateur clôture une campagne |
-| `com_enregistrer_reglement` | Le comptable enregistre un règlement |
+| `com_enregistrer_reglement` | Le comptable recherche une attribution, enregistre un règlement en brouillon puis le soumet |
 | `com_consulter_pilotage` | Le directeur consulte le tableau de pilotage |
 | `com_statistiques_filtrees` | Statistiques d'une campagne avec filtres |
 | `com_desactiver_compte` | Désactiver un compte, puis tentative de connexion refusée |

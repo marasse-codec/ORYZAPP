@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Domain\Acces\Enums\RoleEnum;
 use App\Domain\Demande\Models\Acteur;
+use App\Domain\Referentiel\Models\Departement;
 use App\Domain\Referentiel\Models\Service;
 use App\Domain\Stock\Models\Agent;
 use App\Models\User;
@@ -51,6 +52,9 @@ class UserSeed extends Seeder
             'telephone' => '0758221948',
             'email' => 'acteur@example.com',
         ]);
+
+        // Le DP de démonstration couvre tous les départements.
+        User::where('email', 'dp@example.com')->first()?->departements()->sync(Departement::pluck('id_departement'));
 
         Agent::create([
             'nom' => 'Sam Stock',

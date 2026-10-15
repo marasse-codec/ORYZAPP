@@ -4,6 +4,7 @@ namespace App\Filament\Admin\Resources;
 
 use App\Domain\Acces\Enums\RoleEnum;
 use App\Domain\Acces\Services\CompteService;
+use App\Domain\Referentiel\Models\Departement;
 use App\Filament\Admin\Resources\UserResource\Pages;
 use App\Models\User;
 use Filament\Forms;
@@ -51,6 +52,12 @@ class UserResource extends ReferentielResource
                 ->relationship('service', 'lib_service')->searchable()->preload()
                 ->visible(fn (Get $get) => $get('role') === RoleEnum::agentService->value)
                 ->required(fn (Get $get) => $get('role') === RoleEnum::agentService->value),
+            // Le DP est responsable des demandes des départements qu'il couvre.
+            Forms\Components\Select::make('departements')->label('Départements couverts')
+                ->multiple()->searchable()->preload()
+                ->options(fn () => Departement::orderBy('lib_departement')->pluck('lib_departement', 'id_departement'))
+                ->visible(fn (Get $get) => $get('role') === RoleEnum::dp->value)
+                ->required(fn (Get $get) => $get('role') === RoleEnum::dp->value),
         ];
     }
 
@@ -62,6 +69,7 @@ class UserResource extends ReferentielResource
             Tables\Columns\TextColumn::make('roles.name')->label('Rôle')->badge()
                 ->formatStateUsing(fn (?string $state) => RoleEnum::tryFrom((string) $state)?->libelle() ?? $state),
             Tables\Columns\TextColumn::make('service.lib_service')->label('Service'),
+            Tables\Columns\TextColumn::make('departements.lib_departement')->label('Départements')->badge()->toggleable(),
             Tables\Columns\IconColumn::make('actif')->label('Actif')->boolean(),
             Tables\Columns\TextColumn::make('derniere_connexion_le')->label('Dernière connexion')->dateTime('d/m/Y H:i')->placeholder('Jamais')->sortable(),
         ];
@@ -76,7 +84,10 @@ class UserResource extends ReferentielResource
             ])
             ->actions([
                 Tables\Actions\EditAction::make()
-                    ->mutateRecordDataUsing(fn (array $data, User $record) => $data + ['role' => $record->roles->first()?->name])
+                    ->mutateRecordDataUsing(fn (array $data, User $record) => $data + [
+                        'role' => $record->roles->first()?->name,
+                        'departements' => $record->departements->pluck('id_departement')->all(),
+                    ])
                     ->using(fn (Model $record, array $data) => app(CompteService::class)->modifier($record, $data)),
                 // Désactiver plutôt que supprimer : la personne ne se connecte plus, son historique reste.
                 Tables\Actions\Action::make('desactiver')

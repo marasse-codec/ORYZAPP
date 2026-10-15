@@ -1,5 +1,5 @@
 @startuml uc_delegue_pole
-title Cas d'utilisation : Délégué de pôle
+title Cas d'utilisation : Délégué de pôle (responsable de départements)
 !include ../style.puml
 left to right direction
 
@@ -7,30 +7,35 @@ actor "Délégué de pôle" as DP
 
 rectangle "<b>Plateforme ORYZA</b>" {
     usecase "S'authentifier" as UC_Auth
-    usecase "Enregistrer une demande" as UC_Demande
-    usecase "Saisir hors ligne\n(brouillon sur l'appareil)" as UC_HorsLigne $NOUVEAU
-    usecase "Saisir une série\nde demandes" as UC_Serie
-    usecase "Enregistrer la visite\nde terrain" as UC_Visite
+    usecase "Suivre les demandes\nde ses départements" as UC_Suivre $NOUVEAU
+    usecase "Consulter la chronologie\nd'un dossier" as UC_Chrono
+    usecase "Consulter les attributions\npubliées de ses départements" as UC_Attributions $NOUVEAU
+    usecase "Recevoir les notifications\nde ses départements" as UC_Notif $NOUVEAU
+    usecase "Enregistrer une demande\n(majeur, mise en place ≥ 3 mois)" as UC_Demande
+    usecase "Saisir hors ligne" as UC_HorsLigne
+    usecase "Saisir une série de demandes" as UC_Serie
+    usecase "Enregistrer la visite de terrain" as UC_Visite
     usecase "Soumettre une demande" as UC_Soumettre
-    usecase "Suivre ses demandes" as UC_Suivre
-    usecase "Consulter la chronologie\nd'un dossier" as UC_Chrono $NOUVEAU
     usecase "Transmettre les rendements" as UC_Rendement
 }
 
+DP --> UC_Suivre
+DP --> UC_Attributions
+DP --> UC_Notif
 DP --> UC_Demande
 DP --> UC_Serie
 DP --> UC_Visite
 DP --> UC_Soumettre
-DP --> UC_Suivre
 DP --> UC_Rendement
 
-UC_HorsLigne .> UC_Demande : <<extend>>
 UC_Chrono .> UC_Suivre : <<extend>>
+UC_HorsLigne .> UC_Demande : <<extend>>
 UC_Soumettre ..> UC_Visite : <<include>>
-UC_Demande ..> UC_Auth : <<include>>
+UC_Suivre ..> UC_Auth : <<include>>
 
-note bottom of UC_Demande
-  Refusé si la campagne est clôturée
-  ou si l'acteur est en impayé.
+note right of DP
+  Responsable des départements que l'administrateur
+  lui attribue : il suit toutes leurs demandes,
+  qu'il les ait saisies ou non.
 end note
 @enduml

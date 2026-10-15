@@ -9,8 +9,8 @@
                    :indice="$synthese['taux'] !== null ? number_format($synthese['taux'], 1, ',', ' ').' % du dû' : null" />
         <x-ui.stat libelle="Reste à encaisser" :ton="$synthese['reste'] > 0 ? 'rouge' : 'vert'" :valeur="number_format($synthese['reste'], 0, ',', ' ').' F'"
                    :indice="$synthese['nb_attributions'].' attribution(s) non soldée(s)'" />
-        <x-ui.stat libelle="Acteurs bloqués" :ton="$synthese['nb_acteurs'] > 0 ? 'ambre' : 'vert'" :valeur="$synthese['nb_acteurs']"
-                   indice="Aucune nouvelle demande possible" />
+        <x-ui.stat libelle="Brouillons à soumettre" :ton="$synthese['nb_brouillons'] > 0 ? 'ambre' : 'vert'" :valeur="$synthese['nb_brouillons']"
+                   :href="route('comptabilite.reglements')" indice="Règlements saisis, pas encore pris en compte" />
     </div>
 
     <div class="grid gap-4 lg:grid-cols-2">
@@ -18,7 +18,7 @@
             <ul class="divide-y divide-[--color-border]">
                 @forelse ($reglements['acteurs'] as $ligne)
                     <li>
-                        <a href="{{ route('attributions.show', $ligne['attributions']->first()->id_attribution) }}"
+                        <a href="{{ route('comptabilite.reglement', $ligne['attributions']->first()->id_attribution) }}"
                            class="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 px-4 py-3 text-sm hover:bg-slate-50 sm:px-6">
                             <span class="min-w-0 truncate font-medium text-[--color-ink]">{{ $ligne['acteur']->nom }}
                                 <span class="text-xs font-normal text-[--color-muted]">· {{ $ligne['attributions']->count() }} attribution(s)</span>
@@ -36,7 +36,7 @@
             <ul class="divide-y divide-[--color-border]">
                 @forelse ($reglements['attributions'] as $attribution)
                     <li>
-                        <a href="{{ route('attributions.show', $attribution->id_attribution) }}"
+                        <a href="{{ route('comptabilite.reglement', $attribution->id_attribution) }}"
                            class="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 px-4 py-3 text-sm hover:bg-slate-50 sm:px-6">
                             <span class="min-w-0 truncate text-[--color-ink]">
                                 <span class="font-medium">N° {{ str_pad($attribution->id_attribution, 3, '0', STR_PAD_LEFT) }}</span>

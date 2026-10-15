@@ -1,6 +1,6 @@
 @props(['typesAppuis', 'appuisDisponibles', 'demande' => null])
 
-<section x-show="step === 4" x-cloak class="p-6 space-y-6"
+<section data-etape="4" x-show="step === 4" x-cloak class="p-6 space-y-6"
          x-data="{
              tousLesAppuis: {{ Illuminate\Support\Js::from($appuisDisponibles) }},
              
@@ -26,7 +26,7 @@
                 
                 {{-- 1. Type d'appui --}}
                 <div class="sm:col-span-5">
-                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1" x-text="'Appui n°' + (index + 1) + ' *'"></label>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1"><span x-text="'Appui n°' + (index + 1)"></span><span class="ml-0.5 text-red-600" aria-hidden="true">*</span></label>
                     <select x-bind:name="`lignes[${index}][id_type_appui]`" 
                             x-model="ligne.id_type_appui" 
                             @change="ligne.id_appui = ''" 

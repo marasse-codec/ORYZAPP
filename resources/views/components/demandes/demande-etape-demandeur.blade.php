@@ -1,16 +1,19 @@
 @props(['demande' => null]) 
 
-<section x-show="step === 1" x-cloak class="p-6 space-y-5" @click.away="suggestionsActeurs = []">
+<section data-etape="1" x-show="step === 1" x-cloak class="p-6 space-y-5" @click.away="suggestionsActeurs = []">
     <div>
         <h2 class="text-lg font-semibold text-[--color-primary]">1. Informations du demandeur</h2>
-        <p class="text-sm text-slate-500">Renseignez le nom et la date de naissance pour vérifier si l'acteur existe déjà.</p>
+        <p class="text-sm text-slate-500">Renseignez le nom et la date de naissance pour vérifier si l'acteur existe déjà. Le demandeur doit être majeur (18 ans révolus).</p>
     </div>
 
     <div class="p-4 rounded-xl border border-slate-200 bg-slate-50/70 space-y-4 relative">
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-                <x-input-label for="date_naissance" value="Date de naissance" class="font-semibold text-slate-800" />
-                <x-text-input id="date_naissance" name="date_naissance" type="date" 
+                <x-input-label for="date_naissance" value="Date de naissance" obligatoire class="font-semibold text-slate-800" />
+                {{-- Majeur : 18 ans révolus (cf. ReglesDemande). --}}
+                <x-text-input id="date_naissance" name="date_naissance" type="date"
+                              max="{{ \App\Domain\Demande\Support\ReglesDemande::dateNaissanceMax()->toDateString() }}"
+                              title="{{ \App\Domain\Demande\Support\ReglesDemande::messageMajorite() }}" 
                               x-model="dateNaissance" 
                               @change="rechercherActeurParNomEtDate()"
                               class="block w-full bg-white" required />
@@ -18,7 +21,7 @@
             </div>
 
             <div class="relative">
-                <x-input-label for="recherche_nom" value="Nom et prénoms" class="font-semibold text-slate-800" />
+                <x-input-label for="recherche_nom" value="Nom et prénoms" obligatoire class="font-semibold text-slate-800" />
                 <x-text-input id="recherche_nom" name="nom" type="text" 
                               x-model="nom" 
                               @input.debounce.300ms="rechercherActeurParNomEtDate()"
@@ -55,14 +58,14 @@
 
     <div class="grid gap-4 sm:grid-cols-2">
         <div class="sm:col-span-2" x-show="aBesoinNomStructure" x-cloak x-transition>
-            <x-input-label for="nom_structure" value="Nom de la structure / organisation" />
+            <x-input-label for="nom_structure" value="Nom de la structure / organisation" obligatoire />
             <x-text-input id="nom_structure" name="nom_structure" type="text" class="mt-1 block w-full"
                           x-model="nomStructure" x-bind:required="aBesoinNomStructure" />
             <x-input-error :messages="$errors->get('nom_structure')" class="mt-1" />
         </div>
 
         <div>
-            <x-input-label for="telephone" value="Numéro de téléphone" />
+            <x-input-label for="telephone" value="Numéro de téléphone" obligatoire />
             <x-text-input id="telephone" name="telephone" type="tel" class="mt-1 block w-full" x-model="telephone" required />
             <x-input-error :messages="$errors->get('telephone')" class="mt-1" />
         </div>

@@ -34,7 +34,8 @@
 @section('content')
 <div
     x-data="{
-        step: 1,
+        // Après un refus du serveur, on rouvre l'étape du premier champ en erreur.
+        step: {{ $errors->any() ? \App\Domain\Demande\Support\ReglesDemande::etapeEnErreur($errors->keys()) : 1 }},
         totalSteps: 4,
         idTypeActeur: '{{ old('id_type_acteur', '') }}',
         lignes: {{ Illuminate\Support\Js::from(array_values($lignesInitiales)) }},
@@ -201,8 +202,22 @@
             if (this.lignes.length > 1) this.lignes.splice(index, 1);
         },
 
-        suivant() { if (this.step < this.totalSteps) this.step++; },
+        // On ne passe à l'étape suivante que si ses champs obligatoires sont remplis.
+        suivant() {
+            if (!window.FormulaireEtapes?.etapeValide(this.$root, this.step)) return;
+            if (this.step < this.totalSteps) this.step++;
+        },
         precedent() { if (this.step > 1) this.step--; },
+
+        // À l'envoi, un champ manquant ramène à l'étape où il se trouve.
+        verifierAvantEnvoi(evenement) {
+            const invalide = window.FormulaireEtapes?.premierInvalide(evenement.target);
+            if (!invalide) return true;
+            evenement.preventDefault();
+            if (invalide.etape) this.step = invalide.etape;
+            this.$nextTick(() => invalide.champ.reportValidity());
+            return false;
+        },
     }"
     class="mx-auto w-full max-w-4xl space-y-6"
 >
@@ -265,9 +280,12 @@
 
         <form method="POST" action="{{ route('demandes.store') }}" enctype="multipart/form-data"
               @input="planifierSauvegarde()" @change="planifierSauvegarde()"
-              @submit="if (!navigator.onLine) { $event.preventDefault(); sauvegarderBrouillon(); alert('Vous êtes hors ligne : la demande est gardée sur cet appareil. Envoyez-la quand la connexion sera revenue.'); }"
+              novalidate
+              @submit="if (!navigator.onLine) { $event.preventDefault(); sauvegarderBrouillon(); alert('Vous êtes hors ligne : la demande est gardée sur cet appareil. Envoyez-la quand la connexion sera revenue.'); return; } verifierAvantEnvoi($event)"
               class="bg-white rounded-xl shadow-sm border border-slate-200">
             @csrf
+            {{-- Les champs à remplir portent un astérisque rouge. --}}
+            <p class="px-6 pt-4 text-xs text-slate-500">Les champs marqués <span class="text-red-600">*</span> sont obligatoires.</p>
 
             <input type="hidden" name="id_acteur" :value="idActeurExistant">
 

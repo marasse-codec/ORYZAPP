@@ -104,8 +104,9 @@ class ClotureCampagneTest extends TestCase
         }
 
         // Une dette ne disparaît pas avec la clôture.
-        app(ReglementService::class)->enregistrerPaiement($attribution, ['montant' => 500, 'date_paiement' => today()->toDateString(), 'mode' => ModePaiementEnum::especes->value]);
-        $this->assertSame(1, $attribution->paiements()->count());
+        $reglements = app(ReglementService::class);
+        $reglements->soumettre($reglements->creerBrouillon($attribution, ['montant' => 500, 'date_paiement' => today()->toDateString(), 'mode' => ModePaiementEnum::especes->value]));
+        $this->assertSame(1, $attribution->paiements()->soumis()->count());
     }
 
     public function test_on_ne_cloture_pas_deux_fois(): void

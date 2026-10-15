@@ -5,12 +5,14 @@ namespace Tests\Feature;
 use App\Domain\Commission\Enums\ModePaiementEnum;
 use App\Domain\Commission\Models\Attribution;
 use App\Domain\Commission\Models\LigneAttribution;
+use App\Domain\Commission\Models\Paiement;
 use App\Domain\Commission\Services\ReglementService;
 use App\Domain\Demande\Models\Acteur;
 use App\Domain\Demande\Models\Demande;
 use App\Domain\Demande\Services\CreationDemandeSerieService;
 use App\Domain\Demande\Services\CreationDemandeService;
 use App\Domain\Journal\Enums\ActionJournalEnum;
+use App\Domain\Journal\Models\JournalAction;
 use App\Domain\Referentiel\Models\Campagne;
 use App\Domain\Shared\Exceptions\RegleMetierViolee;
 use App\Models\User;
@@ -56,7 +58,7 @@ class ReglementTest extends TestCase
             'localites' => [1],
             'id_campagne' => Campagne::enCours()->id_campagne,
             'periode_debut_mise_en_place' => '2026-11-01',
-            'periode_fin_mise_en_place' => '2027-01-31',
+            'periode_fin_mise_en_place' => '2027-02-01',
             'lignes' => [['id_type_appui' => 1, 'id_appui' => 1, 'quantite_demandee' => 5]],
         ];
     }
@@ -66,6 +68,20 @@ class ReglementTest extends TestCase
         return $surcharge + ['montant' => 4000, 'date_paiement' => today()->toDateString(), 'mode' => ModePaiementEnum::mobileMoney->value];
     }
 
+    /** Un règlement déjà soumis, créé directement (pour préparer une situation). */
+    private function paiementSoumis(array $surcharge = []): array
+    {
+        return $this->paiement($surcharge) + ['date_soumission' => now()];
+    }
+
+    /** Le parcours du comptable : saisie en brouillon, puis soumission. */
+    private function regler(Attribution $attribution, array $donnees): Paiement
+    {
+        $service = app(ReglementService::class);
+
+        return $service->soumettre($service->creerBrouillon($attribution, $donnees));
+    }
+
     // ------------------------------------------------------------------ Reste dû
 
     public function test_le_reste_du_se_deduit_du_montant_et_des_paiements(): void
@@ -73,7 +89,12 @@ class ReglementTest extends TestCase
         $attribution = $this->attributionPubliee();
         $this->assertSame(10000.0, $attribution->resteDu());
 
-        $attribution->paiements()->create($this->paiement(['montant' => 4000]));
+        // Un brouillon ne compte pas : seul un règlement soumis diminue le reste dû.
+        $attribution->paiements()->create($this->paiement(['montant' => 1000]));
+        $this->assertSame(10000.0, $attribution->refresh()->resteDu());
+        $this->assertSame(1000.0, $attribution->totalBrouillons());
+
+        $attribution->paiements()->create($this->paiementSoumis(['montant' => 4000]));
 
         $attribution->refresh();
         $this->assertSame(4000.0, $attribution->totalPaye());
@@ -106,10 +127,12 @@ class ReglementTest extends TestCase
         $attribution = $this->attributionPubliee();
         $this->actingAs(User::role('admin')->first());
 
-        $service->enregistrerPaiement($attribution, $this->paiement(['montant' => 4000]));
+        $brouillon = $service->creerBrouillon($attribution, $this->paiement(['montant' => 4000]));
+        $this->assertSame(10000.0, $attribution->refresh()->resteDu());     // brouillon : rien n'est encore payé
+        $service->soumettre($brouillon);
         $this->assertTrue($service->estEnImpaye($this->acteur));
 
-        $service->enregistrerPaiement($attribution->refresh(), $this->paiement(['montant' => 6000]));
+        $this->regler($attribution->refresh(), $this->paiement(['montant' => 6000]));
         $this->assertTrue($attribution->refresh()->estReglee());
         $this->assertFalse($service->estEnImpaye($this->acteur));
         $this->assertDatabaseHas('journals_actions', ['action' => ActionJournalEnum::paiementEnregistre->value, 'cible_id' => $attribution->id_attribution]);
@@ -121,10 +144,10 @@ class ReglementTest extends TestCase
         $this->actingAs(User::role('admin')->first());
 
         $this->expectException(RegleMetierViolee::class);
-        $this->expectExceptionMessage('dépasse le reste dû');
+        $this->expectExceptionMessage('ne pas dépasser le reste dû');
 
         try {
-            app(ReglementService::class)->enregistrerPaiement($attribution, $this->paiement(['montant' => 10001]));
+            app(ReglementService::class)->creerBrouillon($attribution, $this->paiement(['montant' => 10001]));
         } finally {
             $this->assertSame(0, $attribution->paiements()->count());
         }
@@ -136,40 +159,68 @@ class ReglementTest extends TestCase
         $this->actingAs(User::role('admin')->first());
 
         try {
-            $service->enregistrerPaiement($this->attributionPubliee(publiee: false), $this->paiement());
+            $service->creerBrouillon($this->attributionPubliee(publiee: false), $this->paiement());
             $this->fail('Une attribution non publiée ne se règle pas.');
         } catch (RegleMetierViolee $e) {
             $this->assertStringContainsString('pas publiés', $e->getMessage());
         }
 
         $soldee = $this->attributionPubliee();
-        $service->enregistrerPaiement($soldee, $this->paiement(['montant' => 10000]));
+        $this->regler($soldee, $this->paiement(['montant' => 10000]));
 
         $this->expectException(RegleMetierViolee::class);
         $this->expectExceptionMessage('déjà soldée');
-        $service->enregistrerPaiement($soldee->refresh(), $this->paiement(['montant' => 1]));
+        $service->creerBrouillon($soldee->refresh(), $this->paiement(['montant' => 1]));
     }
 
     public function test_seul_qui_tient_la_caisse_enregistre_un_reglement(): void
     {
         $attribution = $this->attributionPubliee();
-        $url = route('attributions.paiements.store', $attribution->id_attribution);
+        $url = route('comptabilite.reglement.creer', $attribution->id_attribution);
 
         $this->actingAs(User::role('dp')->first())->post($url, $this->paiement())->assertForbidden();
         $this->actingAs(User::role('gestionnaire-stock')->first())->post($url, $this->paiement())->assertForbidden();
         $this->assertSame(0, $attribution->paiements()->count());
 
-        $this->actingAs(User::role('admin')->first())->post($url, $this->paiement())
-            ->assertRedirect(route('attributions.show', $attribution->id_attribution))
+        $this->actingAs(User::role('comptable')->first())->post($url, $this->paiement())
+            ->assertRedirect(route('comptabilite.reglement', $attribution->id_attribution))
             ->assertSessionHas('success');
-        $this->assertSame(1, $attribution->paiements()->count());
+        $this->assertSame(1, $attribution->paiements()->brouillons()->count());
+    }
+
+    public function test_un_brouillon_se_corrige_se_supprime_ou_se_soumet(): void
+    {
+        $attribution = $this->attributionPubliee();
+        $this->actingAs(User::role('comptable')->first());
+
+        $this->post(route('comptabilite.reglement.creer', $attribution), $this->paiement(['montant' => 3000]));
+        $brouillon = $attribution->paiements()->sole();
+
+        $this->put(route('comptabilite.reglement.modifier', $brouillon), $this->paiement(['montant' => 3500]))->assertSessionHas('success');
+        $this->assertSame(3500.0, (float) $brouillon->refresh()->montant);
+        $ecart = JournalAction::where('action', ActionJournalEnum::paiementBrouillonModifie->value)->sole()->details['montant'];
+        $this->assertEquals([3000.0, 3500.0], [(float) $ecart['avant'], (float) $ecart['apres']]);   // l'avant et l'après au journal
+
+        $this->post(route('comptabilite.reglement.soumettre', $brouillon))->assertSessionHas('success');
+        $this->assertTrue($brouillon->refresh()->estSoumis());
+        $this->assertSame(6500.0, $attribution->refresh()->resteDu());
+
+        // Soumis, il est définitif.
+        $this->delete(route('comptabilite.reglement.supprimer', $brouillon))->assertSessionHas('error');
+        $this->assertDatabaseHas('paiements', ['id_paiement' => $brouillon->id_paiement]);
+
+        // Un autre brouillon se supprime sans laisser de règlement.
+        $this->post(route('comptabilite.reglement.creer', $attribution), $this->paiement(['montant' => 100]));
+        $autre = $attribution->paiements()->brouillons()->sole();
+        $this->delete(route('comptabilite.reglement.supprimer', $autre))->assertSessionHas('success');
+        $this->assertDatabaseMissing('paiements', ['id_paiement' => $autre->id_paiement]);
     }
 
     public function test_la_saisie_est_validee_et_un_depassement_est_explique(): void
     {
         $attribution = $this->attributionPubliee();
-        $url = route('attributions.paiements.store', $attribution->id_attribution);
-        $this->actingAs(User::role('admin')->first());
+        $url = route('comptabilite.reglement.creer', $attribution->id_attribution);
+        $this->actingAs(User::role('comptable')->first());
 
         $this->post($url, $this->paiement(['montant' => 0]))->assertSessionHasErrors('montant');
         $this->post($url, $this->paiement(['mode' => 'troc']))->assertSessionHasErrors('mode');
@@ -177,6 +228,28 @@ class ReglementTest extends TestCase
 
         $this->post($url, $this->paiement(['montant' => 99999]))->assertSessionHas('error');
         $this->assertSame(0, $attribution->paiements()->count());
+    }
+
+    public function test_le_comptable_retrouve_une_attribution_par_son_numero_ou_le_demandeur(): void
+    {
+        $attribution = $this->attributionPubliee();
+        $autre = $this->attributionPubliee(Acteur::create(['nom' => 'Traoré', 'telephone' => '0102030405', 'date_naissance' => '1985-03-03']));
+        $service = app(ReglementService::class);
+
+        $this->assertSame([$attribution->id_attribution], $service->rechercherAttributions('ATT-'.$attribution->id_attribution)->pluck('id_attribution')->all());
+        $this->assertSame([$attribution->id_attribution], $service->rechercherAttributions((string) $attribution->id_attribution)->pluck('id_attribution')->all());
+        $this->assertSame([$autre->id_attribution], $service->rechercherAttributions('DEM-'.$autre->id_demande)->pluck('id_attribution')->all());
+        $this->assertSame([$autre->id_attribution], $service->rechercherAttributions('01 02 03 04 05')->pluck('id_attribution')->all());
+        $this->assertSame([$attribution->id_attribution], $service->rechercherAttributions('Kouas')->pluck('id_attribution')->all());
+
+        $this->actingAs(User::role('comptable')->first())
+            ->get(route('comptabilite.attributions', ['q' => 'Traoré']))
+            ->assertOk()
+            ->assertSee('ATT-'.str_pad($autre->id_attribution, 3, '0', STR_PAD_LEFT))
+            ->assertSee('Enregistrer un règlement')
+            ->assertDontSee('ATT-'.str_pad($attribution->id_attribution, 3, '0', STR_PAD_LEFT));
+
+        $this->get(route('comptabilite.reglement', $autre))->assertOk()->assertSee('Enregistrer en brouillon');
     }
 
     // ----------------------------------------------------------------- Blocage
@@ -214,7 +287,7 @@ class ReglementTest extends TestCase
     {
         $attribution = $this->attributionPubliee();
         $this->actingAs(User::role('admin')->first());
-        app(ReglementService::class)->enregistrerPaiement($attribution, $this->paiement(['montant' => 10000]));
+        $this->regler($attribution, $this->paiement(['montant' => 10000]));
 
         $this->actingAs(User::role('dp')->first());
         $demande = app(CreationDemandeService::class)->creer($this->donneesDemande());
@@ -246,7 +319,7 @@ class ReglementTest extends TestCase
                 'id_campagne' => Campagne::enCours()->id_campagne,
                 'localites' => [1],
                 'periode_debut_mise_en_place' => '2026-11-01',
-                'periode_fin_mise_en_place' => '2027-01-31',
+                'periode_fin_mise_en_place' => '2027-02-01',
                 'appuis' => [['id_type_appui' => 1, 'id_appui' => 1]],
             ], [
                 ['nom' => 'Libre', 'date_naissance' => '1991-01-01', 'telephone' => '0701'],
@@ -273,16 +346,16 @@ class ReglementTest extends TestCase
     public function test_laccueil_de_ladmin_liste_les_acteurs_et_attributions_non_soldes(): void
     {
         $attribution = $this->attributionPubliee();
-        $attribution->paiements()->create($this->paiement(['montant' => 4000]));
+        $attribution->paiements()->create($this->paiementSoumis(['montant' => 4000]));
         $soldee = $this->attributionPubliee(Acteur::create(['nom' => 'Soldé', 'telephone' => '0702', 'date_naissance' => '1975-02-02']));
-        $soldee->paiements()->create($this->paiement(['montant' => 10000]));
+        $soldee->paiements()->create($this->paiementSoumis(['montant' => 10000]));
 
         $this->actingAs(User::role('admin')->first())
             ->get(route('dashboard'))
             ->assertOk()
             ->assertSee('Acteurs en impayé')
             ->assertSee('Kouassi')
-            ->assertSee('Acteurs bloqués');
+            ->assertSee('Brouillons à soumettre');
 
         // L'acteur soldé figure parmi les dernières attributions, mais pas parmi les impayés.
         $this->assertSame(['Kouassi'], app(ReglementService::class)->acteursEnImpaye()->pluck('acteur.nom')->all());
@@ -310,13 +383,13 @@ class ReglementTest extends TestCase
     public function test_la_fiche_de_lattribution_montre_le_reglement(): void
     {
         $attribution = $this->attributionPubliee();
-        $attribution->paiements()->create($this->paiement(['montant' => 4000]));
+        $attribution->paiements()->create($this->paiementSoumis(['montant' => 4000]));
 
-        $this->actingAs(User::role('admin')->first())
+        $this->actingAs(User::role('comptable')->first())
             ->get(route('attributions.show', $attribution->id_attribution))
             ->assertOk()
             ->assertSee('Reste à payer')
-            ->assertSee('Enregistrer le règlement');
+            ->assertSee(route('comptabilite.reglement', $attribution->id_attribution), false);
 
         // Le DP voit où il en est, mais ne tient pas la caisse.
         $attribution->demande->update(['id_user' => User::role('dp')->value('id')]);
@@ -324,6 +397,6 @@ class ReglementTest extends TestCase
             ->get(route('attributions.show', $attribution->id_attribution))
             ->assertOk()
             ->assertSee('Reste à payer')
-            ->assertDontSee('Enregistrer le règlement');
+            ->assertDontSee('Enregistrer un règlement');
     }
 }

@@ -92,12 +92,20 @@ class Attribution extends Model
         return (float) $this->lignesAttributions->sum(fn (LigneAttribution $ligne) => $ligne->montant());
     }
 
-    /** Ce que l'acteur a déjà réglé. */
+    /** Ce que l'acteur a déjà réglé : seuls les règlements soumis comptent, pas les brouillons. */
     public function totalPaye(): float
     {
         $this->loadMissing('paiements');
 
-        return round((float) $this->paiements->sum('montant'), 2);
+        return round((float) $this->paiements->filter(fn (Paiement $p) => $p->estSoumis())->sum('montant'), 2);
+    }
+
+    /** Le total des règlements encore en brouillon (saisis, pas encore soumis). */
+    public function totalBrouillons(): float
+    {
+        $this->loadMissing('paiements');
+
+        return round((float) $this->paiements->reject(fn (Paiement $p) => $p->estSoumis())->sum('montant'), 2);
     }
 
     /**
@@ -124,9 +132,16 @@ class Attribution extends Model
     {
         $user = Auth::user();
 
+        // Le DP voit les attributions publiées des demandes dont il est responsable (ses départements).
         if ($user?->hasRole(RoleEnum::dp->value)) {
             return $query->whereNotNull('date_publication')
-                ->whereHas('demande.user', fn ($q) => $q->where('id', $user->id));
+                ->whereHas('demande', fn ($q) => $q->sousResponsabiliteDe($user));
+        } else if ($user?->hasRole(RoleEnum::comptable->value)) {
+            // La comptabilité règle ce qui est dû : seules les attributions publiées l'intéressent.
+            return $query->whereNotNull('date_publication');
+        } else if ($user?->hasRole(RoleEnum::gestionnaireStock->value)) {
+            // Le magasin sert les bons depuis « Enlèvements » : il ne consulte pas les attributions.
+            return $query->whereRaw('1 = 0');
         } else if ($user->hasRole(RoleEnum::agentService->value)) {
             return $query->whereHas('lignesAttributions.appui.typeAppui', fn ($q) => $q->where('id_service', $user->id_service));
         }
@@ -142,7 +157,7 @@ class Attribution extends Model
         $this->save();
     }
 
-    /** Le DP de la demande, ou l'admin, renseigne les rendements des superficies. */
+    /** Un DP responsable de la demande, ou l'admin, renseigne les rendements des superficies. */
     public function rendementsSaisissablesPar(?User $user): bool
     {
         if (! $user) {
@@ -150,7 +165,7 @@ class Attribution extends Model
         }
 
         return $user->hasRole(RoleEnum::admin->value)
-            || ($user->hasRole(RoleEnum::dp->value) && $this->demande?->id_user === $user->id);
+            || ($user->hasRole(RoleEnum::dp->value) && $this->demande?->responsables()->contains('id', $user->id));
     }
 
     /**

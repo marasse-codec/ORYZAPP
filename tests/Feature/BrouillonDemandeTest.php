@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Domain\Demande\Models\BrouillonSaisie;
 use App\Models\User;
+use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -11,9 +12,21 @@ class BrouillonDemandeTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->seed(RolePermissionSeeder::class);
+    }
+
+    /** Un délégué de pôle : le brouillon de demande sert à qui saisit des demandes. */
+    private function dp(): User
+    {
+        return User::factory()->create()->assignRole('dp');
+    }
+
     public function test_le_brouillon_est_enregistre_puis_remplace_et_relu(): void
     {
-        $user = User::factory()->create();
+        $user = $this->dp();
 
         $this->actingAs($user)->putJson(route('demandes.brouillon.save'), ['donnees' => ['nom' => 'Rakoto', 'step' => 2]])->assertOk();
         $this->actingAs($user)->putJson(route('demandes.brouillon.save'), ['donnees' => ['nom' => 'Rakoto Jean', 'step' => 3]])->assertOk();
@@ -25,7 +38,7 @@ class BrouillonDemandeTest extends TestCase
 
     public function test_le_brouillon_est_propre_a_chaque_utilisateur(): void
     {
-        [$a, $b] = User::factory()->count(2)->create();
+        [$a, $b] = [$this->dp(), $this->dp()];
 
         $this->actingAs($a)->putJson(route('demandes.brouillon.save'), ['donnees' => ['nom' => 'A']])->assertOk();
 
@@ -36,7 +49,7 @@ class BrouillonDemandeTest extends TestCase
 
     public function test_le_brouillon_peut_etre_supprime_et_exige_une_session(): void
     {
-        $user = User::factory()->create();
+        $user = $this->dp();
         $this->putJson(route('demandes.brouillon.save'), ['donnees' => ['nom' => 'X']])->assertRedirect();
 
         $this->actingAs($user)->putJson(route('demandes.brouillon.save'), ['donnees' => ['nom' => 'X']]);

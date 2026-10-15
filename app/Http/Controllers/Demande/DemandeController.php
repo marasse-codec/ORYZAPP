@@ -189,7 +189,8 @@ class DemandeController extends Controller
     }
     public function show(string $id, ChronologieDemandeService $chronologie)
     {
-        $demande = Demande::with([
+        // Seulement dans son périmètre (le DP : les demandes de ses départements).
+        $demande = Demande::query()->pourUtilisateur()->with([
             'acteur',
             'sessionCommission',
             'typeActeur',

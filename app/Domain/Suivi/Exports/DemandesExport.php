@@ -2,7 +2,6 @@
 
 namespace App\Domain\Suivi\Exports;
 
-use App\Domain\Acces\Enums\RoleEnum;
 use App\Domain\Demande\Models\Demande;
 use App\Domain\Referentiel\Models\TypeSystemeProduction;
 use Illuminate\Database\Eloquent\Builder;
@@ -17,7 +16,7 @@ use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
 /**
  * L'export Excel des demandes : une ligne par demande, dans le périmètre de l'utilisateur
- * (le DP ne voit que les siennes, cf. Demande::scopePourUtilisateur pour les autres rôles).
+ * (cf. Demande::scopePourUtilisateur : le DP, celles de ses départements ; etc.).
  */
 class DemandesExport implements FromCollection, WithHeadings, WithMapping, ShouldAutoSize, WithStyles
 {
@@ -67,11 +66,7 @@ class DemandesExport implements FromCollection, WithHeadings, WithMapping, Shoul
     /** Les demandes que l'utilisateur connecté a le droit de voir. */
     public static function perimetre(): Builder
     {
-        $user = auth()->user();
-
-        return $user->hasRole(RoleEnum::dp->value)
-            ? Demande::query()->where('id_user', $user->id)
-            : Demande::query()->pourUtilisateur();
+        return Demande::query()->pourUtilisateur();
     }
 
     private function ecologies(): Collection

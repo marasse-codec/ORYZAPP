@@ -42,7 +42,7 @@ class SaisieSerieTest extends TestCase
             'id_type_acteur' => 1,
             'localites' => [1, 2],
             'periode_debut_mise_en_place' => '2026-11-01',
-            'periode_fin_mise_en_place' => '2027-01-31',
+            'periode_fin_mise_en_place' => '2027-02-01',
             'appuis' => [
                 ['id_type_appui' => 1, 'id_appui' => 1],
                 ['id_type_appui' => 3, 'id_appui' => ''],
@@ -71,9 +71,12 @@ class SaisieSerieTest extends TestCase
 
     public function test_un_agent_peut_aussi_creer_des_demandes_en_serie(): void
     {
-        foreach (['agent-commission', 'agent-service', 'gestionnaire-stock'] as $role) {
+        foreach (['agent-commission', 'agent-service'] as $role) {
             $this->actingAs(User::role($role)->first())->get(route('demandes.serie.create'))->assertOk();
         }
+
+        // Le magasin ne saisit pas de demandes : il ne s'occupe que des stocks.
+        $this->actingAs(User::role('gestionnaire-stock')->first())->get(route('demandes.serie.create'))->assertForbidden();
 
         $agent = User::role('agent-service')->first();
         $this->actingAs($agent)->post(route('demandes.serie.store'), $this->lot())->assertSessionHas('success');

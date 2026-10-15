@@ -44,7 +44,7 @@ class JournalisationTest extends TestCase
         $demande = app(CreationDemandeService::class)->creer([
             'id_type_acteur' => 1, 'nom' => 'Kouassi', 'telephone' => '0700000000', 'date_naissance' => '1980-01-01',
             'localites' => [1], 'id_campagne' => $this->campagne->id_campagne,
-            'periode_debut_mise_en_place' => '2026-11-01', 'periode_fin_mise_en_place' => '2027-01-31',
+            'periode_debut_mise_en_place' => '2026-11-01', 'periode_fin_mise_en_place' => '2027-02-01',
             'lignes' => [['id_type_appui' => 1, 'id_appui' => 1, 'quantite_demandee' => 5]],
         ]);
         $creee = $this->trace(ActionJournalEnum::demandeCreee);
@@ -159,7 +159,7 @@ class JournalisationTest extends TestCase
             app(CreationDemandeService::class)->creer([
                 'id_type_acteur' => 1, 'nom' => 'Fantôme', 'telephone' => '0700000001', 'date_naissance' => '1980-01-01',
                 'localites' => [1], 'id_campagne' => $this->campagne->id_campagne,
-                'periode_debut_mise_en_place' => '2026-11-01', 'periode_fin_mise_en_place' => '2027-01-31',
+                'periode_debut_mise_en_place' => '2026-11-01', 'periode_fin_mise_en_place' => '2027-02-01',
                 'lignes' => [['id_type_appui' => 999, 'id_appui' => null, 'quantite_demandee' => 1]],
             ]);
         } catch (QueryException) {

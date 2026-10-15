@@ -1,28 +1,38 @@
 @startuml uc_comptable
-title Cas d'utilisation : Comptable (nouveau rôle)
+title Cas d'utilisation : Comptable
 !include ../style.puml
 left to right direction
 
 actor "Comptable" as Comptable
 
-rectangle "<b>Plateforme ORYZA</b>" {
+rectangle "<b>Plateforme ORYZA — Comptabilité</b>" {
     usecase "S'authentifier" as UC_Auth
-    usecase "Consulter la caisse\n(dû, encaissé, reste)" as UC_Caisse $NOUVEAU
-    usecase "Enregistrer un règlement" as UC_Reglement
-    usecase "Suivre les acteurs\nen impayé" as UC_Impayes
-    usecase "Télécharger le rapport\nde campagne (PDF)" as UC_Rapport $NOUVEAU
+    usecase "Consulter la caisse\n(tableau de bord)" as UC_Caisse $NOUVEAU
+    usecase "Rechercher une attribution\n(n° d'attribution, n° de demande,\ntéléphone ou nom du demandeur)" as UC_Rechercher $NOUVEAU
+    usecase "Enregistrer un règlement\nen brouillon" as UC_Brouillon $NOUVEAU
+    usecase "Corriger / supprimer\nun brouillon" as UC_Corriger $NOUVEAU
+    usecase "Soumettre un règlement" as UC_Soumettre $NOUVEAU
+    usecase "Consulter les attributions" as UC_Attributions
+    usecase "Télécharger le rapport\nde campagne (PDF)" as UC_Rapport
 }
 
 Comptable --> UC_Caisse
-Comptable --> UC_Reglement
-Comptable --> UC_Impayes
+Comptable --> UC_Rechercher
+Comptable --> UC_Soumettre
+Comptable --> UC_Attributions
 Comptable --> UC_Rapport
 
-UC_Reglement ..> UC_Auth : <<include>>
+UC_Brouillon .> UC_Rechercher : <<extend>>
+UC_Corriger .> UC_Brouillon : <<extend>>
+UC_Soumettre ..> UC_Brouillon : <<include>>
 UC_Caisse ..> UC_Auth : <<include>>
 
-note bottom of UC_Reglement
-  Possible même sur une campagne clôturée :
-  une somme due ne disparaît pas.
+note bottom of UC_Soumettre
+  Seul un règlement soumis compte dans ce qui est payé.
+  Soumis, il est définitif. Possible même sur une campagne clôturée.
+end note
+note right of Comptable
+  Aucun accès aux demandes :
+  seulement aux attributions publiées.
 end note
 @enduml

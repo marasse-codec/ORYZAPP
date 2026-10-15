@@ -23,6 +23,15 @@ return new class extends Migration
 
             $table->index(['id_attribution', 'date_paiement']);
         });
+
+        // ================= Schéma v2 (règlement en brouillon puis soumis) =================
+
+        // Un règlement est d'abord un brouillon : le comptable peut le corriger ou le supprimer.
+        // Il ne compte dans ce qui est payé qu'une fois soumis (date de soumission renseignée).
+        Schema::table('paiements', function (Blueprint $table) {
+            $table->dateTime('date_soumission')->nullable()->after('reference');
+            $table->foreignId('id_user_soumission')->nullable()->after('date_soumission')->constrained('users', 'id')->nullOnDelete();
+        });
     }
 
     public function down(): void

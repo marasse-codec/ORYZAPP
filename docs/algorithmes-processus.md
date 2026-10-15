@@ -46,6 +46,15 @@ Saisie → Visite → Soumission → Instruction → Arbitrage (séance) → Pub
 | Pas de soumission sans visite de terrain enregistrée | `SoumissionDemandeService` | **Pré-condition** (règle de workflow) |
 | La date de soumission fait passer la demande de « Brouillon » à « Soumise » | `Demande::soumettre` | **Machine à états** (états déduits, voir § 9) |
 
+## 2 bis. Responsabilité des délégués de pôle
+
+| Ce qui se passe | Où | Algorithme / technique |
+|---|---|---|
+| Un DP voit les demandes dont une localité est dans un département qu'il couvre (ou qu'il a saisies) | `Demande::scopeSousResponsabiliteDe` | **Semi-jointure** (`WHERE EXISTS`) sur la table d'association `departements_users` |
+| Les DP à prévenir d'une publication sont ceux qui couvrent un département de la demande | `Demande::responsables`, `AlerteService::resultatsPublies` | **Résolution de destinataires par rattachement** + **comptage par destinataire** |
+| La demande est majeure et la mise en place dure au moins 3 mois | `ReglesDemande`, `DureeMiseEnPlace` | **Validation par règles** (comparaison de dates avec `addMonthsNoOverflow`) |
+| Un champ manquant ramène à son étape | `formulaire-etapes.js`, `ReglesDemande::etapeEnErreur` | **Validation par étape** (contraintes HTML5) + **table de correspondance champ → étape** |
+
 ## 3. Instruction par les services
 
 | Ce qui se passe | Où | Algorithme / technique |
@@ -85,7 +94,9 @@ Saisie → Visite → Soumission → Instruction → Arbitrage (séance) → Pub
 |---|---|---|
 | Montant d'une ligne = quantité × coût × (1 − remise %) ; montant de l'attribution = somme des lignes | `LigneAttribution::montant` | **Calcul de facture** (somme de produits) |
 | Reste dû = montant − paiements, jamais négatif ; rien n'est dû avant publication | `Attribution::resteDu` | **Solde courant** (déduit, jamais stocké) |
-| Deux encaissements simultanés ne peuvent pas dépasser le dû | `ReglementService::enregistrerPaiement` | **Verrouillage pessimiste** |
+| Un règlement est d'abord un brouillon, puis il est soumis (définitif) ; seuls les soumis comptent | `ReglementService::creerBrouillon` / `soumettre` | **Machine à états** (brouillon → soumis) |
+| Deux soumissions simultanées ne peuvent pas dépasser le dû | `ReglementService::soumettre` | **Verrouillage pessimiste** |
+| Retrouver une attribution par « ATT-12 », « DEM-7 », un téléphone ou un nom | `ReglementService::rechercherAttributions` | **Analyse du terme par motifs** (expressions régulières), puis recherche exacte ou partielle (`LIKE`) |
 | « Acteur en impayé » n'est pas une case cochée : il se déduit des soldes | `ReglementService::acteursEnImpaye` | **État dérivé** + **regroupement** (`groupBy`) et **tri décroissant** |
 
 ## 8. Rendement

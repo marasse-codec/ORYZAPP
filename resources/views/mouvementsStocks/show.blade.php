@@ -51,7 +51,7 @@
             <div class="space-y-1 text-sm">
                 <p class="flex flex-wrap items-center justify-between gap-2 font-semibold text-[--color-ink]">
                     <span>Attribution ATT-{{ str_pad($mouvement->attribution->id_attribution, 3, '0', STR_PAD_LEFT) }}</span>
-                    @if ($mouvement->attribution->demande)
+                    @if ($mouvement->attribution->demande && auth()->user()->can(\App\Domain\Acces\Enums\PermissionEnum::voirDemandes->value))
                         <a href="{{ route('demandes.show', $mouvement->attribution->demande->id_demande) }}" class="text-xs font-semibold text-[--color-primary] hover:underline">Voir la demande</a>
                     @endif
                 </p>

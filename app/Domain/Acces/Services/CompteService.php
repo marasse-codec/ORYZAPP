@@ -17,12 +17,13 @@ use Illuminate\Support\Facades\DB;
  * utilisateur), désactiver et réactiver. Le compte, son rôle, son agent de stock éventuel et la trace au
  * journal partent ensemble ou pas du tout.
  *
- * Un agent de service relève d'un service ; un gestionnaire de stock (comme
- * l'administrateur) signe des mouvements de stock : il lui faut un agent.
+ * Un agent de service relève d'un service ; un délégué de pôle est responsable de
+ * départements ; un gestionnaire de stock (comme l'administrateur) signe des
+ * mouvements de stock : il lui faut un agent.
  */
 class CompteService
 {
-    /** @param  array{name: string, email: string, password: string, role: string, id_service?: int|string|null}  $donnees */
+    /** @param  array{name: string, email: string, password: string, role: string, id_service?: int|string|null, departements?: array<int, int|string>}  $donnees */
     public function creer(array $donnees): User
     {
         return DB::transaction(function () use ($donnees) {
@@ -36,6 +37,7 @@ class CompteService
             ]);
 
             $this->attribuerRole($user, $role);
+            $this->rattacherDepartements($user, $role, $donnees);
             JournalAction::enregistrer(ActionJournalEnum::compteCree, $user, ['role' => $role->value]);
 
             return $user;
@@ -70,6 +72,15 @@ class CompteService
 
             $user->save();
             $this->attribuerRole($user, $role);
+
+            $departementsAvant = $user->departements()->pluck('departements.id_departement')->sort()->values()->all();
+            $this->rattacherDepartements($user, $role, $donnees);
+            $departementsApres = $user->departements()->pluck('departements.id_departement')->sort()->values()->all();
+
+            if ($departementsAvant !== $departementsApres) {
+                $ecarts['departements'] = ['avant' => $departementsAvant, 'apres' => $departementsApres];
+            }
+
             JournalAction::enregistrer(ActionJournalEnum::compteModifie, $user, $ecarts);
 
             return $user;
@@ -110,6 +121,27 @@ class CompteService
 
             JournalAction::enregistrer(ActionJournalEnum::compteReactive, $user);
         });
+    }
+
+    /**
+     * Un délégué de pôle est responsable d'au moins un département : il voit les demandes
+     * de ces départements et reçoit leurs notifications. Les autres rôles n'en ont pas.
+     */
+    private function rattacherDepartements(User $user, RoleEnum $role, array $donnees): void
+    {
+        if ($role !== RoleEnum::dp) {
+            $user->departements()->detach();
+
+            return;
+        }
+
+        $departements = array_filter((array) ($donnees['departements'] ?? []));
+
+        if ($departements === []) {
+            throw new RegleMetierViolee('Un délégué de pôle doit être responsable d\'au moins un département.');
+        }
+
+        $user->departements()->sync($departements);
     }
 
     /** Seul l'agent de service est rattaché à un service ; pour lui, c'est obligatoire. */

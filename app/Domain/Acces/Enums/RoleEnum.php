@@ -37,12 +37,12 @@ enum RoleEnum: string
     }
 
     /**
-     * Saisir ou modifier une demande est ouvert à tout agent connecté, sauf à la
-     * direction (lecture seule) et à la comptabilité (caisse uniquement).
+     * Saisir ou modifier une demande est ouvert aux agents du circuit des demandes,
+     * pas à la direction (lecture seule), à la comptabilité (caisse) ni au magasin (stocks).
      */
     public function peutSaisirDesDemandes(): bool
     {
-        return ! in_array($this, [self::directeur, self::comptable], true);
+        return ! in_array($this, [self::directeur, self::comptable, self::gestionnaireStock], true);
     }
 
     /**
@@ -55,13 +55,16 @@ enum RoleEnum: string
     {
         return match ($this) {
             self::admin => PermissionEnum::cases(),
-            self::dp => [PermissionEnum::creerDemande, PermissionEnum::editDemande],
+            // Responsable des demandes des départements qu'il couvre.
+            self::dp => [PermissionEnum::creerDemande, PermissionEnum::editDemande, PermissionEnum::voirDemandes, PermissionEnum::voirAttributions],
             // Lecture seule : ses demandes et attributions se filtrent par service ; il télécharge les stocks de ses appuis.
-            self::agentService => [PermissionEnum::voirStocks],
-            self::agentCommission => [PermissionEnum::gererCommission, PermissionEnum::gererSimulation, PermissionEnum::attribuerAppui],
+            self::agentService => [PermissionEnum::voirStocks, PermissionEnum::voirDemandes, PermissionEnum::voirAttributions],
+            self::agentCommission => [PermissionEnum::gererCommission, PermissionEnum::gererSimulation, PermissionEnum::attribuerAppui, PermissionEnum::voirDemandes, PermissionEnum::voirAttributions],
+            // Le magasin ne voit que ses stocks : ni les demandes, ni les attributions (il sert les bons depuis « Enlèvements »).
             self::gestionnaireStock => [PermissionEnum::gererStock, PermissionEnum::gererMouvement, PermissionEnum::voirStocks],
-            self::directeur => [PermissionEnum::voirPilotage, PermissionEnum::voirStatistiques, PermissionEnum::voirStocks, PermissionEnum::telechargerRapports],
-            self::comptable => [PermissionEnum::gererReglements, PermissionEnum::telechargerRapports],
+            self::directeur => [PermissionEnum::voirPilotage, PermissionEnum::voirStatistiques, PermissionEnum::voirStocks, PermissionEnum::telechargerRapports, PermissionEnum::voirDemandes, PermissionEnum::voirAttributions],
+            // La comptabilité ne voit que les attributions : c'est sur elles que portent les règlements.
+            self::comptable => [PermissionEnum::gererReglements, PermissionEnum::telechargerRapports, PermissionEnum::voirAttributions],
         };
     }
 }

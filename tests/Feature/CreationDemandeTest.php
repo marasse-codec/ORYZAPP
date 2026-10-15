@@ -47,7 +47,7 @@ class CreationDemandeTest extends TestCase
             'localites' => [1, 2],
             'id_campagne' => Campagne::enCours()->id_campagne,
             'periode_debut_mise_en_place' => '2026-11-01',
-            'periode_fin_mise_en_place' => '2027-01-31',
+            'periode_fin_mise_en_place' => '2027-02-01',
             'superficies' => [1 => 2.5, 2 => 0],
             'lignes' => [
                 ['id_type_appui' => 1, 'id_appui' => 1, 'quantite_demandee' => 5],
