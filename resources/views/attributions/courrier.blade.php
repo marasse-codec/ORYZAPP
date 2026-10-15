@@ -24,7 +24,7 @@
             <div class="w-1/2 text-center">
                 <p>Ministère de l'Agriculture, du Développement Rural<br>et des Productions Vivrières</p>
                 <p class="mt-2">Agence pour le Développement de la Filière Riz</p>
-                <p class="mt-2 text-xl font-black tracking-[0.3em] text-[--color-primary]">ADERIZ</p>
+                <x-ui.logo-aderiz class="mt-2 block" />
                 <p class="mt-1">Direction Appui à la Production</p>
             </div>
             <div class="w-1/2 text-center">

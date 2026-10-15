@@ -19,6 +19,11 @@ class TypeAppuiSeeder extends Seeder
             [3, 'Charrue', 2, false, true],
             [4, 'Tracteur', 2, false, true],
             [5, 'Moissoneuse', 2, false, true],
+            [6, 'Engrais NPK', 1, true, true],
+            [7, 'Herbicide', 1, true, true],
+            [8, 'Motoculteur', 2, false, true],
+            [9, 'Batteuse', 2, false, true],
+            [10, 'Décortiqueuse', 5, false, true],
         ];
 
         foreach ($types as [$id, $libelle, $idService, $estIntrant, $estStockable]) {

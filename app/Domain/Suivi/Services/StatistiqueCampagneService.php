@@ -95,6 +95,41 @@ class StatistiqueCampagneService
     }
 
     /**
+     * Par écologie : le rendement moyen (t/ha) que les DP ont transmis, et combien de superficies
+     * déclarées l'ont reçu. Rendement pondéré (production totale ÷ superficie récoltée totale),
+     * pas une moyenne de rendements : une grande parcelle pèse plus qu'une petite.
+     *
+     * @return Collection<string, array{rendement: ?float, production: float, recoltee: float, renseignees: int, declarees: int}>
+     */
+    public function rendementsParEcologie(Campagne $campagne): Collection
+    {
+        $lignes = $this->demandesSoumises($campagne)
+            ->join('systemes_productions', 'systemes_productions.id_demande', '=', 'demandes.id_demande')
+            ->leftJoin('rendements', 'rendements.id_systeme_production', '=', 'systemes_productions.id_systeme_production')
+            ->groupBy('systemes_productions.id_type_systeme_production')
+            ->selectRaw('systemes_productions.id_type_systeme_production AS id_type, COUNT(*) AS declarees, COUNT(rendements.id_rendement) AS renseignees, COALESCE(SUM(rendements.production_tonnes), 0) AS production, COALESCE(SUM(rendements.superficie_recoltee), 0) AS recoltee')
+            ->get()
+            ->keyBy('id_type');
+
+        return DB::table('types_systemes_productions')
+            ->orderBy('id_type_systeme_production')
+            ->get(['id_type_systeme_production', 'lib_type_systeme_production'])
+            ->mapWithKeys(function ($type) use ($lignes) {
+                $ligne = $lignes->get($type->id_type_systeme_production);
+                $recoltee = (float) ($ligne->recoltee ?? 0);
+                $production = (float) ($ligne->production ?? 0);
+
+                return [$type->lib_type_systeme_production => [
+                    'rendement' => $recoltee > 0 ? round($production / $recoltee, 2) : null,
+                    'production' => $production,
+                    'recoltee' => $recoltee,
+                    'renseignees' => (int) ($ligne->renseignees ?? 0),
+                    'declarees' => (int) ($ligne->declarees ?? 0),
+                ]];
+            });
+    }
+
+    /**
      * Nombre de demandes par statut (brouillons compris), tous statuts présents.
      *
      * @return array<int, int> valeur de StatutDemandeE => total

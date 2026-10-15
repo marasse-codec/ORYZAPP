@@ -63,6 +63,19 @@
                 @endif
             </x-ui.card>
 
+            <x-ui.card titre="Rendement moyen par écologie (t/ha)">
+                @if ($graphiqueRendements)
+                    <div class="h-64"><canvas data-chart="{{ json_encode($graphiqueRendements) }}"></canvas></div>
+                @else
+                    <p class="text-sm text-[--color-muted]">Aucun rendement transmis par les DP pour cette campagne.</p>
+                @endif
+                <ul class="mt-3 space-y-1 text-xs text-[--color-muted]">
+                    @foreach ($rendements as $ecologie => $r)
+                        <li>{{ $ecologie }} : {{ $r['renseignees'] }}/{{ $r['declarees'] }} superficie(s) renseignée(s)@if ($r['rendement'] !== null), {{ number_format($r['production'], 1, ',', ' ') }} t sur {{ number_format($r['recoltee'], 1, ',', ' ') }} ha @endif</li>
+                    @endforeach
+                </ul>
+            </x-ui.card>
+
             <x-ui.card titre="Types d'appuis : demandés et servis">
                 @if ($graphiqueTypesAppuis)
                     <div class="h-64"><canvas data-chart="{{ json_encode($graphiqueTypesAppuis) }}"></canvas></div>

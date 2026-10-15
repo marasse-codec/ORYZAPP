@@ -5,6 +5,7 @@ namespace App\Domain\Demande\Models;
 use App\Domain\Referentiel\Models\TypeSystemeProduction;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class SystemeProduction extends Model
 {
@@ -24,5 +25,10 @@ class SystemeProduction extends Model
     public function typeSystemeProduction(): BelongsTo
     {
         return $this->belongsTo(TypeSystemeProduction::class, 'id_type_systeme_production', 'id_type_systeme_production');
+    }
+
+    public function rendement(): HasOne
+    {
+        return $this->hasOne(Rendement::class, 'id_systeme_production', 'id_systeme_production');
     }
 }

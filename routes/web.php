@@ -6,6 +6,7 @@ use App\Http\Controllers\Commission\CommissionAttributionController;
 use App\Http\Controllers\Commission\EditionArbitrageController;
 use App\Http\Controllers\Commission\EditionAttributionController;
 use App\Http\Controllers\Commission\PaiementController;
+use App\Http\Controllers\Commission\RendementController;
 use App\Http\Controllers\Commission\EditionDemandeController;
 use App\Http\Controllers\Stock\EditionStockController;
 use App\Http\Controllers\Commission\SimulationSortieController;
@@ -50,6 +51,11 @@ Route::middleware('auth')->group(function () {
         ->whereNumber('attribution')
         ->middleware('permission:'.PermissionEnum::gererReglements->value)
         ->name('attributions.paiements.store');
+
+    // Rendements : le DP transmet ce que les superficies de sa demande ont produit (garde dans la requête).
+    Route::put('/attributions/{attribution}/rendements', [RendementController::class, 'update'])
+        ->whereNumber('attribution')
+        ->name('attributions.rendements.update');
 
     // Archives de sauvegarde : l'admin (ressources) les télécharge depuis l'administration.
     Route::get('/sauvegardes/{disque}/{nom}', [SauvegardeController::class, 'telecharger'])

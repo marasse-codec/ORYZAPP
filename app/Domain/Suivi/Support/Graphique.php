@@ -28,12 +28,13 @@ class Graphique
     /**
      * Barres, verticales ou horizontales ($horizontal), axe des valeurs à partir de 0.
      * Chaque série : ['label' => string, 'data' => array, 'color' => string].
-     * La légende n'apparaît que s'il y a plusieurs séries.
+     * La légende n'apparaît que s'il y a plusieurs séries. $decimales : les graduations de l'axe
+     * ne se limitent plus aux entiers (rendements en t/ha).
      *
      * @param  array<int, string>  $libelles
      * @param  array<int, array{label: string, data: array<int, int|float>, color: string}>  $series
      */
-    public static function barres(array $libelles, array $series, bool $horizontal = false): array
+    public static function barres(array $libelles, array $series, bool $horizontal = false, bool $decimales = false): array
     {
         return [
             'type' => 'bar',
@@ -49,7 +50,7 @@ class Graphique
                 'indexAxis' => $horizontal ? 'y' : 'x',
                 'maintainAspectRatio' => false,
                 'plugins' => ['legend' => ['display' => count($series) > 1, 'position' => 'bottom']],
-                'scales' => [($horizontal ? 'x' : 'y') => ['beginAtZero' => true, 'ticks' => ['precision' => 0]]],
+                'scales' => [($horizontal ? 'x' : 'y') => ['beginAtZero' => true, 'ticks' => ['precision' => $decimales ? 2 : 0]]],
             ],
         ];
     }

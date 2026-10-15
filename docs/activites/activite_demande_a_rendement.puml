@@ -1,0 +1,35 @@
+@startuml activite_demande_a_rendement
+title De la demande au retour de rendement
+
+|Délégué de pôle (DP)|
+start
+:Saisir la demande\n(superficies et appuis);
+:Enregistrer la visite de terrain;
+:Soumettre la demande;
+
+|Commission et administration|
+:Arbitrer en séance\n(demandes face au stock);
+if (Accordée ?) then (non)
+  |Délégué de pôle (DP)|
+  :Rejet notifié au DP (motif);
+  stop
+else (oui)
+  |Commission et administration|
+  :Attribuer les quantités;
+  :Clôturer la séance\n(l'attribution est validée);
+  :Publier les résultats\n(le DP est notifié);
+endif
+
+fork
+  |Délégué de pôle (DP)|
+  :Transmettre le rendement\nde chaque superficie\n(ou l'admin à sa place);
+fork again
+  |Magasin et caisse|
+  :Enregistrer le règlement\n(en une ou plusieurs fois);
+  :Sortie de stock sur bon;
+end fork
+
+|Commission et administration|
+:Analyser les rendements\npar écologie (statistiques);
+stop
+@enduml

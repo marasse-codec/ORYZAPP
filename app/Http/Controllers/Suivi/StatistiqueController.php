@@ -33,6 +33,7 @@ class StatistiqueController extends Controller
         $localites = $stats->parLocalite($campagne);
         $typesActeurs = $stats->parTypeActeur($campagne);
         $superficies = $stats->superficiesParEcologie($campagne);
+        $rendements = $stats->rendementsParEcologie($campagne);
 
         return view('statistiques.index', [
             'layout' => Helper::layout(),
@@ -52,6 +53,12 @@ class StatistiqueController extends Controller
                     ['label' => 'Concernée (ha)', 'data' => $superficies->pluck('concernee')->all(), 'color' => '#E5A93B'],
                     ['label' => 'Traitée (ha)', 'data' => $superficies->pluck('traitee')->all(), 'color' => '#1E5E3A'],
                 ],
+            ) : null,
+            'rendements' => $rendements,
+            'graphiqueRendements' => $rendements->contains(fn ($r) => $r['rendement'] !== null) ? Graphique::barres(
+                $rendements->keys()->all(),
+                [['label' => 'Rendement moyen (t/ha)', 'data' => $rendements->map(fn ($r) => $r['rendement'] ?? 0)->values()->all(), 'color' => '#1E5E3A']],
+                decimales: true,
             ) : null,
             'graphiqueTypesAppuis' => $typesAppuis->isEmpty() ? null : Graphique::barres(
                 $typesAppuis->keys()->all(),

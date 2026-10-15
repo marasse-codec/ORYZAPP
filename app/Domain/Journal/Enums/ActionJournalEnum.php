@@ -24,6 +24,7 @@ enum ActionJournalEnum: string
     case attributionPubliee = 'ATTRIBUTION_PUBLIEE';
     case attributionRetiree = 'ATTRIBUTION_RETIREE';
     case paiementEnregistre = 'PAIEMENT_ENREGISTRE';
+    case rendementEnvoye = 'RENDEMENT_ENVOYE';
 
     case approvisionnementEnregistre = 'APPROVISIONNEMENT_ENREGISTRE';
     case equipementRestitue = 'EQUIPEMENT_RESTITUE';
@@ -52,6 +53,7 @@ enum ActionJournalEnum: string
             self::attributionPubliee => 'Attribution publiée',
             self::attributionRetiree => 'Appuis retirés au magasin',
             self::paiementEnregistre => 'Règlement enregistré',
+            self::rendementEnvoye => 'Rendements des superficies transmis',
             self::approvisionnementEnregistre => 'Approvisionnement enregistré',
             self::equipementRestitue => 'Équipement restitué',
             self::appuiCree => 'Appui ajouté au catalogue',

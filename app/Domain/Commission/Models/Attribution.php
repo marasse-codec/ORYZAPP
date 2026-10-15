@@ -131,6 +131,37 @@ class Attribution extends Model
         $this->save();
     }
 
+    /** Le DP de la demande, ou l'admin, renseigne les rendements des superficies. */
+    public function rendementsSaisissablesPar(?User $user): bool
+    {
+        if (! $user) {
+            return false;
+        }
+
+        return $user->hasRole(RoleEnum::admin->value)
+            || ($user->hasRole(RoleEnum::dp->value) && $this->demande?->id_user === $user->id);
+    }
+
+    /**
+     * Où en est le retour de rendement : « attente » tant qu'une superficie déclarée n'a pas
+     * le sien, « renseigne » quand toutes l'ont ; null avant la publication ou sans superficie.
+     * Charge demande.systemesProductions.rendement : à précharger sur une liste.
+     */
+    public function etatRendement(): ?string
+    {
+        if (! $this->estPubliee()) {
+            return null;
+        }
+
+        $systemes = $this->demande?->systemesProductions;
+
+        if (! $systemes || $systemes->isEmpty()) {
+            return null;
+        }
+
+        return $systemes->every(fn ($systeme) => $systeme->rendement !== null) ? 'renseigne' : 'attente';
+    }
+
     public function estPubliee() : bool {
         return ! is_null($this->date_publication);
     }

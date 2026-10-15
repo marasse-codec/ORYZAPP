@@ -27,6 +27,7 @@
 
         <div class="hidden items-center gap-8 text-sm font-medium text-slate-600 md:flex">
             <a href="#demarche" class="transition hover:text-[--color-primary]">La démarche</a>
+            <a href="#parcours" class="transition hover:text-[--color-primary]">Le parcours</a>
             <a href="#pieces" class="transition hover:text-[--color-primary]">Pièces à fournir</a>
             <a href="#appuis" class="transition hover:text-[--color-primary]">Catalogue</a>
             <a href="#contact" class="transition hover:text-[--color-primary]">Nous joindre</a>
@@ -40,6 +41,7 @@
     <div x-show="ouvert" x-cloak x-transition class="border-t border-slate-200 md:hidden">
         <div class="space-y-1 px-6 py-3 text-sm font-medium text-slate-600">
             <a href="#demarche" @click="ouvert = false" class="block py-2">La démarche</a>
+            <a href="#parcours" @click="ouvert = false" class="block py-2">Le parcours</a>
             <a href="#pieces" @click="ouvert = false" class="block py-2">Pièces à fournir</a>
             <a href="#appuis" @click="ouvert = false" class="block py-2">Catalogue</a>
             <a href="#contact" @click="ouvert = false" class="block py-2">Nous joindre</a>
@@ -144,6 +146,31 @@
             Si vous ne pouvez pas vous déplacer, la personne mandatée devra présenter sa propre
             pièce d'identité <span class="font-semibold">et</span> une procuration signée de votre main.
         </p>
+    </div>
+</section>
+
+{{-- ══════════════════════════ Du dépôt au rendement ═════════════════════════ --}}
+<section id="parcours" class="scroll-mt-20 py-20 sm:py-24">
+    <div class="mx-auto max-w-6xl px-6">
+        <div class="max-w-2xl">
+            <p class="text-sm font-semibold uppercase tracking-widest text-or-600">Le parcours complet</p>
+            <h2 class="mt-3 text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
+                De la demande au retour de rendement
+            </h2>
+            <p class="mt-4 text-lg leading-relaxed text-slate-600">
+                Le diagramme suit un dossier de bout en bout. Une fois les résultats publiés, le retrait
+                des appuis et le retour du délégué de pôle sur les rendements se déroulent en parallèle.
+            </p>
+        </div>
+
+        <figure class="mt-10 overflow-x-auto rounded-2xl border border-slate-200 bg-white p-4 sm:p-6">
+            <div class="mx-auto max-w-3xl">
+                @include('partials.diagramme-workflow')
+            </div>
+            <figcaption class="mt-3 text-center text-xs text-slate-500">
+                Diagramme d'activités UML : un couloir par intervenant, la barre noire sépare ou réunit les flux parallèles.
+            </figcaption>
+        </figure>
     </div>
 </section>
 

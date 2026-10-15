@@ -4,8 +4,30 @@
 
 @section('content')
 <x-ui.page titre="Attributions" :sous-titre="$attributions->count().' bon(s) d\'attribution'">
-    <x-ui.card sans-marge>
-        <x-ui.tableau>
+    {{-- Le retour de rendement du DP sépare les bons : ceux qui l'attendent d'abord, puis ceux qui l'ont reçu. --}}
+    @php
+        $sections = [
+            'attente' => ['Retour de rendement en attente', 'Publiées : le DP n\'a pas encore transmis le rendement de toutes les superficies.', 'ambre', 'hourglass_top'],
+            'renseigne' => ['Retour de rendement renseigné', 'Toutes les superficies ont leur rendement.', 'vert', 'task_alt'],
+            'autres' => ['Autres attributions', 'Pas encore publiées, ou sans superficie déclarée.', 'neutre', 'inventory_2'],
+        ];
+    @endphp
+
+    @foreach ($sections as $cle => [$titreSection, $aide, $ton, $icone])
+        @continue($groupes[$cle]->isEmpty() && ! ($cle === 'autres' && $attributions->isEmpty()))
+        @php $lot = $groupes[$cle]; @endphp
+        <x-ui.card sans-marge>
+            <div class="flex items-center justify-between gap-3 border-b border-[--color-border] px-4 py-3">
+                <div class="flex items-center gap-2">
+                    <span class="material-symbols-outlined text-lg text-[--color-muted]">{{ $icone }}</span>
+                    <div>
+                        <h2 class="text-sm font-semibold text-[--color-ink]">{{ $titreSection }}</h2>
+                        <p class="text-xs text-[--color-muted]">{{ $aide }}</p>
+                    </div>
+                </div>
+                <x-ui.badge :ton="$ton">{{ $lot->count() }}</x-ui.badge>
+            </div>
+            <x-ui.tableau>
             <thead class="bg-slate-50 text-left text-xs uppercase tracking-wide text-[--color-muted]">
                 <tr>
                     <th class="px-4 py-3">Bon</th>
@@ -19,7 +41,7 @@
                 </tr>
             </thead>
             <tbody class="divide-y divide-[--color-border]">
-                @forelse ($attributions as $attribution)
+                @foreach ($lot as $attribution)
                     <tr class="hover:bg-slate-50">
                         <td class="px-4 py-3 font-medium text-[--color-ink]">ATT-{{ str_pad($attribution->id_attribution, 3, '0', STR_PAD_LEFT) }}</td>
                         <td class="px-4 py-3 text-slate-600">{{ $attribution->demande?->acteur?->nom }}</td>
@@ -43,11 +65,13 @@
                             </div>
                         </td>
                     </tr>
-                @empty
+                @endforeach
+                @if ($lot->isEmpty())
                     <tr><td colspan="8" class="px-4 py-8 text-center text-[--color-muted]">Aucune attribution enregistrée.</td></tr>
-                @endforelse
+                @endif
             </tbody>
         </x-ui.tableau>
-    </x-ui.card>
+        </x-ui.card>
+    @endforeach
 </x-ui.page>
 @endsection

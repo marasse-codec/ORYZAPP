@@ -99,7 +99,7 @@
         <header class="insecable">
             <div class="flex items-end justify-between gap-8">
                 <div>
-                    <p class="text-xl font-black uppercase tracking-[0.3em] text-[--color-primary]">ADERIZ</p>
+                    <x-ui.logo-aderiz class="!mx-0" />
                     <p class="mt-1 text-[11px] leading-tight text-slate-500">
                         Agence pour le Développement de la Filière Riz<br>
                         Plateforme ORYZA de gestion des appuis

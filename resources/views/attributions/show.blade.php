@@ -165,6 +165,67 @@
         </x-ui.card>
     @endif
 
+    {{-- Rendements : dès la publication, le DP dit ce que chaque superficie a produit --}}
+    @if ($attribution->estPubliee() && $demande->systemesProductions->isNotEmpty())
+        @php
+            $peutSaisir = $attribution->rendementsSaisissablesPar(auth()->user());
+        @endphp
+        <x-ui.card titre="Rendement des superficies" sans-marge>
+            @if ($peutSaisir)
+                <form action="{{ route('attributions.rendements.update', $attribution->id_attribution) }}" method="POST">
+                    @csrf
+                    @method('PUT')
+            @endif
+            <x-ui.tableau>
+                <thead class="bg-slate-50 text-left text-xs uppercase tracking-wide text-[--color-muted]">
+                    <tr>
+                        <th class="px-4 py-3">Système de production</th>
+                        <th class="px-4 py-3 text-right">Déclarée (ha)</th>
+                        <th class="px-4 py-3 text-right">Récoltée (ha)</th>
+                        <th class="px-4 py-3 text-right">Production (t)</th>
+                        <th class="px-4 py-3 text-right">Rendement (t/ha)</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-[--color-border]">
+                    @foreach ($demande->systemesProductions as $systeme)
+                        @php $rendement = $systeme->rendement; @endphp
+                        <tr>
+                            <td class="px-4 py-3 font-medium text-[--color-ink]">{{ $systeme->typeSystemeProduction?->lib_type_systeme_production }}</td>
+                            <td class="px-4 py-3 text-right text-slate-600">{{ \App\Utils\Helper::quantite($systeme->superficie) }}</td>
+                            @if ($peutSaisir)
+                                <td class="px-4 py-3 text-right">
+                                    <input name="rendements[{{ $systeme->id_systeme_production }}][superficie_recoltee]" type="number" step="0.01" min="0" max="{{ $systeme->superficie }}"
+                                           value="{{ old('rendements.'.$systeme->id_systeme_production.'.superficie_recoltee', $rendement?->superficie_recoltee) }}"
+                                           class="w-28 rounded-lg border border-slate-300 px-3 py-2 text-right text-sm">
+                                    @error('rendements.'.$systeme->id_systeme_production.'.superficie_recoltee')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
+                                </td>
+                                <td class="px-4 py-3 text-right">
+                                    <input name="rendements[{{ $systeme->id_systeme_production }}][production_tonnes]" type="number" step="0.001" min="0"
+                                           value="{{ old('rendements.'.$systeme->id_systeme_production.'.production_tonnes', $rendement?->production_tonnes) }}"
+                                           class="w-28 rounded-lg border border-slate-300 px-3 py-2 text-right text-sm">
+                                    @error('rendements.'.$systeme->id_systeme_production.'.production_tonnes')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
+                                </td>
+                            @else
+                                <td class="px-4 py-3 text-right text-slate-600">{{ $rendement ? \App\Utils\Helper::quantite($rendement->superficie_recoltee) : '—' }}</td>
+                                <td class="px-4 py-3 text-right text-slate-600">{{ $rendement ? \App\Utils\Helper::quantite($rendement->production_tonnes) : '—' }}</td>
+                            @endif
+                            <td class="px-4 py-3 text-right font-semibold text-[--color-ink]">
+                                {{ $rendement?->rendement_t_ha !== null ? number_format($rendement->rendement_t_ha, 2, ',', ' ') : '—' }}
+                            </td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </x-ui.tableau>
+            @if ($peutSaisir)
+                    <div class="border-t border-[--color-border] px-4 py-3">
+                        @error('rendements')<p class="mb-2 text-xs text-red-600">{{ $message }}</p>@enderror
+                        <x-ui.bouton type="submit">Transmettre les rendements</x-ui.bouton>
+                    </div>
+                </form>
+            @endif
+        </x-ui.card>
+    @endif
+
     {{-- Sortie du magasin, une fois effectuée --}}
     @if ($attribution->date_destockage)
         <x-ui.card titre="Sortie de stock" class="border-emerald-200 bg-emerald-50/40">

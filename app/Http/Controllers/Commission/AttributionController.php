@@ -29,13 +29,19 @@ class AttributionController extends Controller
     public function index()
     {
         $attributions = Attribution::query()
-            ->with(['lignesAttributions.appui', 'demande.acteur', 'session'])
+            ->with(['lignesAttributions.appui', 'demande.acteur', 'demande.systemesProductions.rendement', 'session'])
             ->orderByDesc('id_attribution')
             ->user()
             ->get();
 
         return view('attributions.index', [
             'attributions' => $attributions,
+            // Le retour de rendement du DP : celles qui l'attendent, celles qui l'ont reçu, le reste.
+            'groupes' => [
+                'attente' => $attributions->filter(fn ($a) => $a->etatRendement() === 'attente'),
+                'renseigne' => $attributions->filter(fn ($a) => $a->etatRendement() === 'renseigne'),
+                'autres' => $attributions->filter(fn ($a) => $a->etatRendement() === null),
+            ],
             'layout' => Helper::layout(),
         ]);
     }
@@ -93,6 +99,8 @@ class AttributionController extends Controller
             'demande.acteur',
             'demande.typeActeur',
             'demande.localites.departement',
+            'demande.systemesProductions.typeSystemeProduction',
+            'demande.systemesProductions.rendement',
             'lignesAttributions.appui.uniteDosage',
             'session',
             'paiements.encaissePar',
