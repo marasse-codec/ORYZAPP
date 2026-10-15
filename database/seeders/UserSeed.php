@@ -19,6 +19,8 @@ class UserSeed extends Seeder
             ['Délégué de pôle', 'dp@example.com', RoleEnum::dp, null],
             ['Agent de commission', 'agent.commission@example.com', RoleEnum::agentCommission, null],
             ['Gestionnaire de stock', 'stock@example.com', RoleEnum::gestionnaireStock, null],
+            ['Directeur', 'directeur@example.com', RoleEnum::directeur, null],
+            ['Comptable', 'comptable@example.com', RoleEnum::comptable, null],
         ];
 
         // Un agent instructeur par service : chacun n'instruit que les appuis

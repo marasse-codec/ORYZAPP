@@ -26,7 +26,7 @@ use Illuminate\Notifications\Notifiable;
 use NotificationChannels\WebPush\HasPushSubscriptions;
 use Spatie\Permission\Traits\HasRoles;
 
-#[Fillable(['name', 'email', 'password', 'id_service'])]
+#[Fillable(['name', 'email', 'password', 'id_service', 'actif', 'desactive_le', 'motif_desactivation', 'derniere_connexion_le'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable implements EstUtilisable
 {
@@ -43,6 +43,9 @@ class User extends Authenticatable implements EstUtilisable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'actif' => 'boolean',
+            'desactive_le' => 'datetime',
+            'derniere_connexion_le' => 'datetime',
         ];
     }
 
@@ -110,6 +113,24 @@ class User extends Authenticatable implements EstUtilisable
         if(! auth()->user()->hasRole(RoleEnum::agentCommission->value)) return false;
 
         return true;
+    }
+
+    /** Un compte désactivé garde son historique mais ne peut plus se connecter. */
+    public function estActif(): bool
+    {
+        return $this->actif !== false;
+    }
+
+    /** Les comptes qui peuvent se connecter. */
+    public function scopeActifs($query)
+    {
+        return $query->where('actif', true);
+    }
+
+    /** Le rôle unique du compte (un compte n'a qu'un rôle), ou null s'il n'en a pas. */
+    public function roleEnum(): ?RoleEnum
+    {
+        return RoleEnum::tryFrom((string) $this->getRoleNames()->first());
     }
 
     /**

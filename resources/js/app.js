@@ -1,3 +1,5 @@
+import './hors-ligne';
+
 /*
 import Alpine from 'alpinejs';
 

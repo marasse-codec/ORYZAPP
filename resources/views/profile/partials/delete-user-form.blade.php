@@ -1,18 +1,18 @@
 <section class="space-y-6">
     <header>
         <h2 class="text-base font-semibold text-[--color-ink]">
-            Supprimer mon compte
+            Fermer mon compte
         </h2>
 
         <p class="mt-1 text-sm text-[--color-muted]">
-            La suppression du compte est définitive : vous ne pourrez plus vous connecter.
+            Votre compte sera désactivé : vous ne pourrez plus vous connecter. Ce que vous avez enregistré reste conservé ; seul un administrateur peut le réactiver.
         </p>
     </header>
 
     <x-danger-button
         x-data=""
         x-on:click.prevent="$dispatch('open-modal', 'confirm-user-deletion')"
-    >Supprimer mon compte</x-danger-button>
+    >Fermer mon compte</x-danger-button>
 
     <x-modal name="confirm-user-deletion" :show="$errors->userDeletion->isNotEmpty()" focusable>
         <form method="post" action="{{ route('profile.destroy') }}" class="p-6">
@@ -20,11 +20,11 @@
             @method('delete')
 
             <h2 class="text-base font-semibold text-[--color-ink]">
-                Supprimer définitivement votre compte ?
+                Fermer votre compte ?
             </h2>
 
             <p class="mt-1 text-sm text-[--color-muted]">
-                Saisissez votre mot de passe pour confirmer la suppression.
+                Saisissez votre mot de passe pour confirmer.
             </p>
 
             <div class="mt-6">
@@ -47,7 +47,7 @@
                 </x-secondary-button>
 
                 <x-danger-button class="ms-3">
-                    Supprimer mon compte
+                    Fermer mon compte
                 </x-danger-button>
             </div>
         </form>

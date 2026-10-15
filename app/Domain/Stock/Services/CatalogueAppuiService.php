@@ -4,6 +4,7 @@ namespace App\Domain\Stock\Services;
 
 use App\Domain\Journal\Enums\ActionJournalEnum;
 use App\Domain\Journal\Models\JournalAction;
+use App\Domain\Journal\Support\Ecarts;
 use App\Domain\Shared\Exceptions\RegleMetierViolee;
 use App\Domain\Stock\Models\Appui;
 use Illuminate\Support\Facades\DB;
@@ -36,10 +37,22 @@ class CatalogueAppuiService
     public function modifier(Appui $appui, array $donnees): Appui
     {
         return DB::transaction(function () use ($appui, $donnees) {
-            $appui->update($this->attributs($donnees));
-            $appui->typesSystemesProductions()->sync($donnees['systemes'] ?? []);
+            // Ce qui change (prix, dose, seuil…), noté avant l'enregistrement : l'historique des prix reste lisible.
+            $appui->fill($this->attributs($donnees));
+            $ecarts = Ecarts::duModele($appui);
+            $appui->save();
 
-            JournalAction::enregistrer(ActionJournalEnum::appuiModifie, $appui, ['libelle' => $appui->libelle]);
+            $ecologies = $appui->typesSystemesProductions()->sync($donnees['systemes'] ?? []);
+
+            if ($ecologies['attached'] !== []) {
+                $ecarts['écologies ajoutées'] = $ecologies['attached'];
+            }
+
+            if ($ecologies['detached'] !== []) {
+                $ecarts['écologies retirées'] = $ecologies['detached'];
+            }
+
+            JournalAction::enregistrer(ActionJournalEnum::appuiModifie, $appui, ['libelle' => $appui->libelle] + $ecarts);
 
             return $appui;
         });
@@ -54,7 +67,8 @@ class CatalogueAppuiService
                 throw new RegleMetierViolee("« {$appui->libelle} » est utilisé (demandes, attributions ou mouvements de stock) : il ne peut pas être supprimé.");
             }
 
-            JournalAction::enregistrer(ActionJournalEnum::appuiSupprime, $appui, ['libelle' => $appui->libelle]);
+            // Copie complète de la fiche : elle reste lisible au journal après la suppression.
+            JournalAction::enregistrer(ActionJournalEnum::appuiSupprime, $appui, $appui->attributesToArray());
 
             $appui->typesSystemesProductions()->detach();
             $appui->delete();

@@ -9,10 +9,21 @@ use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Auth;
 
+/**
+ * Une attribution : ce que la commission accorde à une demande.
+ *
+ * Suppression douce (SoftDeletes) : annuler une attribution la marque d'une date
+ * (deleted_at) au lieu de l'effacer. Laravel l'écarte alors de toutes les requêtes
+ * Eloquent ; les requêtes SQL écrites à la main filtrent « deleted_at IS NULL ».
+ * Son contenu reste consultable dans la chronologie de la demande.
+ */
 class Attribution extends Model
 {
+    use SoftDeletes;
+
     protected $primaryKey = 'id_attribution';
 
     protected $fillable = [

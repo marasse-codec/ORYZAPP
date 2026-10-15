@@ -5,10 +5,10 @@ use App\Http\Controllers\Commission\AttributionController;
 use App\Http\Controllers\Commission\CommissionAttributionController;
 use App\Http\Controllers\Commission\EditionArbitrageController;
 use App\Http\Controllers\Commission\EditionAttributionController;
-use App\Http\Controllers\Commission\PaiementController;
-use App\Http\Controllers\Commission\RendementController;
 use App\Http\Controllers\Commission\EditionDemandeController;
-use App\Http\Controllers\Stock\EditionStockController;
+use App\Http\Controllers\Commission\PaiementController;
+use App\Http\Controllers\Commission\ReglementController;
+use App\Http\Controllers\Commission\RendementController;
 use App\Http\Controllers\Commission\SimulationSortieController;
 use App\Http\Controllers\Demande\BrouillonDemandeController;
 use App\Http\Controllers\Demande\DemandeController;
@@ -20,14 +20,17 @@ use App\Http\Controllers\PlanificationController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Stock\ApprovisionnementController;
 use App\Http\Controllers\Stock\AppuiController;
+use App\Http\Controllers\Stock\EditionStockController;
 use App\Http\Controllers\Stock\EnlevementController;
 use App\Http\Controllers\Stock\EquipementController;
 use App\Http\Controllers\Stock\EquipementRetourController;
 use App\Http\Controllers\Stock\MouvementStockController;
 use App\Http\Controllers\Suivi\DashboardController;
+use App\Http\Controllers\Suivi\PilotageController;
 use App\Http\Controllers\Suivi\SauvegardeController;
 use App\Http\Controllers\Suivi\StatistiqueController;
 use App\Http\Controllers\VitrineController;
+use App\Http\Middleware\JournaliserExport;
 use Illuminate\Support\Facades\Route;
 
 // Vitrine publique : la démarche et le catalogue, sans authentification.
@@ -46,7 +49,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/editions/attributions', [EditionAttributionController::class, 'index'])->name('editions.attributions.index');
     Route::get('/editions/demandes', [EditionDemandeController::class, 'index'])->name('editions.demandes.index');
     Route::get('/attributions/{idAttribution}', [AttributionController::class, 'show'])->whereNumber('idAttribution')->name('attributions.show');
-    // Règlements : encaissement d'une attribution publiée par qui tient la caisse (admin).
+    // Règlements : encaissement d'une attribution publiée par qui tient la caisse (comptable, admin).
     Route::post('/attributions/{attribution}/paiements', [PaiementController::class, 'store'])
         ->whereNumber('attribution')
         ->middleware('permission:'.PermissionEnum::gererReglements->value)
@@ -96,9 +99,12 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
+    // Les exports sont notés au journal (qui a sorti quelles données).
     Route::get('/statistiques/export/attributions', [EditionAttributionController::class, 'exportAttributions'])
+            ->middleware(JournaliserExport::class)
             ->name('stats.export.attributions');
     Route::get('/statistiques/export/demandes', [EditionDemandeController::class, 'exportDemandes'])
+            ->middleware(JournaliserExport::class)
             ->name('stats.export.demandes');
     
     // Route d'enregistrement de l'abonnement PWA WebPush
@@ -171,12 +177,28 @@ Route::middleware(['auth', 'permission:'.PermissionEnum::gererStock->value])->gr
 // ÉDITIONS DE STOCK : chaque service télécharge l'état des stocks des appuis qu'il fournit.
 Route::middleware(['auth', 'permission:'.PermissionEnum::voirStocks->value])->group(function () {
     Route::get('/editions/stocks', [EditionStockController::class, 'index'])->name('editions.stocks.index');
-    Route::get('/editions/stocks/export', [EditionStockController::class, 'exporter'])->name('editions.stocks.export');
+    Route::get('/editions/stocks/export', [EditionStockController::class, 'exporter'])->middleware(JournaliserExport::class)->name('editions.stocks.export');
 });
 
-// STATISTIQUES : réservées à l'administration.
+// STATISTIQUES : administration et direction.
 Route::middleware(['auth', 'permission:'.PermissionEnum::voirStatistiques->value])->group(function () {
     Route::get('/statistiques', [StatistiqueController::class, 'index'])->name('statistiques.index');
+    Route::get('/statistiques/comparaison', [StatistiqueController::class, 'comparaison'])->name('statistiques.comparaison');
+});
+
+// RAPPORT DE CAMPAGNE (PDF) : direction, comptabilité, administration. La trace au journal est posée par le contrôleur.
+Route::middleware(['auth', 'permission:'.PermissionEnum::telechargerRapports->value])->group(function () {
+    Route::get('/statistiques/rapport', [StatistiqueController::class, 'rapport'])->name('statistiques.rapport');
+});
+
+// PILOTAGE : le tableau de bord de la direction (lecture seule).
+Route::middleware(['auth', 'permission:'.PermissionEnum::voirPilotage->value])->group(function () {
+    Route::get('/pilotage', [PilotageController::class, 'index'])->name('pilotage.index');
+});
+
+// RÈGLEMENTS : la caisse du comptable (encaissements et impayés).
+Route::middleware(['auth', 'permission:'.PermissionEnum::gererReglements->value])->group(function () {
+    Route::get('/reglements', [ReglementController::class, 'index'])->name('reglements.index');
 });
 
 // Le bon d'attribution est remis au demandeur : le DP le retire pour lui.

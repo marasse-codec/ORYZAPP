@@ -26,6 +26,7 @@ class JournalAction extends Model
         'cible_type',
         'cible_id',
         'details',
+        'adresse_ip',
     ];
 
     protected $casts = [
@@ -65,12 +66,53 @@ class JournalAction extends Model
             return null;
         }
 
+        return self::consigner($action, $cible, $details);
+    }
+
+    /**
+     * Ajoute une entrée même sans objet précis (paramètres, export) ou sans auteur
+     * connecté (tentative de connexion refusée). L'auteur est l'utilisateur
+     * connecté, sauf si on le précise ; l'adresse IP de la requête est notée.
+     *
+     * @param  array<string, mixed>  $details
+     */
+    public static function consigner(ActionJournalEnum $action, ?Model $cible = null, array $details = [], ?User $auteur = null): self
+    {
         return self::create([
-            'user_id' => Auth::id(),
+            'user_id' => $auteur?->id ?? Auth::id(),
             'action' => $action->value,
-            'cible_type' => $cible->getMorphClass(),
-            'cible_id' => $cible->getKey(),
+            'cible_type' => $cible?->getMorphClass(),
+            'cible_id' => $cible?->getKey(),
             'details' => $details ?: null,
+            'adresse_ip' => request()?->ip(),
         ]);
+    }
+
+    /**
+     * Les détails lisibles par un humain : « champ : valeur », et pour un changement
+     * « champ : avant → après ». Sert à l'écran du journal et à la chronologie.
+     */
+    public function detailsLisibles(): string
+    {
+        return collect($this->details ?? [])
+            ->map(function ($valeur, $champ) {
+                if (is_array($valeur) && array_key_exists('avant', $valeur) && array_key_exists('apres', $valeur)) {
+                    return "{$champ} : ".self::texte($valeur['avant']).' → '.self::texte($valeur['apres']);
+                }
+
+                return "{$champ} : ".self::texte($valeur);
+            })
+            ->implode(' ; ');
+    }
+
+    /** Une valeur de détail en texte : listes jointes, oui/non, vide affiché « - ». */
+    private static function texte(mixed $valeur): string
+    {
+        return match (true) {
+            $valeur === null, $valeur === '' => '-',
+            is_bool($valeur) => $valeur ? 'oui' : 'non',
+            is_array($valeur) => '['.collect($valeur)->map(fn ($v, $k) => is_int($k) ? self::texte($v) : "{$k}: ".self::texte($v))->implode(', ').']',
+            default => (string) $valeur,
+        };
     }
 }

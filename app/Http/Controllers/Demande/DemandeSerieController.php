@@ -23,7 +23,7 @@ class DemandeSerieController extends Controller
 
         return view('demandes.serie', [
             'layout' => Helper::layout(),
-            'campagnes' => Campagne::orderByDesc('mois_debut_campagne')->get(),
+            'campagnes' => Campagne::ouvertes()->orderByDesc('mois_debut_campagne')->get(),
             'campagneParDefaut' => Campagne::enCours()?->id_campagne,
             'typesActeurs' => TypeActeur::orderBy('lib_type_acteur')->get(),
             'localites' => Localite::with('departement')->orderBy('lib_localite')->get(),

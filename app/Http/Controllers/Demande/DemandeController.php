@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Demande;
 
 use App\Domain\Acces\Enums\PermissionEnum;
+use App\Domain\Acces\Enums\RoleEnum;
 use App\Domain\Commission\Services\SyntheseCommissionService;
 use App\Domain\Demande\Enums\StatutDemandeE;
 use App\Domain\Demande\Models\BrouillonSaisie;
@@ -12,6 +13,7 @@ use App\Domain\Demande\Services\FormulaireDemandeService;
 use App\Domain\Demande\Services\SoumissionDemandeService;
 use App\Domain\Demande\Services\UpdateDemandeService;
 use App\Domain\Demande\Services\VisiteDemandeService;
+use App\Domain\Journal\Services\ChronologieDemandeService;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Demande\DemandeMarquerVisiteRequest;
 use App\Http\Requests\Demande\StoreDemandeRequest;
@@ -186,7 +188,7 @@ class DemandeController extends Controller
             ->route('demandes.show', $demande->id_demande)
             ->with('success', 'La demande n°' . $demande->id_demande . ' a été mise à jour avec succès.');
     }
-    public function show(string $id)
+    public function show(string $id, ChronologieDemandeService $chronologie)
     {
         $demande = Demande::with([
             'acteur',
@@ -204,6 +206,8 @@ class DemandeController extends Controller
             'demande' => $demande,
             'sessionFinie' => $demande->sessionCommission?->estFinie() ?? false,
             'layout' => Helper::layout(),
+            // L'historique interne (qui a fait quoi) ne s'affiche pas aux acteurs de la filière.
+            'chronologie' => Auth::user()->hasRole(RoleEnum::acteur->value) ? collect() : $chronologie->pour($demande),
         ]);
     }
 

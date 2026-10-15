@@ -2,6 +2,10 @@
 
 namespace App\Http\Requests\Auth;
 
+use App\Domain\Administration\Enums\ParametreEnum;
+use App\Domain\Administration\Services\ParametreService;
+use App\Domain\Journal\Enums\ActionJournalEnum;
+use App\Domain\Journal\Models\JournalAction;
 use Illuminate\Auth\Events\Lockout;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
@@ -50,6 +54,18 @@ class LoginRequest extends FormRequest
             ]);
         }
 
+        // Bon mot de passe, mais compte désactivé par l'administrateur : on referme aussitôt.
+        $user = Auth::user();
+
+        if (! $user->estActif()) {
+            Auth::logout();
+            JournalAction::consigner(ActionJournalEnum::connexionEchouee, $user, ['motif' => 'compte désactivé'], $user);
+
+            throw ValidationException::withMessages([
+                'email' => 'Ce compte a été désactivé. Adressez-vous à l\'administrateur.',
+            ]);
+        }
+
         RateLimiter::clear($this->throttleKey());
     }
 
@@ -60,7 +76,7 @@ class LoginRequest extends FormRequest
      */
     public function ensureIsNotRateLimited(): void
     {
-        if (! RateLimiter::tooManyAttempts($this->throttleKey(), 5)) {
+        if (! RateLimiter::tooManyAttempts($this->throttleKey(), app(ParametreService::class)->entier(ParametreEnum::connexionTentativesMax))) {
             return;
         }
 

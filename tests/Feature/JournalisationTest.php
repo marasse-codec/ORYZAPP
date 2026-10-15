@@ -127,9 +127,10 @@ class JournalisationTest extends TestCase
 
         $this->delete(route('attributions.destroy', $attribution->id_attribution));
         $suppression = $this->trace(ActionJournalEnum::attributionSupprimee);
-        $this->assertSame($attribution->id_attribution, $suppression->cible_id);   // la cible n'existe plus, la trace reste
-        $this->assertNull($suppression->cible);
-        $this->assertDatabaseMissing('attributions', ['id_attribution' => $attribution->id_attribution]);
+        $this->assertSame($attribution->id_attribution, $suppression->cible_id);   // la cible est annulée, la trace reste
+        $this->assertNull($suppression->cible);                                    // une attribution annulée n'est plus servie
+        $this->assertSoftDeleted('attributions', ['id_attribution' => $attribution->id_attribution]);
+        $this->assertArrayHasKey('commentaires', $suppression->details);           // copie du contenu annulé
     }
 
     public function test_la_publication_laisse_une_trace_par_attribution(): void

@@ -7,6 +7,8 @@ use App\Domain\Demande\Models\LigneDemande;
 use App\Domain\Demande\Models\Traitement;
 use App\Domain\Journal\Enums\ActionJournalEnum;
 use App\Domain\Journal\Models\JournalAction;
+use App\Domain\Journal\Support\Ecarts;
+use App\Domain\Referentiel\Models\Campagne;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
@@ -14,7 +16,14 @@ class UpdateDemandeService
 {
     public function execute(Demande $demande, array $data, array $files = []): Demande
     {
+        // Ni la campagne actuelle de la demande, ni celle vers laquelle on la déplace, ne doivent être clôturées.
+        Campagne::exigerOuverteParId($demande->id_campagne, 'modifier une demande');
+        Campagne::exigerOuverteParId($data['id_campagne'] ?? null, 'déplacer une demande vers cette campagne');
+
         return DB::transaction(function () use ($demande, $data, $files) {
+
+            // Le contenu avant modification : le journal dira ce qui a changé.
+            $avant = $this->instantane($demande);
 
             // 1. Mise à jour de l'acteur associé
             if ($demande->acteur) {
@@ -53,10 +62,33 @@ class UpdateDemandeService
                 $this->enregistrerPieces($demande, $files);
             }
 
-            JournalAction::enregistrer(ActionJournalEnum::demandeModifiee, $demande);
+            JournalAction::enregistrer(ActionJournalEnum::demandeModifiee, $demande, Ecarts::entre($avant, $this->instantane($demande->fresh())));
 
             return $demande;
         });
+    }
+
+    /**
+     * La demande en texte simple (champs principaux, localités, superficies, appuis demandés),
+     * pour comparer avant et après au journal.
+     *
+     * @return array<string, mixed>
+     */
+    private function instantane(Demande $demande): array
+    {
+        $demande->load('localites', 'systemesProductions', 'lignes.typeAppui', 'lignes.appui');
+
+        return [
+            'campagne' => $demande->id_campagne,
+            'type d\'acteur' => $demande->id_type_acteur,
+            'structure' => $demande->nom_structure,
+            'localités' => $demande->localites->pluck('lib_localite')->sort()->implode(', '),
+            'superficies' => $demande->systemesProductions->sortBy('id_type_systeme_production')
+                ->map(fn ($s) => "écologie {$s->id_type_systeme_production} : ".(float) $s->superficie.' ha')->implode(', '),
+            'appuis' => $demande->lignes
+                ->map(fn ($l) => ($l->appui?->libelle ?? $l->typeAppui?->lib_type_appui).' : '.(float) $l->quantite_demandee)
+                ->sort()->implode(', '),
+        ];
     }
 
     private function enregistrerSuperficies(Demande $demande, array $superficies): void

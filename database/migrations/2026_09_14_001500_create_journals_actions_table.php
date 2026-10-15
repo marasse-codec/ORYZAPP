@@ -17,6 +17,16 @@ return new class extends Migration
             $table->json('details')->nullable();
             $table->timestamps();
         });
+
+        // ================= Schéma v2 (historisation) =================
+
+        Schema::table('journals_actions', function (Blueprint $table) {
+            // Une tentative de connexion échouée n'a pas d'auteur connu : l'auteur devient facultatif.
+            $table->foreignId('user_id')->nullable()->change();
+            // D'où venait la demande (poste, réseau) : utile pour les connexions et les exports.
+            $table->string('adresse_ip', 45)->nullable()->after('details');
+            $table->index(['cible_type', 'cible_id', 'created_at'], 'journal_cible_date');
+        });
     }
 
     public function down(): void

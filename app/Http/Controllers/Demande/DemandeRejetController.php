@@ -7,6 +7,7 @@ use App\Domain\Demande\Models\Demande;
 use App\Domain\Demande\Models\Traitement;
 use App\Domain\Journal\Enums\ActionJournalEnum;
 use App\Domain\Journal\Models\JournalAction;
+use App\Domain\Referentiel\Models\Campagne;
 use App\Http\Controllers\Controller;
 use App\Utils\Helper;
 use Illuminate\Http\Request;
@@ -52,6 +53,8 @@ class DemandeRejetController extends Controller
         $demande = Demande::where('id_demande', $validated['id_demande'])->firstOrFail();
         $motif = $validated['motifs_rejet'];
         $idSession = $request->query('id_session');
+
+        Campagne::exigerOuverteParId($demande->id_campagne, 'rejeter une demande');
 
         // La décision de rejet se prend en session
         

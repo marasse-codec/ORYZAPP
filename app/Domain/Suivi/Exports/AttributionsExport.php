@@ -2,11 +2,11 @@
 
 namespace App\Domain\Suivi\Exports;
 
-use App\Utils\Helper;
-
 use App\Domain\Acces\Enums\RoleEnum;
+
 use App\Domain\Commission\Enums\StatutAttributionEnum;
 use App\Domain\Commission\Models\Attribution;
+use App\Utils\Helper;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -98,6 +98,7 @@ class AttributionsExport implements FromCollection, WithHeadings, WithMapping, S
             ->leftJoin('types_appuis', 'appuis.id_type_appui', '=', 'types_appuis.id_type_appui')
             ->leftJoin('services', 'types_appuis.id_service', '=', 'services.id_service')
             ->select($selects)
+            ->whereNull('attributions.deleted_at') // les attributions annulées ne s'exportent pas
             ->whereBetween('attributions.created_at', [$dateDebut, $dateFin])
             ->groupBy(
                 'attributions.id_attribution',

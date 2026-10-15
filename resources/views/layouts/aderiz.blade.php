@@ -121,6 +121,12 @@
             </div>
         </header>
 
+        {{-- Hors ligne : bandeau affiché par resources/js/hors-ligne.js quand la connexion est perdue. --}}
+        <div id="bandeau-hors-ligne" hidden class="bg-amber-100 px-4 py-2 text-center text-sm text-amber-900">
+            Vous êtes hors ligne. Les pages déjà ouvertes restent consultables et la saisie d'une demande est gardée sur cet appareil ;
+            elle sera envoyée au retour de la connexion.
+        </div>
+
         <main class="min-w-0 flex-1 px-4 py-6 sm:px-6 lg:px-8">
             @include('partials.flash')
 

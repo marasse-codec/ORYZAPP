@@ -1,7 +1,9 @@
 <?php
 
+use App\Domain\Administration\Services\SanteSystemeService;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Schedule;
 
 Artisan::command('inspire', function () {
@@ -18,3 +20,6 @@ Schedule::command('notifications:resume-quotidien')->dailyAt('07:00')->onOneServ
 
 // Rappels du lundi matin : impayés, bons non retirés, brouillons oubliés, séances à clôturer.
 Schedule::command('notifications:rappels')->weeklyOn(1, '08:00')->onOneServer()->withoutOverlapping();
+
+// Le planificateur note qu'il est passé : l'écran « Santé du système » s'en sert pour savoir s'il tourne.
+Schedule::call(fn () => Cache::forever(SanteSystemeService::CLE_PLANIFICATEUR, now()->toIso8601String()))->everyMinute()->name('sante-planificateur');

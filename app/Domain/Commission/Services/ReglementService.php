@@ -157,4 +157,15 @@ class ReglementService
             'nb_acteurs' => $impayees->map(fn (Attribution $a) => $a->demande?->id_acteur)->filter()->unique()->count(),
         ];
     }
+
+    /** Les derniers règlements encaissés, du plus récent au plus ancien (page du comptable). */
+    public function derniersPaiements(int $limite = 20): Collection
+    {
+        return Paiement::query()
+            ->with(['attribution.demande.acteur', 'encaissePar'])
+            ->orderByDesc('date_paiement')
+            ->orderByDesc('id_paiement')
+            ->limit($limite)
+            ->get();
+    }
 }

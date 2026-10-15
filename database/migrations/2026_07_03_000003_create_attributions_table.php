@@ -34,6 +34,15 @@ return new class extends Migration
 
             $table->timestamps();
         });
+
+        // ================= Schéma v2 (historisation) =================
+
+        // Suppression « douce » : une attribution annulée n'est plus effacée, elle est
+        // marquée (date d'annulation). Elle disparaît des écrans et des calculs, mais
+        // son contenu (lignes, superficies) reste consultable pour l'historique.
+        Schema::table('attributions', function (Blueprint $table) {
+            $table->softDeletes();
+        });
     }
 
     public function down(): void

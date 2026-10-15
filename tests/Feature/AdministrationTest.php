@@ -121,19 +121,19 @@ class AdministrationTest extends TestCase
     public function test_la_creation_dun_agent_de_service_exige_son_service(): void
     {
         Livewire::test(ManageUsers::class)
-            ->callAction(CreateAction::class, ['name' => 'Agent Test', 'email' => 'agent.test@example.com', 'password' => 'motdepasse1', 'role' => 'agent-service'])
+            ->callAction(CreateAction::class, ['name' => 'Agent Test', 'email' => 'agent.test@example.com', 'password' => 'Motdepasse1', 'role' => 'agent-service'])
             ->assertHasActionErrors(['id_service']);
 
         $this->assertDatabaseMissing('users', ['email' => 'agent.test@example.com']);
 
         Livewire::test(ManageUsers::class)
-            ->callAction(CreateAction::class, ['name' => 'Agent Test', 'email' => 'agent.test@example.com', 'password' => 'motdepasse1', 'role' => 'agent-service', 'id_service' => 2])
+            ->callAction(CreateAction::class, ['name' => 'Agent Test', 'email' => 'agent.test@example.com', 'password' => 'Motdepasse1', 'role' => 'agent-service', 'id_service' => 2])
             ->assertHasNoActionErrors();
 
         $user = User::where('email', 'agent.test@example.com')->firstOrFail();
         $this->assertTrue($user->hasRole('agent-service'));
         $this->assertSame(2, $user->id_service);
-        $this->assertTrue(Hash::check('motdepasse1', $user->password));
+        $this->assertTrue(Hash::check('Motdepasse1', $user->password));
         $this->assertNull($user->agent);                                  // pas un agent de stock
         $this->assertTrue(JournalAction::where('action', ActionJournalEnum::compteCree->value)->first()->cible->is($user));
     }
@@ -141,7 +141,7 @@ class AdministrationTest extends TestCase
     public function test_un_gestionnaire_de_stock_recoit_son_agent(): void
     {
         Livewire::test(ManageUsers::class)
-            ->callAction(CreateAction::class, ['name' => 'Magasinier Neuf', 'email' => 'magasin.neuf@example.com', 'password' => 'motdepasse1', 'role' => 'gestionnaire-stock'])
+            ->callAction(CreateAction::class, ['name' => 'Magasinier Neuf', 'email' => 'magasin.neuf@example.com', 'password' => 'Motdepasse1', 'role' => 'gestionnaire-stock'])
             ->assertHasNoActionErrors();
 
         $user = User::where('email', 'magasin.neuf@example.com')->firstOrFail();
@@ -167,16 +167,25 @@ class AdministrationTest extends TestCase
         $this->assertSame(1, JournalAction::where('action', ActionJournalEnum::compteModifie->value)->count());
     }
 
-    public function test_un_compte_qui_a_agi_ne_se_supprime_pas_et_on_ne_se_supprime_pas_soi_meme(): void
+    public function test_un_compte_se_desactive_au_lieu_detre_supprime(): void
     {
         $dp = User::role('dp')->first();                                  // porteur de demandes
-        $this->assertTrue($dp->estUtilise());
 
         Livewire::test(ManageUsers::class)
-            ->callTableAction(DeleteAction::class, $dp)
-            ->assertNotified('Suppression impossible : cet élément est utilisé ailleurs.');
-        $this->assertDatabaseHas('users', ['id' => $dp->id]);
+            ->assertTableActionDoesNotExist('delete')
+            ->callTableAction('desactiver', $dp, ['motif' => 'Départ'])
+            ->assertNotified('Compte désactivé');
 
-        Livewire::test(ManageUsers::class)->assertTableActionHidden(DeleteAction::class, $this->admin);
+        $dp->refresh();
+        $this->assertFalse($dp->estActif());
+        $this->assertSame('Départ', $dp->motif_desactivation);
+        $this->assertDatabaseHas('users', ['id' => $dp->id]);             // toujours là, avec son historique
+        $this->assertTrue(JournalAction::where('action', ActionJournalEnum::compteDesactive->value)->first()->cible->is($dp));
+
+        Livewire::test(ManageUsers::class)->callTableAction('reactiver', $dp)->assertNotified('Compte réactivé');
+        $this->assertTrue($dp->refresh()->estActif());
+
+        // On ne se désactive pas soi-même.
+        Livewire::test(ManageUsers::class)->assertTableActionHidden('desactiver', $this->admin);
     }
 }

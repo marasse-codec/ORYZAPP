@@ -6,6 +6,7 @@ use App\Domain\Demande\Models\Demande;
 use App\Domain\Demande\Models\Traitement;
 use App\Domain\Journal\Enums\ActionJournalEnum;
 use App\Domain\Journal\Models\JournalAction;
+use App\Domain\Referentiel\Models\Campagne;
 use App\Domain\Shared\Exceptions\RegleMetierViolee;
 use Illuminate\Support\Facades\DB;
 
@@ -23,6 +24,8 @@ class SoumissionDemandeService
 {
     public function soumettre(Demande $demande): void
     {
+        Campagne::exigerOuverteParId($demande->id_campagne, 'soumettre une demande');
+
         if (! $demande->terrainAEteVisite()) {
             throw new RegleMetierViolee("Une visite de terrain doit être enregistrée avant de soumettre la demande n°{$demande->id_demande}.");
         }

@@ -6,6 +6,7 @@ use App\Domain\Commission\Models\Attribution;
 use App\Domain\Demande\Models\Rendement;
 use App\Domain\Journal\Enums\ActionJournalEnum;
 use App\Domain\Journal\Models\JournalAction;
+use App\Domain\Referentiel\Models\Campagne;
 use App\Domain\Shared\Exceptions\RegleMetierViolee;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -34,9 +35,12 @@ class RendementService
                 throw new RegleMetierViolee("Les résultats de l'attribution n°{$attribution->id_attribution} ne sont pas publiés : les rendements ne peuvent pas encore être transmis.");
             }
 
+            Campagne::exigerOuverteParId($attribution->demande?->id_campagne, 'transmettre des rendements');
+
             $systemes = $attribution->demande->systemesProductions()->get()->keyBy('id_systeme_production');
             $enregistres = 0;
             $production = 0.0;
+            $corrections = [];
 
             foreach ($lignes as $idSysteme => $ligne) {
                 $recoltee = $ligne['superficie_recoltee'] ?? null;
@@ -57,6 +61,16 @@ class RendementService
                     ));
                 }
 
+                // Une correction garde la trace de l'ancienne valeur au journal.
+                $ancien = Rendement::where('id_systeme_production', $systeme->id_systeme_production)->first();
+
+                if ($ancien) {
+                    $corrections["superficie {$systeme->id_systeme_production}"] = [
+                        'avant' => "{$ancien->production_tonnes} t sur {$ancien->superficie_recoltee} ha",
+                        'apres' => "{$tonnes} t sur {$recoltee} ha",
+                    ];
+                }
+
                 Rendement::updateOrCreate(
                     ['id_systeme_production' => $systeme->id_systeme_production],
                     ['superficie_recoltee' => $recoltee, 'production_tonnes' => $tonnes, 'id_user' => Auth::id()],
@@ -73,7 +87,7 @@ class RendementService
             JournalAction::enregistrer(ActionJournalEnum::rendementEnvoye, $attribution, [
                 'superficies' => $enregistres,
                 'production_tonnes' => round($production, 3),
-            ]);
+            ] + $corrections);
 
             return $enregistres;
         });

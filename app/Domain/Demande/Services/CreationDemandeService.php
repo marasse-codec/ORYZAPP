@@ -11,6 +11,7 @@ use App\Domain\Demande\Models\SystemeProduction;
 use App\Domain\Demande\Models\Traitement;
 use App\Domain\Journal\Enums\ActionJournalEnum;
 use App\Domain\Journal\Models\JournalAction;
+use App\Domain\Referentiel\Models\Campagne;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -29,6 +30,9 @@ class CreationDemandeService
     {
         // Demandeur, demande et lignes partent ensemble ou pas du tout : le demandeur
         // se résout donc dans la transaction, pas avant.
+        // Une campagne clôturée n'accepte plus de demande.
+        Campagne::exigerOuverteParId($donnees['id_campagne'] ?? null, 'déposer une demande');
+
         return DB::transaction(function () use ($donnees, $pieces) {
             $acteur = $this->resoudreDemandeur($donnees);
 

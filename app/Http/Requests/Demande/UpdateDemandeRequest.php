@@ -11,9 +11,10 @@ class UpdateDemandeRequest extends FormRequest
     /**
      * Détermine si l'utilisateur est autorisé à effectuer cette requête.
      */
+    /** La direction et la comptabilité consultent sans saisir de demande (cf. RoleEnum::peutSaisirDesDemandes). */
     public function authorize(): bool
     {
-        return true;
+        return $this->user()?->roleEnum()?->peutSaisirDesDemandes() ?? true;
     }
 
     /**

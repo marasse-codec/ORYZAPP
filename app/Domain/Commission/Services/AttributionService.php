@@ -9,6 +9,8 @@ use App\Domain\Commission\Models\SuperficieAttribution;
 use App\Domain\Demande\Models\Demande;
 use App\Domain\Journal\Enums\ActionJournalEnum;
 use App\Domain\Journal\Models\JournalAction;
+use App\Domain\Journal\Support\Ecarts;
+use App\Domain\Referentiel\Models\Campagne;
 use App\Domain\Shared\Exceptions\RegleMetierViolee;
 use App\Domain\Stock\Models\Appui;
 use Illuminate\Support\Facades\DB;
@@ -29,6 +31,8 @@ class AttributionService
      */
     public function enregistrer(Demande $demande, int|string|null $idSession, array $lignes, ?string $commentaires = null, array $superficies = []): Attribution
     {
+        Campagne::exigerOuverteParId($demande->id_campagne, 'attribuer des appuis');
+
         return DB::transaction(function () use ($demande, $idSession, $lignes, $commentaires, $superficies) {
             $session = $idSession ? SessionCommission::whereKey($idSession)->lockForUpdate()->first() : null;
 
@@ -67,6 +71,10 @@ class AttributionService
     {
         return DB::transaction(function () use ($attribution, $lignes, $commentaires, $superficies) {
             $this->exigerSeanceOuverte($attribution, 'modifiée');
+            Campagne::exigerOuverteParId($attribution->demande?->id_campagne, 'modifier une attribution');
+
+            // Le contenu avant modification, pour que le journal dise ce qui a changé.
+            $avant = $this->instantane($attribution);
 
             $attribution->lignesAttributions()->delete();
             $this->enregistrerLignes($attribution, $lignes);
@@ -74,7 +82,7 @@ class AttributionService
             $this->enregistrerSuperficies($attribution, $superficies);
             $attribution->update(['commentaires' => $commentaires]);
 
-            JournalAction::enregistrer(ActionJournalEnum::attributionModifiee, $attribution);
+            JournalAction::enregistrer(ActionJournalEnum::attributionModifiee, $attribution, Ecarts::entre($avant, $this->instantane($attribution->fresh())));
 
             return $attribution;
         });
@@ -84,12 +92,40 @@ class AttributionService
     {
         DB::transaction(function () use ($attribution) {
             $this->exigerSeanceOuverte($attribution, 'annulée');
+            Campagne::exigerOuverteParId($attribution->demande?->id_campagne, 'annuler une attribution');
 
-            // La trace d'abord : la cible disparaît avec la suppression, l'identifiant et le contexte restent.
-            JournalAction::enregistrer(ActionJournalEnum::attributionSupprimee, $attribution, ['id_demande' => $attribution->id_demande]);
+            // Suppression douce : l'attribution est marquée annulée, son contenu reste en base.
+            // Le journal en garde aussi une copie lisible.
+            JournalAction::enregistrer(ActionJournalEnum::attributionSupprimee, $attribution, ['id_demande' => $attribution->id_demande] + $this->instantane($attribution));
 
             $attribution->delete();
         });
+    }
+
+    /**
+     * Le contenu d'une attribution en texte simple (appui => quantité × coût, remise),
+     * pour comparer avant/après au journal et garder une copie d'une attribution annulée.
+     *
+     * @return array<string, string|null>
+     */
+    private function instantane(Attribution $attribution): array
+    {
+        $attribution->load('lignesAttributions.appui', 'superficies');
+
+        $lignes = $attribution->lignesAttributions->mapWithKeys(fn (LigneAttribution $ligne) => [
+            'appui '.($ligne->appui?->libelle ?? $ligne->id_appui) => sprintf(
+                '%s × %s F, remise %s %%',
+                (float) $ligne->quantite_attribuee,
+                (float) $ligne->cout_attribution,
+                (float) $ligne->remise,
+            ),
+        ]);
+
+        $superficies = $attribution->superficies->mapWithKeys(fn (SuperficieAttribution $s) => [
+            "superficie écologie {$s->id_type_systeme_production}" => (float) $s->superficie_traitee.' ha',
+        ]);
+
+        return $lignes->merge($superficies)->put('commentaires', $attribution->commentaires)->all();
     }
 
     /** La séance est relue sous verrou : la clôture qui la fige ne peut pas passer entre le contrôle et l'écriture. */

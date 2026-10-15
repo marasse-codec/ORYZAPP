@@ -6,6 +6,7 @@ use App\Domain\Acces\Enums\PermissionEnum;
 use App\Domain\Journal\Enums\ActionJournalEnum;
 use App\Domain\Journal\Models\JournalAction;
 use App\Filament\Admin\Resources\JournalActionResource\Pages;
+use Filament\Forms;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -57,6 +58,7 @@ class JournalActionResource extends Resource
                     ->sortable(),
                 Tables\Columns\TextColumn::make('user.name')
                     ->label('Auteur')
+                    ->placeholder('Inconnu')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('action')
                     ->label('Action')
@@ -68,10 +70,15 @@ class JournalActionResource extends Resource
                 Tables\Columns\TextColumn::make('cible_id')
                     ->label('N°')
                     ->sortable(),
+                // « champ : avant → après » pour une modification, « champ : valeur » sinon.
                 Tables\Columns\TextColumn::make('details')
                     ->label('Détails')
-                    ->formatStateUsing(fn ($state) => is_array($state) ? collect($state)->map(fn ($v, $k) => "{$k} : {$v}")->implode(', ') : $state)
+                    ->getStateUsing(fn (JournalAction $record) => $record->detailsLisibles() ?: '-')
                     ->wrap(),
+                Tables\Columns\TextColumn::make('adresse_ip')
+                    ->label('Adresse IP')
+                    ->placeholder('-')
+                    ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('action')
@@ -80,6 +87,15 @@ class JournalActionResource extends Resource
                 Tables\Filters\SelectFilter::make('user_id')
                     ->label('Auteur')
                     ->relationship('user', 'name'),
+                // Retrouver ce qui s'est passé sur une période (audit, contrôle).
+                Tables\Filters\Filter::make('periode')
+                    ->form([
+                        Forms\Components\DatePicker::make('du')->label('Du'),
+                        Forms\Components\DatePicker::make('au')->label('Au'),
+                    ])
+                    ->query(fn ($query, array $data) => $query
+                        ->when($data['du'] ?? null, fn ($q, $du) => $q->whereDate('created_at', '>=', $du))
+                        ->when($data['au'] ?? null, fn ($q, $au) => $q->whereDate('created_at', '<=', $au))),
             ])
             ->actions([])
             ->bulkActions([]);

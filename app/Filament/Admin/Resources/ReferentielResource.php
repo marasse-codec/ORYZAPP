@@ -3,13 +3,19 @@
 namespace App\Filament\Admin\Resources;
 
 use App\Domain\Acces\Enums\PermissionEnum;
+use App\Domain\Journal\Enums\ActionJournalEnum;
+use App\Domain\Journal\Models\JournalAction;
+use App\Domain\Journal\Support\Ecarts;
 use App\Domain\Shared\Contracts\EstUtilisable;
+use App\Domain\Shared\Exceptions\RegleMetierViolee;
 use Filament\Forms\Form;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\QueryException;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Socle des référentiels (types, localités, campagnes…) : des listes que
@@ -18,7 +24,9 @@ use Illuminate\Database\QueryException;
  *
  *  - réservé à l'administration ;
  *  - création et modification dans une fenêtre, sans page dédiée ;
- *  - suppression refusée, avec un message, quand l'élément est utilisé.
+ *  - suppression refusée, avec un message, quand l'élément est utilisé ;
+ *  - chaque modification et suppression est notée au journal (valeurs avant/après) :
+ *    un prix ou une dose changés restent retrouvables.
  *
  * Seules des données de référence passent par ici. Les données transactionnelles
  * (demandes, attributions, stocks…) ne se modifient que par les cas d'usage du
@@ -49,10 +57,28 @@ abstract class ReferentielResource extends Resource
         return $table
             ->columns(static::colonnes())
             ->actions([
-                Tables\Actions\EditAction::make(),
+                static::actionModifier(),
                 static::actionSupprimer(),
             ])
             ->paginated([25, 50, 100]);
+    }
+
+    /** Modifie l'élément et note au journal ce qui a changé (avant → après). */
+    protected static function actionModifier(): Tables\Actions\EditAction
+    {
+        return Tables\Actions\EditAction::make()->using(function (Model $record, array $data) {
+            return DB::transaction(function () use ($record, $data) {
+                $record->fill($data);
+                $ecarts = Ecarts::duModele($record);
+                $record->save();
+
+                if ($ecarts !== []) {
+                    JournalAction::consigner(ActionJournalEnum::referentielModifie, $record, ['element' => static::getModelLabel()] + $ecarts);
+                }
+
+                return $record;
+            });
+        });
     }
 
     /**
@@ -70,10 +96,26 @@ abstract class ReferentielResource extends Resource
             }
 
             try {
-                return (bool) $record->delete();
+                return DB::transaction(function () use ($record) {
+                    // La trace garde tout le contenu de l'élément : il reste lisible après sa disparition.
+                    JournalAction::consigner(ActionJournalEnum::referentielSupprime, $record, ['element' => static::getModelLabel()] + $record->attributesToArray());
+
+                    return (bool) $record->delete();
+                });
             } catch (QueryException) {
                 return false;
             }
         });
+    }
+
+    /** Lance une opération du métier et en affiche le résultat : succès, ou la règle qui l'a refusée. */
+    protected static function executer(callable $operation, string $succes): void
+    {
+        try {
+            $operation();
+            Notification::make()->title($succes)->success()->send();
+        } catch (RegleMetierViolee $e) {
+            Notification::make()->title($e->getMessage())->danger()->send();
+        }
     }
 }

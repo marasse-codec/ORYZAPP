@@ -54,4 +54,34 @@ class Graphique
             ],
         ];
     }
+
+    /**
+     * Courbes : une par série, un point par libellé (ex. une campagne). Un point sans
+     * donnée (null) laisse un trou plutôt qu'un 0 trompeur.
+     *
+     * @param  array<int, string>  $libelles
+     * @param  array<int, array{label: string, data: array<int, int|float|null>, color: string}>  $series
+     */
+    public static function courbes(array $libelles, array $series): array
+    {
+        return [
+            'type' => 'line',
+            'data' => [
+                'labels' => $libelles,
+                'datasets' => array_map(fn (array $serie) => [
+                    'label' => $serie['label'],
+                    'data' => $serie['data'],
+                    'borderColor' => $serie['color'],
+                    'backgroundColor' => $serie['color'],
+                    'tension' => 0.2,
+                    'spanGaps' => false,
+                ], $series),
+            ],
+            'options' => [
+                'maintainAspectRatio' => false,
+                'plugins' => ['legend' => ['position' => 'bottom']],
+                'scales' => ['y' => ['beginAtZero' => true]],
+            ],
+        ];
+    }
 }

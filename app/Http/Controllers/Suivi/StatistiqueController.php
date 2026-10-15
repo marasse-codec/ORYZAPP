@@ -3,50 +3,58 @@
 namespace App\Http\Controllers\Suivi;
 
 use App\Domain\Demande\Enums\StatutDemandeE;
+use App\Domain\Journal\Enums\ActionJournalEnum;
+use App\Domain\Journal\Models\JournalAction;
 use App\Domain\Referentiel\Models\Campagne;
+use App\Domain\Referentiel\Models\Departement;
+use App\Domain\Referentiel\Models\Localite;
+use App\Domain\Referentiel\Models\TypeActeur;
+use App\Domain\Referentiel\Models\TypeAppui;
+use App\Domain\Suivi\Services\ComparaisonCampagnesService;
 use App\Domain\Suivi\Services\StatistiqueCampagneService;
+use App\Domain\Suivi\Support\FiltreStatistique;
 use App\Domain\Suivi\Support\Graphique;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Suivi\StatistiqueRequest;
 use App\Utils\Helper;
-use Illuminate\Http\Request;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Support\Collection;
 
 /**
- * Statistiques d'une campagne (campagne en cours par défaut), pour l'admin.
+ * Statistiques : une campagne (la campagne en cours par défaut) avec ses filtres,
+ * la comparaison entre campagnes, et le rapport de campagne en PDF.
  */
 class StatistiqueController extends Controller
 {
-    public function index(Request $request, StatistiqueCampagneService $stats)
+    public function index(StatistiqueRequest $request, StatistiqueCampagneService $stats)
     {
-        $request->validate(['campagne' => 'nullable|integer|exists:campagnes,id_campagne']);
-
-        $campagnes = Campagne::orderByDesc('mois_debut_campagne')->get();
-        $campagne = $campagnes->firstWhere('id_campagne', $request->integer('campagne')) ?? Campagne::enCours();
+        $campagne = $request->campagne();
 
         // Aucune campagne en base : la page l'indique plutôt que de planter.
         if (! $campagne) {
-            return view('statistiques.index', ['layout' => Helper::layout(), 'campagne' => null, 'campagnes' => $campagnes]);
+            return view('statistiques.index', ['layout' => Helper::layout(), 'campagne' => null] + $this->listes());
         }
 
-        $cas = collect(StatutDemandeE::cases());
-        $statuts = $stats->parStatut($campagne);
-        $typesAppuis = $stats->parTypeAppui($campagne);
-        $localites = $stats->parLocalite($campagne);
-        $typesActeurs = $stats->parTypeActeur($campagne);
-        $superficies = $stats->superficiesParEcologie($campagne);
-        $rendements = $stats->rendementsParEcologie($campagne);
+        $filtre = $request->filtre();
+        $donnees = $this->donnees($stats, $campagne, $filtre);
 
-        return view('statistiques.index', [
+        $cas = collect(StatutDemandeE::cases());
+        $statuts = $stats->parStatut($campagne, $filtre);
+        $typesAppuis = $stats->parTypeAppui($campagne, $filtre);
+        $localites = $stats->parLocalite($campagne, $filtre);
+        $typesActeurs = $stats->parTypeActeur($campagne, $filtre);
+        $superficies = $donnees['superficies'];
+        $rendements = $donnees['rendements'];
+
+        return view('statistiques.index', $donnees + $this->listes() + [
             'layout' => Helper::layout(),
             'campagne' => $campagne,
-            'campagnes' => $campagnes,
-            'indicateurs' => $stats->indicateurs($campagne),
-            'satisfaction' => $stats->satisfactionParAppui($campagne),
+            'filtre' => $filtre,
             'graphiqueStatuts' => Graphique::anneau(
                 $cas->map->libelle()->all(),
                 $cas->map(fn (StatutDemandeE $s) => $statuts[$s->value])->all(),
                 $cas->map->couleurGraphique()->all(),
             ),
-            'superficies' => $superficies,
             'graphiqueSuperficies' => $superficies->sum(fn ($s) => $s['concernee'] + $s['traitee']) > 0 ? Graphique::barres(
                 $superficies->keys()->all(),
                 [
@@ -54,7 +62,6 @@ class StatistiqueController extends Controller
                     ['label' => 'Traitée (ha)', 'data' => $superficies->pluck('traitee')->all(), 'color' => '#1E5E3A'],
                 ],
             ) : null,
-            'rendements' => $rendements,
             'graphiqueRendements' => $rendements->contains(fn ($r) => $r['rendement'] !== null) ? Graphique::barres(
                 $rendements->keys()->all(),
                 [['label' => 'Rendement moyen (t/ha)', 'data' => $rendements->map(fn ($r) => $r['rendement'] ?? 0)->values()->all(), 'color' => '#1E5E3A']],
@@ -78,5 +85,109 @@ class StatistiqueController extends Controller
                 ['#1E5E3A', '#E5A93B', '#0ea5e9', '#e11d48', '#8b5cf6'],
             ),
         ]);
+    }
+
+    /**
+     * Comparaison entre campagnes : par défaut, les cinq plus récentes ; on peut en
+     * cocher d'autres. Les filtres s'appliquent à toutes les campagnes comparées.
+     */
+    public function comparaison(StatistiqueRequest $request, ComparaisonCampagnesService $comparaison)
+    {
+        $filtre = $request->filtre();
+        $choisies = $request->filled('campagnes')
+            ? Campagne::whereIn('id_campagne', $request->input('campagnes'))->get()
+            : Campagne::orderByDesc('mois_debut_campagne')->limit(5)->get();
+
+        $lignes = $comparaison->comparer($choisies, $filtre);
+        $libelles = $lignes->map(fn ($ligne) => $ligne['campagne']->lib_campagne)->all();
+
+        return view('statistiques.comparaison', $this->listes() + [
+            'layout' => Helper::layout(),
+            'filtre' => $filtre,
+            'choisies' => $choisies->pluck('id_campagne')->all(),
+            'lignes' => $lignes,
+            'indicateurs' => ComparaisonCampagnesService::INDICATEURS,
+            // Un graphique par famille d'indicateurs : les unités ne se mélangent pas sur un même axe.
+            'graphiqueVolumes' => $this->courbes($lignes, $libelles, ['soumises', 'beneficiaires']),
+            'graphiqueTaux' => $this->courbes($lignes, $libelles, ['taux_attribution', 'taux_traitement', 'taux_recouvrement']),
+        ]);
+    }
+
+    /** Le rapport de campagne, à imprimer ou à transmettre (PDF). */
+    public function rapport(StatistiqueRequest $request, StatistiqueCampagneService $stats)
+    {
+        $campagne = $request->campagne() ?? abort(404, 'Aucune campagne enregistrée.');
+        $filtre = $request->filtre();
+
+        JournalAction::consigner(ActionJournalEnum::exportTelecharge, $campagne, ['document' => 'rapport de campagne'] + $filtre->parametres());
+
+        $pdf = Pdf::loadView('statistiques.rapport', $this->donnees($stats, $campagne, $filtre) + [
+            'campagne' => $campagne,
+            'filtre' => $filtre,
+            'descriptionFiltre' => $this->descriptionFiltre($filtre),
+            'parLocalite' => $stats->parLocalite($campagne, $filtre),
+            'parTypeActeur' => $stats->parTypeActeur($campagne, $filtre),
+        ])->setPaper('a4');
+
+        return $pdf->download('rapport-campagne-'.str($campagne->lib_campagne)->slug().'.pdf');
+    }
+
+    /** Les chiffres partagés par la page et le rapport. */
+    private function donnees(StatistiqueCampagneService $stats, Campagne $campagne, FiltreStatistique $filtre): array
+    {
+        $indicateurs = $stats->indicateurs($campagne, $filtre);
+        $finances = $stats->finances($campagne, $filtre);
+
+        return [
+            'indicateurs' => $indicateurs,
+            'finances' => $finances,
+            'objectifs' => $stats->objectifs($campagne, $indicateurs, $finances),
+            'satisfaction' => $stats->satisfactionParAppui($campagne, $filtre),
+            'superficies' => $stats->superficiesParEcologie($campagne, $filtre),
+            'rendements' => $stats->rendementsParEcologie($campagne, $filtre),
+        ];
+    }
+
+    /** Les listes des menus déroulants de filtre. */
+    private function listes(): array
+    {
+        return [
+            'campagnes' => Campagne::orderByDesc('mois_debut_campagne')->get(),
+            'departements' => Departement::orderBy('lib_departement')->get(),
+            'localites' => Localite::orderBy('lib_localite')->get(),
+            'typesAppuis' => TypeAppui::orderBy('lib_type_appui')->get(),
+            'typesActeurs' => TypeActeur::orderBy('lib_type_acteur')->get(),
+        ];
+    }
+
+    /** Les filtres actifs en clair, pour l'en-tête du rapport. */
+    private function descriptionFiltre(FiltreStatistique $filtre): string
+    {
+        $morceaux = array_filter([
+            $filtre->idDepartement ? 'Département : '.Departement::find($filtre->idDepartement)?->lib_departement : null,
+            $filtre->idLocalite ? 'Localité : '.Localite::find($filtre->idLocalite)?->lib_localite : null,
+            $filtre->idTypeAppui ? "Type d'appui : ".TypeAppui::find($filtre->idTypeAppui)?->lib_type_appui : null,
+            $filtre->idTypeActeur ? "Type d'acteur : ".TypeActeur::find($filtre->idTypeActeur)?->lib_type_acteur : null,
+            $filtre->du ? 'Soumises à partir du '.$filtre->du->format('d/m/Y') : null,
+            $filtre->au ? "Soumises jusqu'au ".$filtre->au->format('d/m/Y') : null,
+        ]);
+
+        return $morceaux === [] ? 'Toute la campagne' : implode(' · ', $morceaux);
+    }
+
+    /** Un graphique en courbes : une courbe par indicateur, un point par campagne. */
+    private function courbes(Collection $lignes, array $libelles, array $cles): ?array
+    {
+        if ($lignes->count() < 2) {
+            return null;
+        }
+
+        $couleurs = ['#1E5E3A', '#E5A93B', '#0ea5e9'];
+
+        return Graphique::courbes($libelles, collect($cles)->values()->map(fn (string $cle, int $i) => [
+            'label' => ComparaisonCampagnesService::INDICATEURS[$cle][0],
+            'data' => $lignes->map(fn ($ligne) => $ligne['valeurs'][$cle])->all(),
+            'color' => $couleurs[$i % count($couleurs)],
+        ])->all());
     }
 }
