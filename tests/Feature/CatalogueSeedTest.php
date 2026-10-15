@@ -32,11 +32,11 @@ class CatalogueSeedTest extends TestCase
         $this->assertEqualsCanonicalizing([1, 2], $wita->typesSystemesProductions()->pluck('types_systemes_productions.id_type_systeme_production')->all());
     }
 
-    public function test_la_vitrine_presente_le_parcours_jusqu_au_rendement(): void
+    public function test_la_vitrine_mene_a_la_connexion_sans_diagramme(): void
     {
         $this->get('/')
             ->assertOk()
-            ->assertSee('De la demande au retour de rendement')
-            ->assertSee('Transmettre le rendement', false);
+            ->assertSee(route('login'), false)
+            ->assertDontSee('De la demande au retour de rendement');
     }
 }
