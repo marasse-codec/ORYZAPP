@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Demande;
 
+use App\Domain\Demande\Support\ReglesDemande;
 use App\Http\Requests\Concerns\ReglesNumeriques;
 
 use Illuminate\Foundation\Http\FormRequest;
@@ -29,7 +30,7 @@ class UpdateDemandeRequest extends FormRequest
             // --- ÉTAPE 2 : DEMANDEUR ---
             'id_acteur' => ['nullable', 'exists:acteurs,id_acteur'],
             'nom' => ['required', 'string', 'max:255'],
-            'date_naissance' => ['required', 'date', 'before:today'],
+            'date_naissance' => ReglesDemande::dateNaissance(),   // majeur : 18 ans révolus
             'telephone' => ['required', 'string', 'max:20'],
             'email' => ['nullable', 'email', 'max:255'],
             'nom_structure' => ['nullable', 'string', 'max:255'],
@@ -67,6 +68,7 @@ class UpdateDemandeRequest extends FormRequest
             'id_type_acteur.required' => 'Le type d\'acteur est obligatoire.',
             'nom.required' => 'Le nom du demandeur ou de la structure est obligatoire.',
             'date_naissance.required' => 'La date de naissance ou de création est obligatoire.',
+            'date_naissance.before_or_equal' => ReglesDemande::messageMajorite(),
             'telephone.required' => 'Le numéro de téléphone est obligatoire.',
             'id_campagne.required' => 'La campagne est obligatoire.',
             'localites.required' => 'Vous devez sélectionner au moins une localité.',

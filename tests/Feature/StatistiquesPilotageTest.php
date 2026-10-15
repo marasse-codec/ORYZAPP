@@ -80,7 +80,8 @@ class StatistiquesPilotageTest extends TestCase
         $nonPubliee = $this->attribuer($this->demandeSoumise(), $session, [1 => 1]);
         LigneAttribution::query()->update(['cout_attribution' => 1000, 'remise' => 0]);
         LigneAttribution::where('id_attribution', $publiee->id_attribution)->update(['remise' => 50]);   // 4 × 1000 × 50 % = 2 000
-        Paiement::create(['id_attribution' => $publiee->id_attribution, 'montant' => 500, 'date_paiement' => today(), 'mode' => 'especes']);
+        Paiement::create(['id_attribution' => $publiee->id_attribution, 'montant' => 500, 'date_paiement' => today(), 'mode' => 'especes', 'date_soumission' => now()]);
+        Paiement::create(['id_attribution' => $publiee->id_attribution, 'montant' => 300, 'date_paiement' => today(), 'mode' => 'especes']); // brouillon : non encaissé
 
         $finances = $this->stats()->finances($this->campagne);
 

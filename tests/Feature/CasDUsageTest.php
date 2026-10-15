@@ -122,7 +122,7 @@ class CasDUsageTest extends TestCase
     {
         $seance = $this->seance();
 
-        $this->post(route('commissions.cloturer', $seance->id_session))->assertRedirect(route('commissions.index'));
+        $this->post(route('commissions.cloturer', $seance->id_session))->assertRedirect(route('commissions.show', $seance->id_session));   // retour sur la séance clôturée
         $this->post(route('commissions.cloturer', $seance->id_session))
             ->assertSessionHas('error', fn ($m) => str_contains($m, 'déjà clôturée'));
     }

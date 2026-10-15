@@ -9,6 +9,7 @@ rectangle "<b>Plateforme ORYZA</b>" {
     usecase "S'authentifier" as UC_Auth
 
     usecase "Gérer les comptes\n(créer, modifier)" as UC_Comptes
+    usecase "Rattacher un DP\nà ses départements" as UC_Departements $NOUVEAU
     usecase "Désactiver / réactiver\nun compte" as UC_Desactiver $NOUVEAU
     usecase "Modifier les droits\nd'un rôle" as UC_Droits $NOUVEAU
     usecase "Régler les paramètres\ngénéraux" as UC_Parametres $NOUVEAU
@@ -29,6 +30,7 @@ Admin --> UC_Journal
 Admin --> UC_Sauvegardes
 
 UC_Desactiver .> UC_Comptes : <<extend>>
+UC_Departements .> UC_Comptes : <<extend>>
 
 UC_Comptes ..> UC_Auth : <<include>>
 UC_Droits ..> UC_Auth : <<include>>

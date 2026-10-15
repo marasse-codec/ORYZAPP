@@ -8,6 +8,7 @@ use App\Domain\Acces\Enums\RoleEnum;
 use App\Domain\Commission\Models\Attribution;
 use App\Domain\Demande\Models\Demande;
 use App\Domain\Journal\Models\JournalAction;
+use App\Domain\Referentiel\Models\Departement;
 use App\Domain\Referentiel\Models\Service;
 use App\Domain\Shared\Contracts\EstUtilisable;
 use App\Domain\Shared\Exceptions\RegleMetierViolee;
@@ -18,6 +19,7 @@ use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -52,6 +54,12 @@ class User extends Authenticatable implements EstUtilisable
     public function service(): BelongsTo
     {
         return $this->belongsTo(Service::class, 'id_service', 'id_service');
+    }
+
+    /** Pour un délégué de pôle : les départements dont il est responsable. */
+    public function departements(): BelongsToMany
+    {
+        return $this->belongsToMany(Departement::class, 'departements_users', 'user_id', 'id_departement');
     }
 
     public function demandes(): HasMany 

@@ -2,7 +2,6 @@
 
 namespace App\Domain\Suivi\Services;
 
-use App\Domain\Acces\Enums\RoleEnum;
 use App\Domain\Commission\Models\Attribution;
 use App\Domain\Commission\Models\SessionCommission;
 use App\Domain\Commission\Models\SuperficieAttribution;
@@ -10,6 +9,8 @@ use App\Domain\Demande\Enums\StatutDemandeE;
 use App\Domain\Demande\Models\Demande;
 use App\Domain\Demande\Models\SystemeProduction;
 use App\Domain\Stock\Models\Appui;
+use App\Domain\Stock\Models\Equipement;
+use App\Domain\Stock\Models\MouvementStock;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
@@ -24,28 +25,25 @@ use Illuminate\Support\Collection;
 class StatistiqueService
 {
     /**
-     * Les demandes qu'un utilisateur a le droit de compter.
-     * Le DP ne voit que celles qu'il a émises ; l'agent de service, celles de
-     * son service (cf. Demande::scopePourUtilisateur) ; les autres, tout.
+     * Les demandes qu'un utilisateur a le droit de compter (cf. Demande::scopePourUtilisateur) :
+     * le DP, celles de ses départements ; l'agent de service, celles de son service ; etc.
      */
     private function demandesDe(User $user): Builder
     {
-        if ($user->hasRole(RoleEnum::dp->value)) {
-            return Demande::query()->where('id_user', $user->id);
-        }
-
-        return Demande::query()->pourUtilisateur();
+        return Demande::query()->pourUtilisateur($user);
     }
 
     /**
      * Nombre de demandes par statut, tous statuts présents (0 par défaut).
+     * « Reçu attribution » ne compte que les attributions publiées : avant la publication,
+     * la décision n'est pas encore officielle et la demande reste « Soumise ».
      *
      * @return array<int, int> valeur de StatutDemandeE => total
      */
     public function demandesParStatut(User $user): array
     {
         $comptes = $this->demandesDe($user)
-            ->selectRaw(Demande::statutSql().' AS code_statut, COUNT(*) AS total')
+            ->selectRaw(Demande::statutSql(publieeSeulement: true).' AS code_statut, COUNT(*) AS total')
             ->groupBy('code_statut')
             ->pluck('total', 'code_statut');
 
@@ -64,7 +62,7 @@ class StatistiqueService
         return collect(StatutDemandeE::cases())
             ->mapWithKeys(fn (StatutDemandeE $statut) => [
                 $statut->value => $this->demandesDe($user)
-                    ->whereRaw('('.Demande::statutSql().') = ?', [$statut->value])
+                    ->whereRaw('('.Demande::statutSql(publieeSeulement: true).') = ?', [$statut->value])
                     ->orderByDesc('demandes.id_demande')
                     ->value('demandes.id_demande'),
             ])
@@ -133,7 +131,7 @@ class StatistiqueService
         ];
     }
 
-    /** Tableau de bord du magasin : alertes de stock et sorties à effectuer. */
+    /** Tableau de bord du magasin : alertes de stock, sorties à effectuer, équipements et derniers mouvements. */
     public function stock(): array
     {
         // Seuil à 0 = pas d'alerte voulue pour cet appui.
@@ -152,6 +150,13 @@ class StatistiqueService
         return [
             'alertes' => $alertes,
             'sorties_a_effectuer' => Attribution::aDestocker()->count(),
+            'nb_appuis' => Appui::count(),
+            'equipements_en_service' => Equipement::where('en_service', true)->count(),
+            'equipements_disponibles' => Equipement::where('en_service', false)->count(),
+            // Les derniers mouvements (entrées, sorties, restitutions), pour suivre l'activité du magasin.
+            'derniers_mouvements' => MouvementStock::with(['appui', 'typeMouvement'])
+                ->latest('date_mouvement')->latest('id_mouvement_stock')
+                ->limit(8)->get(),
         ];
     }
 }

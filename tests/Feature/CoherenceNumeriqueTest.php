@@ -70,8 +70,8 @@ class CoherenceNumeriqueTest extends TestCase
         $this->assertEqualsWithDelta(0.9996, (float) Appui::find(1)->quantite_en_stock, 1e-9);
         $this->assertEqualsWithDelta(0.0004, (float) MouvementStock::where('id_attribution', $attribution->id_attribution)->sole()->quantite, 1e-9);
 
-        // Et on la lit sans bruit : « 0,0004 », pas « 0.0004 » ni « 0,00 ».
-        $this->get(route('attributions.show', $attribution))->assertOk()->assertSee('0,0004');
+        // Et on la lit sans bruit : « 0,0004 », pas « 0.0004 » ni « 0,00 » (le magasin ne consulte pas les attributions : l'admin la lit).
+        $this->actingAs(User::role('admin')->first())->get(route('attributions.show', $attribution))->assertOk()->assertSee('0,0004');
     }
 
     public function test_un_consommable_se_stocke_en_decimal_mais_un_equipement_se_compte_a_lunite(): void

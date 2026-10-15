@@ -64,7 +64,7 @@ class PerformanceTest extends TestCase
             'localites' => [1],
             'id_campagne' => Campagne::first()->id_campagne,
             'periode_debut_mise_en_place' => '2026-11-01',
-            'periode_fin_mise_en_place' => '2027-01-31',
+            'periode_fin_mise_en_place' => '2027-02-01',
             'superficies' => [1 => 5.5],
             'lignes' => [['id_type_appui' => 1, 'id_appui' => 1, 'quantite_demandee' => 10]],
         ], $pieces);

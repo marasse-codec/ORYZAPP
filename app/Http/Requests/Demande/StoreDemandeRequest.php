@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Demande;
 
+use App\Domain\Demande\Support\ReglesDemande;
 use App\Http\Requests\Concerns\ReglesNumeriques;
 
 use Illuminate\Foundation\Http\FormRequest;
@@ -32,7 +33,7 @@ class StoreDemandeRequest extends FormRequest
             'id_campagne'                 => ['required', 'exists:campagnes,id_campagne'],
 
             'periode_debut_mise_en_place' => ['required', 'date'],
-            'periode_fin_mise_en_place'   => ['required', 'date', 'after:periode_debut_mise_en_place'],
+            'periode_fin_mise_en_place'   => ReglesDemande::periodeFin($this->input('periode_debut_mise_en_place')),
 
             // Superficies par système de production
             'superficies'                 => ['nullable', 'array'],
@@ -48,7 +49,8 @@ class StoreDemandeRequest extends FormRequest
             'pieces'                      => ['nullable', 'array'],
             'pieces.*'                    => ['nullable', 'file', 'max:10240'],
 
-            'date_naissance'              => ['required']
+            // Le demandeur est majeur (18 ans révolus).
+            'date_naissance'              => ReglesDemande::dateNaissance(),
         ];
     }
 
@@ -77,7 +79,9 @@ class StoreDemandeRequest extends FormRequest
             'periode_debut_mise_en_place.date'     => 'La date de début de mise en place est invalide.',
             'periode_fin_mise_en_place.required'   => 'La date de fin de mise en place est obligatoire.',
             'periode_fin_mise_en_place.date'       => 'La date de fin de mise en place est invalide.',
-            'periode_fin_mise_en_place.after' => 'La date de fin doit être postérieure à la date de début.',
+            'date_naissance.required'              => 'La date de naissance est obligatoire.',
+            'date_naissance.date'                  => 'La date de naissance est invalide.',
+            'date_naissance.before_or_equal'       => ReglesDemande::messageMajorite(),
 
             'lignes.required'                      => 'Au moins un type d\'appui doit être sollicité.',
             'lignes.min'                           => 'Au moins un type d\'appui doit être sollicité.',

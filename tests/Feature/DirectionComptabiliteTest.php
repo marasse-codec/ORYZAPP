@@ -48,7 +48,7 @@ class DirectionComptabiliteTest extends TestCase
         $this->actingAs($this->directeur());
 
         $this->post(route('demandes.store'), [])->assertForbidden();
-        $this->post(route('attributions.paiements.store', $attribution->id_attribution), [
+        $this->post(route('comptabilite.reglement.creer', $attribution->id_attribution), [
             'montant' => 100, 'date_paiement' => today()->toDateString(), 'mode' => ModePaiementEnum::especes->value,
         ])->assertForbidden();
         $this->get(route('reglements.index'))->assertForbidden();
@@ -70,13 +70,19 @@ class DirectionComptabiliteTest extends TestCase
 
         $this->get(route('reglements.index'))->assertOk()->assertSee('Reste à encaisser')->assertSee('Aucun règlement enregistré');
 
-        $this->post(route('attributions.paiements.store', $attribution->id_attribution), [
+        $this->post(route('comptabilite.reglement.creer', $attribution->id_attribution), [
             'montant' => 2000, 'date_paiement' => today()->toDateString(), 'mode' => ModePaiementEnum::especes->value,
         ])->assertSessionHas('success');
+        $this->post(route('comptabilite.reglement.soumettre', $attribution->paiements()->sole()))->assertSessionHas('success');
 
         $this->get(route('reglements.index'))->assertOk()->assertSee('2 000 F');
         $this->get(route('statistiques.rapport'))->assertOk();     // il télécharge le rapport de campagne
         $this->get(route('statistiques.index'))->assertForbidden(); // mais pas le détail des statistiques
         $this->post(route('demandes.store'), [])->assertForbidden(); // ni de saisie de demande
+        $this->get(route('demandes.index'))->assertForbidden();     // ni la consultation des demandes
+        $this->get(route('attributions.show', $attribution))->assertOk(); // il consulte les attributions
+
+        // Son tableau de bord ne concerne que les règlements.
+        $this->get(route('dashboard'))->assertOk()->assertSee('Règlements')->assertDontSee('Répartition des demandes');
     }
 }

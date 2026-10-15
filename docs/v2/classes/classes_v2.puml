@@ -59,6 +59,9 @@ package "Administration" #E6F4EA {
 }
 
 package "Référentiel" {
+    class Departement {
+        lib_departement : string
+    }
     class Campagne {
         lib_campagne : string
         mois_debut_campagne : date
@@ -76,6 +79,7 @@ package "Demande / Commission" {
         motifs_rejet : string
         --
         statut (déduit)
+        <color:green>responsables() : DP</color>
     }
     class Attribution {
         date_publication : datetime
@@ -83,11 +87,15 @@ package "Demande / Commission" {
         <color:green>deleted_at : datetime</color>
         --
         montantTotal() / resteDu()
+        <color:green>totalBrouillons()</color>
     }
     class Paiement {
         montant : decimal
         date_paiement : date
         mode : string
+        <color:green>date_soumission : datetime</color>
+        --
+        <color:green>estSoumis() : bool</color>
     }
 }
 
@@ -119,6 +127,7 @@ Role "0..*" -- "0..*" Permission : accorde >
 Role ..> RoleEnum
 User "0..1" -- "0..*" JournalAction : auteur (facultatif) <
 Parametre ..> ParametreEnum : clé
+User "0..*" -- "0..*" Departement : <color:green>couvre (DP)</color> >
 Campagne "1" -- "0..*" Demande
 Campagne "0..*" -- "0..1" User : clôturée par >
 Demande "1" -- "0..1" Attribution : attribution active

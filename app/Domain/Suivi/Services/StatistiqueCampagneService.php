@@ -294,6 +294,7 @@ class StatistiqueCampagneService
         $encaisse = (float) $this->demandesAttribuees($campagne, $filtre)
             ->whereNotNull('attributions.date_publication')
             ->join('paiements', 'paiements.id_attribution', '=', 'attributions.id_attribution')
+            ->whereNotNull('paiements.date_soumission') // les brouillons de règlement ne sont pas encaissés
             ->sum('paiements.montant');
 
         $du = round((float) $montants->du, 2);

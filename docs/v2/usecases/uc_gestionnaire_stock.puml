@@ -22,6 +22,12 @@ Stock --> UC_Mouvements
 UC_Appro ..> UC_Auth : <<include>>
 UC_Enlever ..> UC_Auth : <<include>>
 
+note right of Stock
+  Tableau de bord limité aux stocks.
+  Aucun accès aux demandes ni aux attributions :
+  il sert les bons depuis « Enlèvements ».
+end note
+
 note bottom of UC_Catalogue
   v2 : chaque changement de prix, de dose
   ou de seuil est noté au journal (avant → après).

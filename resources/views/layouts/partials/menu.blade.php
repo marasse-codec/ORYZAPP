@@ -11,13 +11,15 @@
     <x-ui.menu-lien :href="route('pilotage.index')" icone="speed" :actif="request()->routeIs('pilotage.*')">Pilotage</x-ui.menu-lien>
 @endcan
 
-<x-ui.menu-groupe titre="Demandes" icone="assignment" :ouvert="request()->routeIs('demandes.*')">
-    @can(PermissionEnum::creerDemande->value)
-        <x-ui.menu-lien :href="route('demandes.create')" :actif="request()->routeIs('demandes.create')">Nouvelle demande</x-ui.menu-lien>
-        <x-ui.menu-lien :href="route('demandes.serie.create')" :actif="request()->routeIs('demandes.serie.*')">Saisie en série</x-ui.menu-lien>
-    @endcan
-    <x-ui.menu-lien :href="route('demandes.index')" :actif="request()->routeIs('demandes.index', 'demandes.show', 'demandes.edit')">Voir les demandes</x-ui.menu-lien>
-</x-ui.menu-groupe>
+@can(PermissionEnum::voirDemandes->value)
+    <x-ui.menu-groupe titre="Demandes" icone="assignment" :ouvert="request()->routeIs('demandes.*')">
+        @can(PermissionEnum::creerDemande->value)
+            <x-ui.menu-lien :href="route('demandes.create')" :actif="request()->routeIs('demandes.create')">Nouvelle demande</x-ui.menu-lien>
+            <x-ui.menu-lien :href="route('demandes.serie.create')" :actif="request()->routeIs('demandes.serie.*')">Saisie en série</x-ui.menu-lien>
+        @endcan
+        <x-ui.menu-lien :href="route('demandes.index')" :actif="request()->routeIs('demandes.index', 'demandes.show', 'demandes.edit')">Voir les demandes</x-ui.menu-lien>
+    </x-ui.menu-groupe>
+@endcan
 
 @can(PermissionEnum::gererCommission->value)
     <x-ui.menu-groupe titre="Commission" icone="gavel" :ouvert="request()->routeIs('commissions.*', 'attributions.*')">
@@ -27,8 +29,20 @@
             <x-ui.menu-lien :href="route('attributions.simulation')" :actif="request()->routeIs('attributions.simulation*')">Simuler les sorties</x-ui.menu-lien>
         @endcan
     </x-ui.menu-groupe>
-@else
-    <x-ui.menu-lien :href="route('attributions.index')" icone="inventory_2" :actif="request()->routeIs('attributions.*')">Attributions</x-ui.menu-lien>
+@elsecan(PermissionEnum::voirAttributions->value)
+    {{-- La comptabilité passe par son propre menu ci-dessous. --}}
+    @unlessrole(RoleEnum::comptable->value)
+        <x-ui.menu-lien :href="route('attributions.index')" icone="inventory_2" :actif="request()->routeIs('attributions.*')">Attributions</x-ui.menu-lien>
+    @endunlessrole
+@endcan
+
+@can(PermissionEnum::gererReglements->value)
+    <x-ui.menu-groupe titre="Comptabilité" icone="payments" :ouvert="request()->routeIs('comptabilite.*', 'reglements.*')">
+        <x-ui.menu-lien :href="route('comptabilite.attributions')" :actif="request()->routeIs('comptabilite.attributions', 'comptabilite.reglement')">Attributions à encaisser</x-ui.menu-lien>
+        <x-ui.menu-lien :href="route('comptabilite.reglements', ['etat' => 'brouillon'])" :actif="request()->routeIs('comptabilite.reglements') && request('etat') !== 'soumis'">Règlements en brouillon</x-ui.menu-lien>
+        <x-ui.menu-lien :href="route('comptabilite.reglements', ['etat' => 'soumis'])" :actif="request()->routeIs('comptabilite.reglements') && request('etat') === 'soumis'">Règlements soumis</x-ui.menu-lien>
+        <x-ui.menu-lien :href="route('reglements.index')" :actif="request()->routeIs('reglements.*')">Synthèse de caisse</x-ui.menu-lien>
+    </x-ui.menu-groupe>
 @endcan
 
 @can(PermissionEnum::gererStock->value)
@@ -42,20 +56,22 @@
     </x-ui.menu-groupe>
 @endcan
 
-<x-ui.menu-groupe titre="Éditions" icone="print" :ouvert="request()->routeIs('editions.*')">
-    <x-ui.menu-lien :href="route('editions.attributions.index')" :actif="request()->routeIs('editions.attributions.*')">Attributions (export)</x-ui.menu-lien>
-    <x-ui.menu-lien :href="route('editions.demandes.index')" :actif="request()->routeIs('editions.demandes.*')">Demandes (export)</x-ui.menu-lien>
-    @can(PermissionEnum::voirStocks->value)
-        <x-ui.menu-lien :href="route('editions.stocks.index')" :actif="request()->routeIs('editions.stocks.*')">Stocks (export)</x-ui.menu-lien>
-    @endcan
-    @can(PermissionEnum::attribuerAppui->value)
-        <x-ui.menu-lien :href="route('editions.arbitrages.index')" :actif="request()->routeIs('editions.arbitrages.*')">Fiches d'arbitrage</x-ui.menu-lien>
-    @endcan
-</x-ui.menu-groupe>
-
-@can(PermissionEnum::gererReglements->value)
-    <x-ui.menu-lien :href="route('reglements.index')" icone="payments" :actif="request()->routeIs('reglements.*')">Règlements</x-ui.menu-lien>
-@endcan
+@canany([PermissionEnum::voirAttributions->value, PermissionEnum::voirDemandes->value, PermissionEnum::voirStocks->value, PermissionEnum::attribuerAppui->value])
+    <x-ui.menu-groupe titre="Éditions" icone="print" :ouvert="request()->routeIs('editions.*')">
+        @can(PermissionEnum::voirAttributions->value)
+            <x-ui.menu-lien :href="route('editions.attributions.index')" :actif="request()->routeIs('editions.attributions.*')">Attributions (export)</x-ui.menu-lien>
+        @endcan
+        @can(PermissionEnum::voirDemandes->value)
+            <x-ui.menu-lien :href="route('editions.demandes.index')" :actif="request()->routeIs('editions.demandes.*')">Demandes (export)</x-ui.menu-lien>
+        @endcan
+        @can(PermissionEnum::voirStocks->value)
+            <x-ui.menu-lien :href="route('editions.stocks.index')" :actif="request()->routeIs('editions.stocks.*')">Stocks (export)</x-ui.menu-lien>
+        @endcan
+        @can(PermissionEnum::attribuerAppui->value)
+            <x-ui.menu-lien :href="route('editions.arbitrages.index')" :actif="request()->routeIs('editions.arbitrages.*')">Fiches d'arbitrage</x-ui.menu-lien>
+        @endcan
+    </x-ui.menu-groupe>
+@endcanany
 
 @can(PermissionEnum::voirStatistiques->value)
     <x-ui.menu-groupe titre="Statistiques" icone="monitoring" :ouvert="request()->routeIs('statistiques.*')">

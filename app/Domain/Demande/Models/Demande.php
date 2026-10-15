@@ -17,6 +17,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 /**
  *  @property boolean $terrain_visite
@@ -186,12 +187,19 @@ class Demande extends Model
         };
     }
 
-    /** Le même statut sous forme d'expression SQL (valeur entière de StatutDemandeE). */
-    public static function statutSql(): string
+    /**
+     * Le même statut sous forme d'expression SQL (valeur entière de StatutDemandeE).
+     *
+     * $publieeSeulement : « Reçu attribution » seulement quand l'attribution est publiée
+     * (tableau de bord : tant que les résultats ne sont pas publiés, la demande reste « Soumise »).
+     */
+    public static function statutSql(bool $publieeSeulement = false): string
     {
+        $publication = $publieeSeulement ? ' AND attributions.date_publication IS NOT NULL' : '';
+
         return sprintf(
             'CASE
-                WHEN EXISTS (SELECT 1 FROM attributions WHERE attributions.id_demande = demandes.id_demande AND attributions.deleted_at IS NULL) THEN %d
+                WHEN EXISTS (SELECT 1 FROM attributions WHERE attributions.id_demande = demandes.id_demande AND attributions.deleted_at IS NULL'.$publication.') THEN %d
                 WHEN demandes.motifs_rejet IS NOT NULL THEN %d
                 WHEN demandes.date_soummission IS NULL THEN %d
                 ELSE %d
@@ -225,21 +233,59 @@ class Demande extends Model
      * @param User $user
      * @return void
      */
-    public function scopePourUtilisateur($query)
+    public function scopePourUtilisateur($query, ?User $user = null)
     {
-        $user = auth()->user();
-        
+        $user ??= auth()->user();
+
+        if ($user->hasRole(RoleEnum::dp->value)) {
+            return $query->sousResponsabiliteDe($user);
+        }
+
+        // Le magasin et la comptabilité ne consultent pas les demandes.
+        if ($user->hasRole([RoleEnum::gestionnaireStock->value, RoleEnum::comptable->value])) {
+            return $query->whereRaw('1 = 0');
+        }
+
         if ($user->hasRole([RoleEnum::agentService->value])) {
             // « date_soummission » appartient à la demande, pas au service : le filtre se pose hors de la sous-requête.
             return $query->whereNotNull('date_soummission')
                 ->whereHas('lignes.typeAppui.service', fn ($q) => $q->where('id_service', $user->id_service));
         } else if($user->hasRole(RoleEnum::agentCommission->value)){
             return $query->whereNotNull('date_soummission');
-        } else if($user->hasRole(RoleEnum::gestionnaireStock->value)){
-            return $query->where('id_user', $user->id);
         }
         // Agents internes et administrateurs voient l'ensemble des dossiers.
         return $query;
+    }
+
+    /**
+     * Les demandes dont un délégué de pôle est responsable : celles qui portent sur une
+     * localité d'un département qu'il couvre, plus celles qu'il a lui-même saisies
+     * (pour ne pas perdre de vue un dossier saisi hors de ses départements).
+     */
+    public function scopeSousResponsabiliteDe($query, User $dp)
+    {
+        return $query->where(fn ($q) => $q
+            ->where('demandes.id_user', $dp->id)
+            ->orWhereHas('localites', fn ($l) => $l->whereIn('localites.id_departement',
+                DB::table('departements_users')->where('user_id', $dp->id)->select('id_departement'))));
+    }
+
+    /**
+     * Les délégués de pôle responsables de la demande : ceux qui couvrent un de ses
+     * départements, et celui qui l'a saisie s'il est DP. Ce sont eux qu'on notifie.
+     *
+     * @return \Illuminate\Support\Collection<int, User>
+     */
+    public function responsables(): Collection
+    {
+        $departements = $this->localites()->pluck('localites.id_departement')->unique();
+
+        return User::role(RoleEnum::dp->value)
+            ->actifs()
+            ->where(fn ($q) => $q
+                ->where('id', $this->id_user)
+                ->orWhereHas('departements', fn ($d) => $d->whereIn('departements.id_departement', $departements)))
+            ->get();
     }
 
     /**

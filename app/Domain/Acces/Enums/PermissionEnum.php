@@ -26,6 +26,8 @@ enum PermissionEnum: string
     // --- Ajouts v2
     case voirPilotage = 'voir-pilotage';
     case telechargerRapports = 'telecharger-rapports';
+    case voirDemandes = 'voir-demandes';
+    case voirAttributions = 'voir-attributions';
 
     public function libelle(): string
     {
@@ -46,6 +48,8 @@ enum PermissionEnum: string
             self::gererReglements => 'Enregistrer les règlements des attributions et suivre les impayés',
             self::voirPilotage => 'Consulter le tableau de pilotage (direction)',
             self::telechargerRapports => 'Télécharger les rapports de campagne (PDF)',
+            self::voirDemandes => 'Consulter les demandes (selon son périmètre)',
+            self::voirAttributions => 'Consulter les attributions (selon son périmètre)',
         };
     }
 }

@@ -1,6 +1,6 @@
 @props(['localites', 'campagnes', 'typesSystemesProductions', 'demande' => null])
 
-<section x-show="step === 3" x-cloak class="p-6 space-y-5">
+<section data-etape="3" x-show="step === 3" x-cloak class="p-6 space-y-5">
     <div>
         <h2 class="text-lg font-semibold text-[--color-primary]">3. Informations sur la demande</h2>
         <p class="text-sm text-slate-500">Localités concernées, superficies exploitées et dates de mise en place.</p>
@@ -36,7 +36,7 @@
 
             <div x-show="selectedDepartement" x-cloak class="space-y-2 border-t border-slate-200 pt-3">
                 <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600">
-                    2. Cocher les localités
+                    2. Cocher les localités<span class="ml-0.5 text-red-600" aria-hidden="true">*</span>
                 </label>
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 max-h-52 overflow-y-auto p-1">
@@ -73,11 +73,15 @@
                 </div>
             </div>
 
+            {{-- Les localités sont des cases à cocher : ce champ invisible porte la règle « au moins une ». --}}
+            <input type="text" class="sr-only" tabindex="-1" aria-hidden="true" required
+                   :value="selectedLocalites.length ? 'ok' : ''"
+                   x-effect="$el.setCustomValidity(selectedLocalites.length ? '' : 'Sélectionnez au moins une localité.')">
             <x-input-error :messages="$errors->get('localites')" class="mt-1" />
         </div>
 
         <div>
-            <x-input-label for="id_campagne" value="Campagne" />
+            <x-input-label for="id_campagne" value="Campagne" obligatoire />
             <select id="id_campagne" name="id_campagne" required
                     class="mt-1 block w-full border-gray-300 focus:border-[--color-primary] focus:ring-[--color-primary] rounded-md shadow-sm">
                 <option value="">Sélectionner</option>
@@ -91,7 +95,7 @@
             <x-input-error :messages="$errors->get('id_campagne')" class="mt-1" />
         </div>
 
-        {{-- La fin doit être strictement postérieure au début : `finMin` = début + 1 jour. --}}
+        {{-- La mise en place dure au moins 3 mois : `finMin` = début + 3 mois (cf. ReglesDemande). --}}
         @php
             $debutInitial = old('periode_debut_mise_en_place', $demande?->periode_debut_mise_en_place ? \Carbon\Carbon::parse($demande->periode_debut_mise_en_place)->format('Y-m-d') : '');
             $finInitiale = old('periode_fin_mise_en_place', $demande?->periode_fin_mise_en_place ? \Carbon\Carbon::parse($demande->periode_fin_mise_en_place)->format('Y-m-d') : '');
@@ -103,13 +107,13 @@
                 get finMin() {
                 if (!this.debut) return null;
                 const d = new Date(this.debut + 'T00:00:00');
-                d.setDate(d.getDate() + 1);
+                d.setMonth(d.getMonth() + {{ \App\Domain\Demande\Support\ReglesDemande::DUREE_MINIMALE_MOIS }});
                 return d.toLocaleDateString('sv-SE');
             },
              }"
              x-effect="if (fin && finMin && fin < finMin) fin = ''">
             <div>
-                <x-input-label for="periode_debut_mise_en_place" value="Période début de mise en place" />
+                <x-input-label for="periode_debut_mise_en_place" value="Période début de mise en place" obligatoire />
                 <x-text-input id="periode_debut_mise_en_place" name="periode_debut_mise_en_place" type="date"
                               class="mt-1 block w-full"
                               min="{{ now()->format('Y-m-d') }}"
@@ -119,7 +123,7 @@
             </div>
 
             <div>
-                <x-input-label for="periode_fin_mise_en_place" value="Période fin de mise en place" />
+                <x-input-label for="periode_fin_mise_en_place" value="Période fin de mise en place (au moins 3 mois après le début)" obligatoire />
                 <x-text-input id="periode_fin_mise_en_place" name="periode_fin_mise_en_place" type="date"
                               class="mt-1 block w-full"
                               x-model="fin" ::min="finMin"

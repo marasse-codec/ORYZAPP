@@ -72,6 +72,9 @@ class AppServiceProvider extends ServiceProvider
         // rattacher chaque permission une à une.
         Gate::before(fn ($user) => $user->hasRole(RoleEnum::admin->value) ? true : null);
 
+        // Saisir ou modifier une demande : cf. RoleEnum::peutSaisirDesDemandes.
+        Gate::define('saisir-demandes', fn (User $user) => $user->roleEnum()?->peutSaisirDesDemandes() ?? false);
+
         Gate::define('access-mouvement-usecases', function (User $user) {
             return $user->hasRole([RoleEnum::admin->value, RoleEnum::gestionnaireStock->value]);
         });

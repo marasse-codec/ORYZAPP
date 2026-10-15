@@ -108,7 +108,7 @@ class RappelsProgrammesTest extends TestCase
         $acteur = Acteur::create(['nom' => 'Kouassi', 'telephone' => '0700000000', 'date_naissance' => '1980-01-01']);
         $attribution = $this->publier($this->attribuer($this->demandeSoumise(['id_acteur' => $acteur->id_acteur]), $this->seance(cloturee: true), [1 => 5]));
         LigneAttribution::where('id_attribution', $attribution->id_attribution)->update(['cout_attribution' => 2000]);
-        $attribution->paiements()->create(['montant' => 4000, 'date_paiement' => today(), 'mode' => ModePaiementEnum::especes->value]);
+        $attribution->paiements()->create(['montant' => 4000, 'date_paiement' => today(), 'mode' => ModePaiementEnum::especes->value, 'date_soumission' => now()]);
 
         Artisan::call('notifications:rappels');
 
@@ -120,7 +120,7 @@ class RappelsProgrammesTest extends TestCase
         $this->assertSame(0, $this->recus(User::role('dp')->first(), 'Règlements'));
 
         // Une fois soldé, plus de rappel.
-        $attribution->paiements()->create(['montant' => 6000, 'date_paiement' => today(), 'mode' => ModePaiementEnum::especes->value]);
+        $attribution->paiements()->create(['montant' => 6000, 'date_paiement' => today(), 'mode' => ModePaiementEnum::especes->value, 'date_soumission' => now()]);
         Notification::fake();
         Artisan::call('notifications:rappels');
         Notification::assertNothingSent();

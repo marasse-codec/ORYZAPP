@@ -49,6 +49,9 @@ enum ActionJournalEnum: string
     case connexionEchouee = 'CONNEXION_ECHOUEE';
     case deconnexion = 'DECONNEXION';
     case exportTelecharge = 'EXPORT_TELECHARGE';
+    case paiementBrouillon = 'PAIEMENT_BROUILLON';
+    case paiementBrouillonModifie = 'PAIEMENT_BROUILLON_MODIFIE';
+    case paiementBrouillonSupprime = 'PAIEMENT_BROUILLON_SUPPRIME';
 
     public function libelle(): string
     {
@@ -66,7 +69,7 @@ enum ActionJournalEnum: string
             self::attributionSupprimee => 'Attribution supprimée',
             self::attributionPubliee => 'Attribution publiée',
             self::attributionRetiree => 'Appuis retirés au magasin',
-            self::paiementEnregistre => 'Règlement enregistré',
+            self::paiementEnregistre => 'Règlement soumis',
             self::rendementEnvoye => 'Rendements des superficies transmis',
             self::approvisionnementEnregistre => 'Approvisionnement enregistré',
             self::equipementRestitue => 'Équipement restitué',
@@ -87,6 +90,9 @@ enum ActionJournalEnum: string
             self::connexionEchouee => 'Connexion refusée',
             self::deconnexion => 'Déconnexion',
             self::exportTelecharge => 'Export ou rapport téléchargé',
+            self::paiementBrouillon => 'Règlement saisi (brouillon)',
+            self::paiementBrouillonModifie => 'Règlement en brouillon modifié',
+            self::paiementBrouillonSupprime => 'Règlement en brouillon supprimé',
         };
     }
 }

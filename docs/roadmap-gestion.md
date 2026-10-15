@@ -20,13 +20,13 @@ Légende : ✅ en place avant la v2 · 🆕 ajouté par la v2 · ⏳ à faire pl
 | Acteur | Ce qu'il fait | État |
 |---|---|---|
 | Administrateur | Comptes, droits, référentiels, paramètres, clôture, santé, journal | ✅ + 🆕 |
-| Délégué de pôle (DP) | Saisit les demandes, la visite, les rendements | ✅ |
+| Délégué de pôle (DP) | **Responsable des départements** qui lui sont attribués : suit toutes leurs demandes et attributions publiées, reçoit leurs notifications ; saisit aussi les demandes, la visite, les rendements | ✅ + 🆕 |
 | Agent de service | Instruit les demandes de son service, consulte ses stocks | ✅ |
 | Agent de commission | Séances, attributions, rejets, publication | ✅ |
-| Gestionnaire de stock | Approvisionnements, retraits, restitutions, catalogue | ✅ |
+| Gestionnaire de stock | Approvisionnements, retraits, restitutions, catalogue. **Ne voit que les stocks** (ni demandes, ni attributions) | ✅ + 🆕 |
 | Visiteur (acteur de la filière) | Consulte la vitrine : la démarche, les pièces, le catalogue. **Aucun compte, aucun droit** : le DP saisit sa demande pour lui | ✅ (inscription publique retirée) |
 | **Directeur** | Pilote : tableau de pilotage, statistiques, comparaisons, rapports (lecture seule) | 🆕 |
-| **Comptable** | Tient la caisse : règlements, impayés, rapport | 🆕 |
+| **Comptable** | Tient la caisse : recherche d'attribution, règlements en brouillon puis soumis, impayés, rapport. **Aucun accès aux demandes** | 🆕 |
 | Planificateur (système) | Sauvegardes, rappels, résumé quotidien, signal de vie | ✅ + 🆕 |
 | Auditeur / contrôleur (lecture du journal) | Contrôle a posteriori | ⏳ (faisable avec « Rôles et droits ») |
 | Bailleur / partenaire | Rapports par financement | ⏳ (demande un champ « financement » sur l'approvisionnement) |
@@ -348,13 +348,54 @@ de l'organisation va dans les paramètres ; ce qui touche à la logique métier 
 En résumé, le tableau de bord sert le **travail quotidien** (opérationnel), et le tableau de pilotage sert la
 **conduite de l'activité** (stratégique). Les deux lisent les mêmes données, mais à des niveaux différents.
 
+### 2.13 Responsabilités dans le circuit (évolutions après retours)
+
+**Qui voit quoi.** Deux droits nouveaux, réglables dans « Rôles et droits » :
+« Consulter les demandes » et « Consulter les attributions ».
+
+| Rôle | Demandes | Attributions | Tableau de bord |
+|---|---|---|---|
+| Délégué de pôle | Celles de **ses départements** (et celles qu'il a saisies) | Publiées, de ses départements | Ses demandes, ses attributions |
+| Agent de service | Celles de son service | Celles de son service | Ses demandes |
+| Agent de commission | Soumises | Toutes | Demandes + commission |
+| Gestionnaire de stock | ✗ | ✗ (il sert les bons depuis « Enlèvements ») | **Stocks seulement** |
+| Comptable | ✗ | Publiées | **Règlements seulement** |
+| Directeur | Toutes (lecture) | Toutes (lecture) | Demandes + Pilotage |
+
+**Le DP responsable, pas seulement « enregistreur ».** L'administrateur rattache chaque DP à un ou plusieurs départements
+(Administration → Utilisateurs). Le DP suit alors toutes les demandes dont une localité est dans ses départements,
+qu'il les ait saisies ou non. Il voit leurs attributions publiées, transmet leurs rendements et reçoit les notifications de
+publication (`Demande::responsables()`).
+
+**La comptabilité.** Le comptable a son propre menu « Comptabilité » :
+1. **Attributions à encaisser** : une recherche par numéro d'attribution (`ATT-12` ou `12`), numéro de demande
+   (`DEM-7`), téléphone ou nom du demandeur. Chaque ligne a un bouton « Enregistrer un règlement » ;
+2. **la page de règlement** : le détail de l'attribution (demandeur, appuis, montant, réglé, reste), le formulaire, les
+   brouillons et les règlements soumis ;
+3. **le règlement en deux temps** : il est d'abord enregistré **en brouillon** (corrigeable ou supprimable), puis
+   **soumis**. Seul un règlement soumis compte dans ce qui est payé, et il devient définitif. Chaque étape est
+   journalisée ;
+4. **Règlements en brouillon / soumis** et **Synthèse de caisse**.
+
+**Tableau de bord.** « Reçu attribution » ne compte que les attributions **publiées** : avant la publication, la
+demande reste « Soumise ». La page Statistiques garde la règle de gestion « attribuée dès l'attribution » (§ 2.3).
+
+**Saisie d'une demande.**
+- Le demandeur doit être **majeur** : 18 ans révolus, contrôlé au serveur et borné dans le calendrier.
+- La **fin de mise en place** est au moins **3 mois** après le début, contrôlée au serveur et bornée dans le calendrier.
+- **Un champ manquant ramène à son étape** : le bouton « Suivant » refuse de passer tant que l'étape est incomplète, et
+  à l'envoi (ou après un refus du serveur), le formulaire rouvre l'étape du premier champ en erreur.
+- Les champs obligatoires portent un **astérisque rouge**.
+
+**Séances.** Après la clôture d'une séance, on revient sur cette séance (et non sur la liste).
+
 ---
 
 ## 3. Administration : ce que la v2 donne à l'administrateur
 
 | Écran (Administration) | Usage |
 |---|---|
-| Accès → **Utilisateurs** | Un seul rôle par compte, dernière connexion, **Désactiver / Réactiver** (avec motif). On ne peut désactiver ni soi-même, ni le dernier administrateur actif. Une session ouverte est fermée aussitôt. |
+| Accès → **Utilisateurs** | Un seul rôle par compte, **départements couverts** pour un DP (au moins un), dernière connexion, **Désactiver / Réactiver** (avec motif). On ne peut désactiver ni soi-même, ni le dernier administrateur actif. Une session ouverte est fermée aussitôt. |
 | Accès → **Rôles et droits** | Cocher ou décocher les droits de chaque rôle. Le rôle administrateur n'est pas modifiable, et chaque changement est journalisé (droits ajoutés et retirés). |
 | Système → **Paramètres généraux** | Longueur et complexité du mot de passe, tentatives de connexion avant blocage, délais des rappels. Les valeurs sont bornées et chaque changement est journalisé. |
 | Référentiels → **Campagnes** | Dates, **Clôturer** (avec le nombre de dossiers encore en cours), **Rouvrir** (motif obligatoire). |
@@ -375,7 +416,9 @@ droits nouveaux aux rôles concernés, et laisse le reste intact.
      `derniere_connexion_le`, et la table `parametres` ;
    - `…_create_campagnes_table` : clôture (`cloturee_le`, `id_user_cloture`) ;
    - `…_create_attributions_table` : `deleted_at` (suppression douce) ;
-   - `…_create_journals_actions_table` : `user_id` facultatif, `adresse_ip`, index.
+   - `…_create_journals_actions_table` : `user_id` facultatif, `adresse_ip`, index ;
+   - `…_create_departements_table` : table `departements_users` (départements couverts par chaque DP) ;
+   - `…_create_paiements_table` : `date_soumission`, `id_user_soumission` (règlement en brouillon puis soumis).
 
    ⚠️ Une base **déjà installée** a enregistré ces migrations comme exécutées : `php artisan migrate` ne lui
    ajoutera pas ces colonnes, et l'application échouera (connexion comprise). Il faut **reconstruire la base**

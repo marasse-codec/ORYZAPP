@@ -2,17 +2,17 @@
 
 namespace App\Domain\Notification\Services;
 
-use App\Utils\Helper;
+use App\Domain\Acces\Enums\PermissionEnum;
 
 use App\Domain\Acces\Enums\RoleEnum;
 use App\Domain\Commission\Models\Attribution;
-use App\Domain\Acces\Enums\PermissionEnum;
 use App\Domain\Commission\Models\SessionCommission;
 use App\Domain\Commission\Services\ReglementService;
 use App\Domain\Demande\Models\Demande;
 use App\Domain\Notification\Notifications\SuiviDossierNotification;
 use App\Domain\Stock\Models\Appui;
 use App\Models\User;
+use App\Utils\Helper;
 use Illuminate\Support\Facades\Notification;
 use NotificationChannels\WebPush\WebPushChannel;
 
@@ -37,8 +37,8 @@ class AlerteService
     private const CANAUX_RESUME = ['database', 'mail'];
 
     /**
-     * Résultats d'une séance publiés : un message par DP (ses demandes
-     * attribuées et rejetées) et un message aux magasiniers (bons à servir).
+     * Résultats d'une séance publiés : un message par DP responsable (les demandes de
+     * ses départements attribuées et rejetées) et un message aux magasiniers (bons à servir).
      */
     public function resultatsPublies(SessionCommission $session): void
     {
@@ -46,20 +46,31 @@ class AlerteService
 
         $attribuees = Attribution::where('id_session', $session->id_session)
             ->whereNotNull('date_publication')
-            ->with('demande')
+            ->with('demande.localites')
             ->get()
-            ->groupBy(fn (Attribution $a) => $a->demande?->id_user);
+            ->pluck('demande')
+            ->filter();
 
         $rejetees = Demande::where('id_session', $session->id_session)
             ->whereNotNull('motifs_rejet')
-            ->get()
-            ->groupBy('id_user');
+            ->with('localites')
+            ->get();
 
-        $idsDp = $attribuees->keys()->merge($rejetees->keys())->filter()->unique();
+        // Pour chaque DP responsable : combien de ses demandes sont attribuées, combien rejetées.
+        $parDp = [];
+        foreach (['attribuees' => $attribuees, 'rejetees' => $rejetees] as $issue => $demandes) {
+            foreach ($demandes as $demande) {
+                foreach ($demande->responsables() as $dp) {
+                    $parDp[$dp->id]['dp'] = $dp;
+                    $parDp[$dp->id][$issue] = ($parDp[$dp->id][$issue] ?? 0) + 1;
+                }
+            }
+        }
 
-        foreach (User::whereIn('id', $idsDp)->get() as $dp) {
-            $nbAttribuees = $attribuees->get($dp->id)?->count() ?? 0;
-            $nbRejetees = $rejetees->get($dp->id)?->count() ?? 0;
+        foreach ($parDp as $ligne) {
+            $dp = $ligne['dp'];
+            $nbAttribuees = $ligne['attribuees'] ?? 0;
+            $nbRejetees = $ligne['rejetees'] ?? 0;
 
             $dp->notify(new SuiviDossierNotification(
                 titre: 'Résultats de la commission publiés',

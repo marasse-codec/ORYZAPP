@@ -114,9 +114,10 @@
                 <x-ui.stat libelle="Reste à payer" :ton="$reste > 0 ? 'rouge' : 'vert'" :valeur="$reste > 0 ? number_format($reste, 0, ',', ' ').' F' : 'Soldé'" />
             </div>
 
-            @if ($attribution->paiements->isNotEmpty())
+            @php $soumis = $attribution->paiements->filter(fn ($p) => $p->estSoumis())->sortBy('date_paiement'); @endphp
+            @if ($soumis->isNotEmpty())
                 <ul class="mt-4 divide-y divide-[--color-border] rounded-lg border border-[--color-border] text-sm">
-                    @foreach ($attribution->paiements->sortBy('date_paiement') as $paiement)
+                    @foreach ($soumis as $paiement)
                         <li class="flex flex-wrap items-center justify-between gap-2 px-4 py-2.5">
                             <span class="text-[--color-ink]">{{ $paiement->date_paiement->format('d/m/Y') }} · {{ $paiement->modeEnum()?->libelle() ?? $paiement->mode }}
                                 @if ($paiement->reference)<span class="text-xs text-[--color-muted]">(réf. {{ $paiement->reference }})</span>@endif
@@ -127,40 +128,13 @@
                 </ul>
             @endif
 
-            @if ($peutEncaisser && $reste > 0)
-                <form action="{{ route('attributions.paiements.store', $attribution->id_attribution) }}" method="POST" class="mt-4 grid gap-3 sm:grid-cols-4">
-                    @csrf
-                    <div>
-                        <label for="montant" class="block text-xs font-medium text-[--color-muted]">Montant (F)</label>
-                        <input id="montant" name="montant" type="number" step="0.01" min="0.01" max="{{ $reste }}" value="{{ old('montant', $reste) }}" required
-                               class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
-                        @error('montant')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
-                    </div>
-                    <div>
-                        <label for="date_paiement" class="block text-xs font-medium text-[--color-muted]">Date</label>
-                        <input id="date_paiement" name="date_paiement" type="date" max="{{ today()->toDateString() }}" value="{{ old('date_paiement', today()->toDateString()) }}" required
-                               class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
-                        @error('date_paiement')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
-                    </div>
-                    <div>
-                        <label for="mode" class="block text-xs font-medium text-[--color-muted]">Mode</label>
-                        <select id="mode" name="mode" required class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
-                            @foreach (\App\Domain\Commission\Enums\ModePaiementEnum::cases() as $mode)
-                                <option value="{{ $mode->value }}" @selected(old('mode') === $mode->value)>{{ $mode->libelle() }}</option>
-                            @endforeach
-                        </select>
-                        @error('mode')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
-                    </div>
-                    <div>
-                        <label for="reference" class="block text-xs font-medium text-[--color-muted]">Référence (facultatif)</label>
-                        <input id="reference" name="reference" type="text" maxlength="100" value="{{ old('reference') }}"
-                               class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
-                        @error('reference')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
-                    </div>
-                    <div class="sm:col-span-4">
-                        <x-ui.bouton type="submit">Enregistrer le règlement</x-ui.bouton>
-                    </div>
-                </form>
+            {{-- L'enregistrement se fait sur la page de règlement de la comptabilité (brouillon, puis soumission). --}}
+            @if ($peutEncaisser)
+                <div class="mt-4">
+                    <x-ui.bouton :href="route('comptabilite.reglement', $attribution->id_attribution)">
+                        {{ $reste > 0 ? 'Enregistrer un règlement' : 'Voir les règlements' }}
+                    </x-ui.bouton>
+                </div>
             @endif
         </x-ui.card>
     @endif

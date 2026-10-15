@@ -3,10 +3,10 @@
 use App\Domain\Acces\Enums\PermissionEnum;
 use App\Http\Controllers\Commission\AttributionController;
 use App\Http\Controllers\Commission\CommissionAttributionController;
+use App\Http\Controllers\Commission\ComptabiliteController;
 use App\Http\Controllers\Commission\EditionArbitrageController;
 use App\Http\Controllers\Commission\EditionAttributionController;
 use App\Http\Controllers\Commission\EditionDemandeController;
-use App\Http\Controllers\Commission\PaiementController;
 use App\Http\Controllers\Commission\ReglementController;
 use App\Http\Controllers\Commission\RendementController;
 use App\Http\Controllers\Commission\SimulationSortieController;
@@ -46,14 +46,12 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/acteurs/rechercher', [App\Http\Controllers\Demande\ActeurController::class, 'rechercherParNomEtDate'])->name('acteurs.rechercher');
     
-    Route::get('/editions/attributions', [EditionAttributionController::class, 'index'])->name('editions.attributions.index');
-    Route::get('/editions/demandes', [EditionDemandeController::class, 'index'])->name('editions.demandes.index');
-    Route::get('/attributions/{idAttribution}', [AttributionController::class, 'show'])->whereNumber('idAttribution')->name('attributions.show');
-    // Règlements : encaissement d'une attribution publiée par qui tient la caisse (comptable, admin).
-    Route::post('/attributions/{attribution}/paiements', [PaiementController::class, 'store'])
-        ->whereNumber('attribution')
-        ->middleware('permission:'.PermissionEnum::gererReglements->value)
-        ->name('attributions.paiements.store');
+    Route::get('/editions/attributions', [EditionAttributionController::class, 'index'])
+        ->middleware('permission:'.PermissionEnum::voirAttributions->value)->name('editions.attributions.index');
+    Route::get('/editions/demandes', [EditionDemandeController::class, 'index'])
+        ->middleware('permission:'.PermissionEnum::voirDemandes->value)->name('editions.demandes.index');
+    Route::get('/attributions/{idAttribution}', [AttributionController::class, 'show'])->whereNumber('idAttribution')
+        ->middleware('permission:'.PermissionEnum::voirAttributions->value)->name('attributions.show');
 
     // Rendements : le DP transmet ce que les superficies de sa demande ont produit (garde dans la requête).
     Route::put('/attributions/{attribution}/rendements', [RendementController::class, 'update'])
@@ -70,27 +68,35 @@ Route::middleware('auth')->group(function () {
             
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
     
-    Route::get('/attributions', [AttributionController::class, 'index'])->name('attributions.index');
+    Route::get('/attributions', [AttributionController::class, 'index'])
+        ->middleware('permission:'.PermissionEnum::voirAttributions->value)->name('attributions.index');
 
     // DEMANDES
+    // Saisir : les agents du circuit des demandes (pas la direction, la comptabilité ni le magasin).
     // La saisie en série précède la ressource : « serie » ne doit pas être pris pour un identifiant de demande.
-    // Comme l'enregistrement unitaire, elle est ouverte à tout utilisateur connecté (un agent peut aussi créer une demande).
-    // Sauvegarde automatique de la demande en cours de saisie.
-    Route::get('/demandes/brouillon', [BrouillonDemandeController::class, 'show'])->name('demandes.brouillon.show');
-    Route::put('/demandes/brouillon', [BrouillonDemandeController::class, 'save'])->name('demandes.brouillon.save');
-    Route::delete('/demandes/brouillon', [BrouillonDemandeController::class, 'destroy'])->name('demandes.brouillon.destroy');
-    Route::get('/demandes/serie', [DemandeSerieController::class, 'create'])->name('demandes.serie.create');
-    Route::post('/demandes/serie', [DemandeSerieController::class, 'store'])->name('demandes.serie.store');
-    Route::resource('demandes', DemandeController::class)->only(['index', 'create', 'store', 'show']);
-    Route::patch('/demandes/rejeter', DemandeRejetController::class)->name('demandes.rejeter');
-    Route::post('/demandes/visiter', [DemandeController::class, 'visiter'])->name('demandes.visite.valider');
-    Route::post('/demandes/soumettre/{id}', [DemandeController::class, 'soumettre'])->name('demandes.soumettre');
-    Route::get('/demandes/pieces/{demande}', [DemandeController::class, 'pieces'])->name('demandes.pieces');
-    Route::get('/demandes/pdf/{id}', [DemandeController::class, 'telechargerPdf'])->name('demandes.pdf');
+    Route::middleware('can:saisir-demandes')->group(function () {
+        // Sauvegarde automatique de la demande en cours de saisie.
+        Route::get('/demandes/brouillon', [BrouillonDemandeController::class, 'show'])->name('demandes.brouillon.show');
+        Route::put('/demandes/brouillon', [BrouillonDemandeController::class, 'save'])->name('demandes.brouillon.save');
+        Route::delete('/demandes/brouillon', [BrouillonDemandeController::class, 'destroy'])->name('demandes.brouillon.destroy');
+        Route::get('/demandes/serie', [DemandeSerieController::class, 'create'])->name('demandes.serie.create');
+        Route::post('/demandes/serie', [DemandeSerieController::class, 'store'])->name('demandes.serie.store');
+        Route::get('/demandes/create', [DemandeController::class, 'create'])->name('demandes.create');
+        Route::post('/demandes', [DemandeController::class, 'store'])->name('demandes.store');
+        Route::post('/demandes/visiter', [DemandeController::class, 'visiter'])->name('demandes.visite.valider');
+        Route::post('/demandes/soumettre/{id}', [DemandeController::class, 'soumettre'])->name('demandes.soumettre');
+        Route::get('/demandes/{demande}/edit', [DemandeController::class, 'edit'])->name('demandes.edit');
+        Route::put('/demandes/{demande}', [DemandeController::class, 'update'])->name('demandes.update');
+    });
 
-    // Route pour editer la demande
-    Route::get('/demandes/{demande}/edit', [DemandeController::class, 'edit'])->name('demandes.edit');
-    Route::put('/demandes/{demande}', [DemandeController::class, 'update'])->name('demandes.update');
+    // Consulter : selon son périmètre (cf. Demande::scopePourUtilisateur).
+    Route::middleware('permission:'.PermissionEnum::voirDemandes->value)->group(function () {
+        Route::get('/demandes', [DemandeController::class, 'index'])->name('demandes.index');
+        Route::get('/demandes/{demande}', [DemandeController::class, 'show'])->whereNumber('demande')->name('demandes.show');
+        Route::get('/demandes/pieces/{demande}', [DemandeController::class, 'pieces'])->name('demandes.pieces');
+        Route::get('/demandes/pdf/{id}', [DemandeController::class, 'telechargerPdf'])->name('demandes.pdf');
+    });
+    Route::patch('/demandes/rejeter', DemandeRejetController::class)->name('demandes.rejeter');
 
 
     
@@ -101,10 +107,10 @@ Route::middleware('auth')->group(function () {
 
     // Les exports sont notés au journal (qui a sorti quelles données).
     Route::get('/statistiques/export/attributions', [EditionAttributionController::class, 'exportAttributions'])
-            ->middleware(JournaliserExport::class)
+            ->middleware(['permission:'.PermissionEnum::voirAttributions->value, JournaliserExport::class])
             ->name('stats.export.attributions');
     Route::get('/statistiques/export/demandes', [EditionDemandeController::class, 'exportDemandes'])
-            ->middleware(JournaliserExport::class)
+            ->middleware(['permission:'.PermissionEnum::voirDemandes->value, JournaliserExport::class])
             ->name('stats.export.demandes');
     
     // Route d'enregistrement de l'abonnement PWA WebPush
@@ -196,9 +202,16 @@ Route::middleware(['auth', 'permission:'.PermissionEnum::voirPilotage->value])->
     Route::get('/pilotage', [PilotageController::class, 'index'])->name('pilotage.index');
 });
 
-// RÈGLEMENTS : la caisse du comptable (encaissements et impayés).
+// COMPTABILITÉ : la caisse du comptable (synthèse, attributions à encaisser, règlements en brouillon puis soumis).
 Route::middleware(['auth', 'permission:'.PermissionEnum::gererReglements->value])->group(function () {
     Route::get('/reglements', [ReglementController::class, 'index'])->name('reglements.index');
+    Route::get('/comptabilite/attributions', [ComptabiliteController::class, 'attributions'])->name('comptabilite.attributions');
+    Route::get('/comptabilite/attributions/{attribution}/reglement', [ComptabiliteController::class, 'reglement'])->name('comptabilite.reglement');
+    Route::post('/comptabilite/attributions/{attribution}/reglement', [ComptabiliteController::class, 'creer'])->name('comptabilite.reglement.creer');
+    Route::get('/comptabilite/reglements', [ComptabiliteController::class, 'reglements'])->name('comptabilite.reglements');
+    Route::put('/comptabilite/reglements/{paiement}', [ComptabiliteController::class, 'modifier'])->name('comptabilite.reglement.modifier');
+    Route::delete('/comptabilite/reglements/{paiement}', [ComptabiliteController::class, 'supprimer'])->name('comptabilite.reglement.supprimer');
+    Route::post('/comptabilite/reglements/{paiement}/soumettre', [ComptabiliteController::class, 'soumettre'])->name('comptabilite.reglement.soumettre');
 });
 
 // Le bon d'attribution est remis au demandeur : le DP le retire pour lui.

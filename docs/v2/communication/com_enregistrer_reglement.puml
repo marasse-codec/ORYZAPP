@@ -1,20 +1,18 @@
 @startuml com_enregistrer_reglement
-title Communication : le comptable enregistre un règlement
+title Communication : le comptable enregistre puis soumet un règlement
 !include style_communication.puml
 left to right direction
 
 actor "Comptable" as Comptable
-rectangle "<u>:PaiementController</u>" as Controleur
-rectangle "<u>:EnregistrerPaiementRequest</u>" as Requete
+rectangle "<u>:ComptabiliteController</u>" as Controleur
 rectangle "<u>:ReglementService</u>" as Service
 rectangle "<u>attribution:Attribution</u>" as Attribution
-rectangle "<u>:Paiement</u>" as Paiement
+rectangle "<u>paiement:Paiement</u>" as Paiement
 rectangle "<u>:JournalAction</u>" as Journal
 
-Comptable --> Controleur : 1: POST /attributions/{id}/paiements
-Controleur --> Requete : 1.1: valider(montant, date, mode)
-Controleur --> Service : 1.2: enregistrerPaiement(attribution, données)
-Service --> Attribution : 1.2.1: relire sous verrou\nestPubliee(), resteDu()
-Service --> Paiement : 1.2.2: create(montant ≤ reste dû)
-Service --> Journal : 1.2.3: enregistrer(PAIEMENT_ENREGISTRE, reste_du)
+Comptable --> Controleur : 1: rechercher (« ATT-12 », téléphone…)\n2: « Enregistrer un règlement »\n3: « Soumettre »
+Controleur --> Service : 1.1: rechercherAttributions(terme)\n2.1: creerBrouillon(attribution, données)\n3.1: soumettre(paiement)
+Service --> Attribution : 2.1.1 / 3.1.1: relire sous verrou\nestPubliee(), resteDu()
+Service --> Paiement : 2.1.2: create (brouillon)\n3.1.2: update(date_soumission)
+Service --> Journal : 2.1.3: PAIEMENT_BROUILLON\n3.1.3: PAIEMENT_ENREGISTRE (soumis)
 @enduml

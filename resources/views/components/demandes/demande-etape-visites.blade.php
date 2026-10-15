@@ -1,6 +1,6 @@
 @props(['demande' => null])
 
-<section class="p-6 space-y-6">
+<section data-etape="5" class="p-6 space-y-6">
 
     <div>
         <h2 class="text-lg font-semibold text-[--color-primary]">Visite de terrain & Observations</h2>
