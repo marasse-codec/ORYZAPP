@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Demande;
 
 use App\Domain\Acces\Enums\PermissionEnum;
-use App\Domain\Acces\Enums\RoleEnum;
 use App\Domain\Commission\Services\SyntheseCommissionService;
 use App\Domain\Demande\Enums\StatutDemandeE;
 use App\Domain\Demande\Models\BrouillonSaisie;
@@ -206,8 +205,7 @@ class DemandeController extends Controller
             'demande' => $demande,
             'sessionFinie' => $demande->sessionCommission?->estFinie() ?? false,
             'layout' => Helper::layout(),
-            // L'historique interne (qui a fait quoi) ne s'affiche pas aux acteurs de la filière.
-            'chronologie' => Auth::user()->hasRole(RoleEnum::acteur->value) ? collect() : $chronologie->pour($demande),
+            'chronologie' => $chronologie->pour($demande),
         ]);
     }
 

@@ -24,7 +24,7 @@
         </dl>
     </x-filament::section>
 
-    <x-filament::section heading="Archives" description="Sauvegarde automatique chaque nuit à 2 h ; nettoyage à 2 h 30 (7 jours complets, puis quotidiennes, hebdomadaires, mensuelles).">
+    <x-filament::section heading="Archives" description="Sauvegarde automatique chaque nuit à 2 h. Les archives sont toutes conservées : aucune n'est supprimée automatiquement.">
         <div class="overflow-x-auto">
             <table class="w-full text-left text-sm">
                 <thead class="text-xs uppercase text-gray-500">

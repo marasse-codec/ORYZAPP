@@ -10,7 +10,8 @@ use Illuminate\Support\Facades\Storage;
 /**
  * Les archives de sauvegarde (spatie/laravel-backup), telles que le stockage les voit :
  * ce que l'admin consulte, télécharge, et la santé de la dernière sauvegarde.
- * La création et le nettoyage restent aux commandes planifiées (routes/console.php).
+ * La création reste à la commande planifiée (routes/console.php). Aucune archive
+ * n'est supprimée automatiquement.
  */
 class SauvegardeService
 {

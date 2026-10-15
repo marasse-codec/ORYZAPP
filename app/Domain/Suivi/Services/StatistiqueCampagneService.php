@@ -6,7 +6,6 @@ use App\Domain\Demande\Enums\StatutDemandeE;
 use App\Domain\Demande\Models\Demande;
 use App\Domain\Referentiel\Models\Campagne;
 use App\Domain\Suivi\Support\FiltreStatistique;
-use App\Domain\Suivi\Support\Objectif;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -306,30 +305,6 @@ class StatistiqueCampagneService
             'reste' => round(max(0, $du - $encaisse), 2),
             'taux_recouvrement' => $du > 0 ? round($encaisse / $du * 100, 1) : null,
         ];
-    }
-
-    /**
-     * Les objectifs fixés pour la campagne, chacun comparé au réalisé.
-     * Un objectif laissé vide par l'administrateur n'apparaît pas.
-     *
-     * @param  array<string, mixed>  $indicateurs  résultat de indicateurs()
-     * @param  array<string, mixed>  $finances  résultat de finances()
-     * @return array<int, Objectif>
-     */
-    public function objectifs(Campagne $campagne, array $indicateurs, array $finances): array
-    {
-        $possibles = [
-            [$campagne->objectif_taux_attribution, "Taux d'attribution", $indicateurs['taux_attribution'], '%', true],
-            [$campagne->objectif_taux_traitement, 'Superficie traitée', $indicateurs['taux_traitement'], '%', true],
-            [$campagne->objectif_taux_recouvrement, 'Taux de recouvrement', $finances['taux_recouvrement'], '%', true],
-            [$campagne->objectif_delai_arbitrage, 'Délai soumission → arbitrage', $indicateurs['delai_arbitrage'], 'j', false],
-        ];
-
-        return collect($possibles)
-            ->filter(fn (array $o) => $o[0] !== null)
-            ->map(fn (array $o) => new Objectif($o[1], (float) $o[0], $o[2] === null ? null : (float) $o[2], $o[3], $o[4]))
-            ->values()
-            ->all();
     }
 
     /**

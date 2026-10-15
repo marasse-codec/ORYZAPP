@@ -2,10 +2,14 @@
 
 namespace App\Domain\Acces\Enums;
 
+/**
+ * Les rôles des agents qui utilisent la plateforme. Les acteurs de la filière
+ * (demandeurs) n'ont pas de compte : ils consultent la vitrine, et c'est le
+ * délégué de pôle qui saisit leurs demandes.
+ */
 enum RoleEnum: string
 {
     case admin = 'admin';
-    case acteur = 'acteur';
     case dp = 'dp';
     case agentService = 'agent-service';
     // L'agent de commission ouvre et clôture les séances autant qu'il arbitre :
@@ -23,7 +27,6 @@ enum RoleEnum: string
     {
         return match ($this) {
             self::admin => 'Administrateur',
-            self::acteur => 'Acteur de la filière',
             self::dp => 'Délégué de pôle',
             self::agentService => 'Agent de service',
             self::agentCommission => 'Agent de commission',
@@ -52,7 +55,6 @@ enum RoleEnum: string
     {
         return match ($this) {
             self::admin => PermissionEnum::cases(),
-            self::acteur => [PermissionEnum::creerDemande],
             self::dp => [PermissionEnum::creerDemande, PermissionEnum::editDemande],
             // Lecture seule : ses demandes et attributions se filtrent par service ; il télécharge les stocks de ses appuis.
             self::agentService => [PermissionEnum::voirStocks],

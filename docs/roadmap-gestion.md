@@ -3,7 +3,7 @@
 Ce document répond à trois besoins :
 
 1. **la feuille de route** : ce qu'une application de gestion doit contenir, ce qu'ORYZA fait déjà, ce que la v2 ajoute et ce qui reste à faire ;
-2. **les réponses aux questions** posées sur les statistiques, les agrégats SQL, la BI, les objectifs, les rapports, l'historisation et le hors-ligne ;
+2. **les réponses aux questions** posées sur les statistiques, les agrégats SQL, la BI, les objectifs, les rapports, l'historisation, le hors-ligne, les campagnes, les paramètres généraux et la différence entre tableau de bord et tableau de pilotage ;
 3. **les points d'attention** pour la mise en production (schéma modifié, rôles, sécurité).
 
 Les diagrammes de la v2 sont dans [`docs/v2`](v2) et le déroulé complet d'une demande, avec les algorithmes, dans
@@ -24,7 +24,7 @@ Légende : ✅ en place avant la v2 · 🆕 ajouté par la v2 · ⏳ à faire pl
 | Agent de service | Instruit les demandes de son service, consulte ses stocks | ✅ |
 | Agent de commission | Séances, attributions, rejets, publication | ✅ |
 | Gestionnaire de stock | Approvisionnements, retraits, restitutions, catalogue | ✅ |
-| Acteur de la filière | S'inscrit, suit ses demandes | ✅ |
+| Visiteur (acteur de la filière) | Consulte la vitrine : la démarche, les pièces, le catalogue. **Aucun compte, aucun droit** : le DP saisit sa demande pour lui | ✅ (inscription publique retirée) |
 | **Directeur** | Pilote : tableau de pilotage, statistiques, comparaisons, rapports (lecture seule) | 🆕 |
 | **Comptable** | Tient la caisse : règlements, impayés, rapport | 🆕 |
 | Planificateur (système) | Sauvegardes, rappels, résumé quotidien, signal de vie | ✅ + 🆕 |
@@ -51,7 +51,6 @@ Diagrammes de cas d'utilisation, **un par acteur** : `docs/v2/usecases/uc_*.puml
 | | Tableau de pilotage de la direction | 🆕 |
 | | Statistiques filtrées (département, localité, type d'appui, type d'acteur, période) | 🆕 |
 | | Comparaison entre campagnes | 🆕 |
-| | Objectifs de campagne comparés au réalisé | 🆕 |
 | | Finances : engagé, dû, encaissé, taux de recouvrement | 🆕 |
 | **Rapports** | Exports Excel, fiches d'arbitrage, bons, courriers | ✅ |
 | | Rapport de campagne en PDF | 🆕 |
@@ -209,31 +208,20 @@ nous mieux que la campagne passée ? »).
 La v2 prépare ce passage : les campagnes clôturées sont figées, les valeurs de référence sont historisées, et les
 exports Excel ainsi que le rapport PDF sont tracés.
 
-### 2.5 (Q11) Les objectifs cibles et les seuils de décision
+### 2.5 (Q11) Objectifs cibles : pourquoi ORYZA n'en a pas
 
-Un **objectif cible** est la valeur qu'on se fixe **avant** la campagne. Un indicateur seul, par exemple « 64 %
-d'attribution », ne dit pas si c'est bien ou mal. Comparé à un objectif, par exemple « nous visions 70 % », il
-devient une information de décision : on est en dessous, il faut agir.
+Un **objectif cible** est une valeur qu'une organisation se fixe avant une période (« attribuer 70 % des
+demandes ») pour juger ensuite son résultat. C'est utile quand l'organisation a des engagements chiffrés,
+envers un bailleur par exemple.
 
-**Oui, ils doivent être définis dans la solution, et la v2 le fait.** Les objectifs se saisissent sur chaque
-campagne (Administration → Campagnes → Modifier) :
+**L'ADERIZ n'a pas d'objectifs chiffrés : elle appuie les demandeurs selon les demandes et les stocks.** Les
+objectifs ont donc été retirés de l'application. Les statistiques **constatent** (combien de demandes, combien
+servies, en combien de temps) et se comparent **à la campagne précédente**, sans cible à atteindre.
 
-| Objectif | Sens | Exemple |
-|---|---|---|
-| Taux d'attribution visé | au moins | ≥ 70 % des demandes soumises |
-| Superficie traitée visée | au moins | ≥ 60 % de la superficie concernée |
-| Taux de recouvrement visé | au moins | ≥ 90 % du dû encaissé |
-| Délai soumission → arbitrage | au plus | ≤ 15 jours |
-
-La classe `Objectif` compare le réalisé à la cible et affiche un **feu tricolore** :
-
-- 🟢 **vert** : l'objectif est atteint ;
-- 🟠 **ambre** : non atteint, mais à moins de 10 % de la cible (zone de vigilance) ;
-- 🔴 **rouge** : non atteint et loin de la cible, il faut décider d'une action.
-
-Un objectif laissé vide n'est pas suivi. Il existe aussi des **seuils d'alerte opérationnels**, qui déclenchent une
-notification : le seuil d'alerte de stock de chaque appui (réglé dans le catalogue) et les délais des rappels du
-lundi (réglés dans les paramètres généraux).
+Restent les **seuils d'alerte opérationnels**, qui ne jugent pas un résultat mais déclenchent une action :
+- le seuil d'alerte de stock de chaque appui (réglé dans le catalogue), qui prévient quand il faut réapprovisionner ;
+- les délais des rappels du lundi (réglés dans les paramètres généraux), qui relancent les bons non retirés,
+  les brouillons oubliés et les séances restées ouvertes.
 
 ### 2.6 (Q13) Une application de gestion peut-elle produire des rapports ?
 
@@ -242,7 +230,7 @@ Oui. C'est même une de ses fonctions de base : restituer l'activité sous une f
 - **des documents de travail** : bons d'attribution, courriers, fiches d'arbitrage, impression d'une demande et de
   ses pièces ;
 - **des exports de données** : demandes, attributions, stocks (Excel) ;
-- 🆕 **le rapport de campagne (PDF)** : chiffres clés, objectifs, finances, superficies et rendements, satisfaction
+- 🆕 **le rapport de campagne (PDF)** : chiffres clés, finances, superficies et rendements, satisfaction
   par appui, répartition. Il respecte les filtres choisis et indique s'il est **provisoire** (campagne ouverte) ou
   **définitif** (campagne clôturée). On le télécharge depuis Statistiques ou Pilotage, avec le droit « Télécharger
   les rapports ».
@@ -265,9 +253,9 @@ rapport à la direction chaque mois (planificateur + e-mail).
 
 Le journal ne se modifie ni ne se supprime : on y ajoute seulement des lignes. C'est un **journal d'audit**.
 
-Les données ne sont pas « temporaires » : rien ne les efface automatiquement. Seules les **copies de sauvegarde**
-tournent (7 jours complets, puis une par jour, par semaine, par mois, par an). Reste à faire (⏳) : une politique
-écrite de conservation et d'anonymisation des données personnelles des acteurs.
+Les données ne sont pas « temporaires » : rien ne les efface automatiquement. Les **copies de sauvegarde** non
+plus : il n'y a pas de nettoyage automatique (voir § 2.9). Reste à faire (⏳) : une politique écrite de conservation
+et d'anonymisation des données personnelles des demandeurs.
 
 ### 2.8 (Q14) Le mode hors-ligne
 
@@ -286,6 +274,80 @@ Le travail de terrain se fait souvent sans réseau. La v2 ajoute :
 Limite assumée : on ne **valide** pas une demande hors ligne. Les règles (acteur en impayé, campagne clôturée,
 visite obligatoire) ne se vérifient qu'au serveur.
 
+### 2.9 Le nettoyage des sauvegardes (retiré)
+
+Le « nettoyage » était la commande `backup:clean`, lancée chaque nuit à 2 h 30. Elle **supprimait les anciennes
+copies de sauvegarde** pour ne garder qu'un échantillon : toutes celles des 7 derniers jours, puis une par jour
+pendant 16 jours, une par semaine pendant 8 semaines, une par mois pendant 4 mois et une par an pendant 2 ans. Elle
+ne touchait jamais aux données de l'application, seulement aux archives `.zip`.
+
+**Il est retiré : plus aucune archive n'est supprimée automatiquement.** Conséquence à surveiller : les archives
+s'accumulent (une par nuit). L'écran « Santé du système » affiche l'espace disque libre, et `backup:monitor` (3 h)
+prévient l'administrateur quand les archives dépassent 5 Go. Il faut alors supprimer les plus anciennes à la main, ou
+remettre le nettoyage en planifiant de nouveau `backup:clean` dans `routes/console.php`.
+
+### 2.10 Des campagnes « obsolètes » après chaque année : est-ce logique ?
+
+**Qu'une campagne se termine, oui. Qu'elle devienne obsolète au sens « inutile ou à effacer », non.**
+
+- Une campagne correspond à un **cycle de culture** (ORYZA en connaît plusieurs : Cycle 1, 2, 3…), avec une date de
+  début et une date de fin. Il est logique qu'on ne dépose plus de demande sur un cycle terminé.
+- Mais ses données gardent leur valeur après la fin :
+  - **les règlements** : un acteur peut encore devoir de l'argent sur une campagne passée, et il reste bloqué pour
+    toute nouvelle demande tant qu'il n'a pas soldé ;
+  - **les rendements** arrivent après la récolte, donc souvent après la fin du cycle ;
+  - **la comparaison** et l'historique d'un demandeur (ce qu'il a déjà reçu) ;
+  - **les contrôles** (audit, bailleurs) qui portent sur les années passées.
+
+La bonne pratique est donc de **clôturer** la campagne (elle devient en lecture seule) plutôt que de la considérer
+comme jetable. C'est ce que fait la v2 : une campagne clôturée refuse demandes, attributions et rendements, accepte
+encore les règlements, et reste consultable dans les statistiques. Une campagne n'est jamais supprimée tant qu'elle
+porte des demandes.
+
+Deux améliorations possibles (⏳) :
+1. **proposer automatiquement la clôture**, par exemple un mois après la date de fin, sur décision de
+   l'administrateur ;
+2. **attendre les rendements** avant la clôture définitive, ou les autoriser après clôture si la récolte est tardive.
+
+### 2.11 En quoi consistent les « paramètres généraux » d'une application ?
+
+Ce sont les **réglages de fonctionnement que l'administrateur peut changer lui-même, sans développeur et sans
+redéployer l'application**. Ils ne contiennent pas de données métier (demandes, stocks) : ils fixent **comment**
+l'application se comporte.
+
+Exemples courants dans les applications de gestion : politique de mot de passe, durée de session, nombre de
+tentatives de connexion, délais de relance, coordonnées de l'organisation sur les documents, devise et format des
+nombres, adresse d'envoi des e-mails, seuils d'alerte par défaut.
+
+Dans ORYZA (Administration → Système → Paramètres généraux) :
+
+| Groupe | Paramètre | Valeur par défaut |
+|---|---|---|
+| Mots de passe | Longueur minimale | 8 |
+| | Exiger majuscules et minuscules | oui |
+| | Exiger un chiffre | oui |
+| | Exiger un symbole | non |
+| Connexion | Tentatives avant blocage temporaire | 5 |
+| Rappels automatiques | Bon non retiré, brouillon oublié, séance ouverte (jours) | 14, 7, 30 |
+
+Chaque valeur a des bornes (on ne peut pas mettre un mot de passe de 2 caractères) et chaque modification est notée
+au journal avec l'ancienne et la nouvelle valeur. La règle à retenir : ce qui change souvent et relève d'une décision
+de l'organisation va dans les paramètres ; ce qui touche à la logique métier reste dans le code.
+
+### 2.12 Tableau de bord ou tableau de pilotage : quelle différence ?
+
+| | Tableau de bord | Tableau de pilotage |
+|---|---|---|
+| Pour qui | Chaque agent (DP, commission, magasin, comptable…) | La direction |
+| Question | « Qu'ai-je à faire aujourd'hui ? » | « Comment se passe la campagne, où faut-il intervenir ? » |
+| Horizon | Le jour, la semaine : le travail en cours | La campagne entière, comparée à la précédente |
+| Contenu | Ses propres dossiers, ses tâches en attente (à arbitrer, bons à servir, stocks bas, impayés) | Les grands indicateurs (volumes, taux, délais, montants), leur évolution, les points de blocage |
+| Usage | Agir : chaque chiffre mène à un dossier à traiter | Décider : réorienter, relancer un service, alerter |
+| Dans ORYZA | Menu « Tableau de bord », différent selon le rôle | Menu « Pilotage » (rôle Directeur, lecture seule) |
+
+En résumé, le tableau de bord sert le **travail quotidien** (opérationnel), et le tableau de pilotage sert la
+**conduite de l'activité** (stratégique). Les deux lisent les mêmes données, mais à des niveaux différents.
+
 ---
 
 ## 3. Administration : ce que la v2 donne à l'administrateur
@@ -295,7 +357,7 @@ visite obligatoire) ne se vérifient qu'au serveur.
 | Accès → **Utilisateurs** | Un seul rôle par compte, dernière connexion, **Désactiver / Réactiver** (avec motif). On ne peut désactiver ni soi-même, ni le dernier administrateur actif. Une session ouverte est fermée aussitôt. |
 | Accès → **Rôles et droits** | Cocher ou décocher les droits de chaque rôle. Le rôle administrateur n'est pas modifiable, et chaque changement est journalisé (droits ajoutés et retirés). |
 | Système → **Paramètres généraux** | Longueur et complexité du mot de passe, tentatives de connexion avant blocage, délais des rappels. Les valeurs sont bornées et chaque changement est journalisé. |
-| Référentiels → **Campagnes** | Objectifs, **Clôturer** (avec le nombre de dossiers encore en cours), **Rouvrir** (motif obligatoire). |
+| Référentiels → **Campagnes** | Dates, **Clôturer** (avec le nombre de dossiers encore en cours), **Rouvrir** (motif obligatoire). |
 | Système → **Santé du système** | Base de données, sauvegardes, tâches automatiques, file d'attente, disque, mode débogage, connexions refusées, comptes. |
 | Système → Journal, Sauvegardes | Déjà présents ; le journal affiche maintenant les écarts avant → après et l'adresse IP. |
 
@@ -311,7 +373,7 @@ droits nouveaux aux rôles concernés, et laisse le reste intact.
    ajout est dans un bloc « Schéma v2 », séparé de la définition d'origine de la table :
    - `0001_01_01_000000_create_users_table` : `users.actif`, `desactive_le`, `motif_desactivation`,
      `derniere_connexion_le`, et la table `parametres` ;
-   - `…_create_campagnes_table` : objectifs et clôture ;
+   - `…_create_campagnes_table` : clôture (`cloturee_le`, `id_user_cloture`) ;
    - `…_create_attributions_table` : `deleted_at` (suppression douce) ;
    - `…_create_journals_actions_table` : `user_id` facultatif, `adresse_ip`, index.
 

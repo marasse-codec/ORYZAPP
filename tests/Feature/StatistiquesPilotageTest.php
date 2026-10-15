@@ -17,7 +17,7 @@ use Illuminate\Support\Carbon;
 use Tests\Concerns\CreeDonneesDeSuivi;
 use Tests\TestCase;
 
-/** Filtres, finances, objectifs, comparaison entre campagnes et rapport PDF. */
+/** Filtres, finances, comparaison entre campagnes et rapport PDF. */
 class StatistiquesPilotageTest extends TestCase
 {
     use CreeDonneesDeSuivi;
@@ -71,7 +71,7 @@ class StatistiquesPilotageTest extends TestCase
         $this->get(route('statistiques.index', ['localite' => 9999]))->assertSessionHasErrors('localite');
     }
 
-    // ------------------------------------------- Finances, objectifs, annulations
+    // --------------------------------------------------- Finances, annulations
 
     public function test_les_finances_suivent_le_du_et_lencaisse(): void
     {
@@ -90,23 +90,6 @@ class StatistiquesPilotageTest extends TestCase
         $this->assertSame(1500.0, $finances['reste']);
         $this->assertSame(25.0, $finances['taux_recouvrement']);
         $this->assertNotNull($nonPubliee);
-    }
-
-    public function test_les_objectifs_sont_compares_au_realise(): void
-    {
-        $this->attribuer($this->demandeSoumise(), $this->seance(), [1 => 1]);
-        $this->demandeSoumise();                                  // 1 attribuée sur 2 : 50 %
-        $this->campagne->update(['objectif_taux_attribution' => 60, 'objectif_delai_arbitrage' => 15]);
-
-        $indicateurs = $this->stats()->indicateurs($this->campagne);
-        $objectifs = $this->stats()->objectifs($this->campagne->refresh(), $indicateurs, $this->stats()->finances($this->campagne));
-
-        $this->assertCount(2, $objectifs);                        // les objectifs vides ne sont pas suivis
-        $this->assertSame("Taux d'attribution", $objectifs[0]->libelle);
-        $this->assertFalse($objectifs[0]->atteint());             // 50 % < 60 %
-        $this->assertSame(-10.0, $objectifs[0]->ecart());
-        $this->assertSame('rouge', $objectifs[0]->ton());
-        $this->assertTrue($objectifs[1]->atteint());              // délai de 10 jours ≤ 15 (« au plus »)
     }
 
     public function test_une_attribution_annulee_ne_compte_plus(): void

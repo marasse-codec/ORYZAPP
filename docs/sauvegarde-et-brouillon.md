@@ -9,14 +9,12 @@ Les schémas sont en Mermaid (rendus par GitHub, GitLab, VS Code, etc.).
 flowchart LR
     CRON[Cron serveur<br/>php artisan schedule:run] --> SCH[routes/console.php<br/>Schedule]
     SCH -->|02:00| RUN[backup:run]
-    SCH -->|02:30| CLEAN[backup:clean]
     SCH -->|03:00| MON[backup:monitor]
     RUN --> DUMP[mysqldump<br/>mariadb-client]
     DUMP --> DB[(MySQL aderiz_app)]
     RUN --> PJ[storage/app/public<br/>pièces justificatives]
     RUN --> ZIP[Archive .zip<br/>chiffrable]
     ZIP --> DISK[Disque « sauvegardes »<br/>storage/app/backups]
-    CLEAN --> DISK
     MON --> DISK
     RUN -. échec .-> MAIL[Courriel administrateur]
     MON -. périmée > 1 j .-> MAIL
@@ -45,9 +43,11 @@ sequenceDiagram
     else échec
         B-->>A: courriel BackupHasFailed
     end
-    S->>Z: 02:30 backup:clean (rétention 7 j / 16 j / 8 sem. / 4 mois / 2 ans)
     S->>Z: 03:00 backup:monitor (âge ≤ 1 j, taille ≤ 5 Go)
 ```
+
+> Aucun nettoyage automatique : `backup:clean` n'est pas planifié, toutes les archives sont conservées.
+> `backup:monitor` prévient quand les archives dépassent 5 Go ; supprimer alors les plus anciennes à la main.
 
 ## 2. Brouillon de saisie
 

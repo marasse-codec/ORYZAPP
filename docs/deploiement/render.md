@@ -24,7 +24,7 @@ Solution : un service de ping appelle l'application chaque minute, comme le fera
 3. Contrôle : la réponse doit être `202 {"statut":"lancé"}`. Sans jeton ou avec un mauvais jeton : `404` / `401`.
 
 Un ping chaque minute garde aussi le service éveillé (750 h gratuites par mois ≥ 744 h d'un mois de 31 jours).
-Tâches ainsi exécutées (cf. `routes/console.php`) : sauvegarde 2 h, nettoyage 2 h 30, contrôle 3 h,
+Tâches ainsi exécutées (cf. `routes/console.php`) : sauvegarde 2 h, contrôle 3 h (pas de nettoyage automatique des archives),
 résumé quotidien 7 h, rappels du lundi 8 h.
 
 Sans `CRON_TOKEN`, la route n'existe pas (404).

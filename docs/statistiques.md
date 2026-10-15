@@ -3,7 +3,7 @@
 Page **Statistiques** (permission « voir-statistiques » : administrateur et directeur).
 Tous les chiffres portent sur **une campagne**, choisie en haut de page (la campagne en cours par défaut),
 éventuellement restreinte par des **filtres** (département, localité, type d'appui, type d'acteur, période de soumission).
-Voir aussi la comparaison entre campagnes, le rapport PDF et les objectifs : [`roadmap-gestion.md`](roadmap-gestion.md).
+Voir aussi la comparaison entre campagnes et le rapport PDF : [`roadmap-gestion.md`](roadmap-gestion.md).
 Code : `StatistiqueCampagneService` (calculs), `StatistiqueController` (mise en forme), `statistiques/index.blade.php` (affichage).
 
 ## Règles communes
@@ -35,7 +35,7 @@ Code : `StatistiqueCampagneService` (calculs), `StatistiqueController` (mise en 
 
 Les délais ne comptent que les dossiers qui ont les deux dates. On compare des jours, pas des heures.
 
-## Finances et objectifs (v2)
+## Finances (v2)
 
 | Bloc | Calcul |
 |---|---|
@@ -43,7 +43,6 @@ Les délais ne comptent que les dossiers qui ont les deux dates. On compare des 
 | **Montant dû** | La même somme, limitée aux attributions publiées. |
 | **Encaissé** | Somme des paiements des attributions publiées (requête séparée, pour ne pas multiplier les lignes). |
 | **Taux de recouvrement** | Encaissé ÷ dû × 100. |
-| **Objectifs** | Fixés sur la campagne (Administration → Campagnes). Comparés au réalisé : vert (atteint), ambre (à moins de 10 %), rouge. |
 
 ## Les graphiques
 

@@ -10,8 +10,8 @@ use Filament\Tables;
 use Filament\Tables\Table;
 
 /**
- * Les campagnes : leurs dates, leurs objectifs (comparés au réalisé dans les
- * statistiques et le tableau de pilotage) et leur clôture.
+ * Les campagnes : leurs dates et leur clôture. L'ADERIZ appuie les demandeurs
+ * sans objectifs chiffrés : une campagne n'a donc pas de cible à atteindre.
  */
 class CampagneResource extends ReferentielResource
 {
@@ -29,24 +29,7 @@ class CampagneResource extends ReferentielResource
             Forms\Components\TextInput::make('lib_campagne')->label('Libellé')->required()->maxLength(30),
             Forms\Components\DatePicker::make('mois_debut_campagne')->label('Début')->required(),
             Forms\Components\DatePicker::make('mois_fin_campagne')->label('Fin')->required()->afterOrEqual('mois_debut_campagne'),
-
-            // Les objectifs sont facultatifs : un objectif vide n'est simplement pas suivi.
-            Forms\Components\Section::make('Objectifs de la campagne')
-                ->description('Ce que la campagne vise. Les statistiques et le tableau de pilotage comparent le réalisé à ces cibles.')
-                ->columns(2)
-                ->schema([
-                    static::champPourcentage('objectif_taux_attribution', "Taux d'attribution visé (% des demandes soumises)"),
-                    static::champPourcentage('objectif_taux_traitement', 'Superficie traitée visée (% de la superficie concernée)'),
-                    static::champPourcentage('objectif_taux_recouvrement', 'Taux de recouvrement visé (% du montant dû encaissé)'),
-                    Forms\Components\TextInput::make('objectif_delai_arbitrage')->label('Délai soumission → arbitrage, au plus (jours)')
-                        ->numeric()->integer()->minValue(1)->maxValue(365),
-                ]),
         ];
-    }
-
-    private static function champPourcentage(string $nom, string $libelle): Forms\Components\TextInput
-    {
-        return Forms\Components\TextInput::make($nom)->label($libelle)->numeric()->minValue(0)->maxValue(100)->suffix('%');
     }
 
     protected static function colonnes(): array

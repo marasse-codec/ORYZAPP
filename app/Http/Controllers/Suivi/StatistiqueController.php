@@ -135,13 +135,9 @@ class StatistiqueController extends Controller
     /** Les chiffres partagés par la page et le rapport. */
     private function donnees(StatistiqueCampagneService $stats, Campagne $campagne, FiltreStatistique $filtre): array
     {
-        $indicateurs = $stats->indicateurs($campagne, $filtre);
-        $finances = $stats->finances($campagne, $filtre);
-
         return [
-            'indicateurs' => $indicateurs,
-            'finances' => $finances,
-            'objectifs' => $stats->objectifs($campagne, $indicateurs, $finances),
+            'indicateurs' => $stats->indicateurs($campagne, $filtre),
+            'finances' => $stats->finances($campagne, $filtre),
             'satisfaction' => $stats->satisfactionParAppui($campagne, $filtre),
             'superficies' => $stats->superficiesParEcologie($campagne, $filtre),
             'rendements' => $stats->rendementsParEcologie($campagne, $filtre),

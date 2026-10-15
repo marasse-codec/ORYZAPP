@@ -15,7 +15,7 @@
 @endphp
 
 @section('content')
-<x-ui.page titre="Pilotage" sous-titre="La campagne en un coup d'œil : objectifs, évolution, et ce qui demande votre attention.">
+<x-ui.page titre="Pilotage" sous-titre="La campagne en un coup d'œil : son activité, son évolution, et ce qui demande votre attention.">
     <x-slot:actions>
         <form method="GET" action="{{ route('pilotage.index') }}" class="flex items-center gap-2">
             <label for="campagne" class="text-sm text-[--color-muted]">Campagne</label>
@@ -51,11 +51,6 @@
             <x-ui.stat libelle="Stocks sous le seuil" :valeur="$v['stocks_bas']" :ton="$v['stocks_bas'] > 0 ? 'rouge' : 'vert'" />
             <x-ui.stat libelle="Acteurs en impayé" :valeur="$v['acteurs_en_impaye']" :ton="$v['acteurs_en_impaye'] > 0 ? 'rouge' : 'vert'" />
         </section>
-
-        @include('statistiques.partials.objectifs', ['objectifs' => $tableau['objectifs']])
-        @if (empty($tableau['objectifs']))
-            <x-ui.card><p class="text-sm text-[--color-muted]">Aucun objectif n'est fixé pour cette campagne. L'administrateur peut en définir dans Administration → Campagnes.</p></x-ui.card>
-        @endif
 
         {{-- Activité, avec l'évolution par rapport à la campagne précédente --}}
         <section class="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">

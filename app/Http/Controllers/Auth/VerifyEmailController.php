@@ -2,12 +2,10 @@
 
 namespace App\Http\Controllers\Auth;
 
-use App\Domain\Acces\Enums\RoleEnum;
 use App\Http\Controllers\Controller;
 use Illuminate\Auth\Events\Verified;
 use Illuminate\Foundation\Auth\EmailVerificationRequest;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Support\Facades\Auth;
 
 class VerifyEmailController extends Controller
 {
@@ -24,8 +22,6 @@ class VerifyEmailController extends Controller
             event(new Verified($request->user()));
         }
 
-        $layout = Auth::user()?->role?->id === RoleEnum::acteur->value ? 'layouts.acteur' : 'layouts.aderiz';
-
-        return redirect()->intended(route('dashboard', compact('layout'), absolute: false).'?verified=1');
+        return redirect()->intended(route('dashboard', absolute: false).'?verified=1');
     }
 }
