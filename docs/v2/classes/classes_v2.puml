@@ -28,7 +28,6 @@ package "Accès" {
     enum RoleEnum {
         admin
         dp
-        acteur
         agentService
         agentCommission
         gestionnaireStock
@@ -64,10 +63,6 @@ package "Référentiel" {
         lib_campagne : string
         mois_debut_campagne : date
         mois_fin_campagne : date
-        <color:green>objectif_taux_attribution : decimal</color>
-        <color:green>objectif_taux_traitement : decimal</color>
-        <color:green>objectif_taux_recouvrement : decimal</color>
-        <color:green>objectif_delai_arbitrage : int</color>
         <color:green>cloturee_le : datetime</color>
         --
         <color:green>estCloturee() : bool</color>
@@ -117,14 +112,6 @@ package "Suivi (objets de calcul)" #E6F4EA {
         --
         appliquer(requête)
     }
-    class Objectif <<valeur>> {
-        libelle : string
-        cible : float
-        realise : float
-        auMoins : bool
-        --
-        atteint() / ecart() / ton()
-    }
 }
 
 User "0..*" -- "1" Role : a un seul >
@@ -136,6 +123,5 @@ Campagne "1" -- "0..*" Demande
 Campagne "0..*" -- "0..1" User : clôturée par >
 Demande "1" -- "0..1" Attribution : attribution active
 Attribution "1" -- "0..*" Paiement
-Campagne ..> Objectif : comparée au réalisé
 FiltreStatistique ..> Demande : restreint
 @enduml

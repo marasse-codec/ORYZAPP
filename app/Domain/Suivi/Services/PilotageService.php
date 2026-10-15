@@ -9,8 +9,8 @@ use App\Domain\Referentiel\Models\Campagne;
 
 /**
  * Le tableau de pilotage du directeur : en une page, où en est la campagne par
- * rapport à ses objectifs et à la campagne précédente, et ce qui bloque
- * (dossiers en attente, stocks bas, impayés). Lecture seule.
+ * rapport à la campagne précédente, et ce qui bloque (dossiers en attente,
+ * stocks bas, impayés). Lecture seule.
  */
 class PilotageService
 {
@@ -23,14 +23,11 @@ class PilotageService
 
     public function tableau(Campagne $campagne): array
     {
-        $indicateurs = $this->stats->indicateurs($campagne);
-        $finances = $this->stats->finances($campagne);
         $precedente = $this->precedente($campagne);
 
         return [
-            'indicateurs' => $indicateurs,
-            'finances' => $finances,
-            'objectifs' => $this->stats->objectifs($campagne, $indicateurs, $finances),
+            'indicateurs' => $this->stats->indicateurs($campagne),
+            'finances' => $this->stats->finances($campagne),
             'precedente' => $precedente,
             'evolutions' => $precedente ? $this->evolutions($campagne, $precedente) : [],
             'vigilance' => $this->vigilance(),

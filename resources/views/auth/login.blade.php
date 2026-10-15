@@ -69,14 +69,6 @@
     </form>
 
     <footer class="mt-8 space-y-3 border-t border-slate-200 pt-6 text-center text-sm">
-        @if (Route::has('register'))
-            <p class="text-slate-500">
-                Pas encore de compte ?
-                <a href="{{ route('register') }}" class="font-semibold text-[--color-primary] hover:underline">
-                    Créer un compte
-                </a>
-            </p>
-        @endif
         <p>
             <a href="{{ route('vitrine') }}" class="text-slate-500 hover:text-[--color-primary] hover:underline">
                 Comment faire une demande d'appui ?

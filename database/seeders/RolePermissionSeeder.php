@@ -16,7 +16,9 @@ use Spatie\Permission\PermissionRegistrar;
  *  - un rôle qui n'existait pas reçoit ses droits par défaut (RoleEnum::droitsParDefaut) ;
  *  - un droit qui n'existait pas est donné aux rôles qui l'ont par défaut ;
  *  - le reste (les réglages de l'administrateur) n'est pas touché ;
- *  - l'administrateur reçoit toujours tous les droits.
+ *  - l'administrateur reçoit toujours tous les droits ;
+ *  - un rôle qui n'existe plus dans l'application (ex. l'ancien rôle « acteur »)
+ *    est supprimé, s'il n'est plus porté par aucun compte.
  */
 class RolePermissionSeeder extends Seeder
 {
@@ -49,6 +51,9 @@ class RolePermissionSeeder extends Seeder
                 $role->givePermissionTo(array_map(fn (PermissionEnum $d) => $d->value, $aAjouter));
             }
         }
+
+        $rolesConnus = array_map(fn (RoleEnum $r) => $r->value, RoleEnum::cases());
+        Role::whereNotIn('name', $rolesConnus)->whereDoesntHave('users')->delete();
 
         app(PermissionRegistrar::class)->forgetCachedPermissions();
     }

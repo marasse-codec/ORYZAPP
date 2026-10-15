@@ -21,8 +21,6 @@
         th, td { border: 1px solid #d4d4d4; padding: 4px 6px; text-align: left; }
         th { background: #eef7f1; }
         td.n, th.n { text-align: right; }
-        .ok { color: #047857; font-weight: bold; }
-        .ko { color: #be123c; font-weight: bold; }
         .note { color: #666; font-size: 8pt; }
         .entete td { border: none; padding: 0; vertical-align: top; }
     </style>
@@ -54,21 +52,6 @@
         <tr><th>Délai soumission → arbitrage</th><td class="n">{{ $nombre($indicateurs['delai_arbitrage'], 1) }} j</td>
             <th>Délai arbitrage → retrait</th><td class="n">{{ $nombre($indicateurs['delai_retrait'], 1) }} j</td></tr>
     </table>
-
-    @if (! empty($objectifs))
-        <h2>Objectifs</h2>
-        <table>
-            <tr><th>Objectif</th><th class="n">Cible</th><th class="n">Réalisé</th><th>Résultat</th></tr>
-            @foreach ($objectifs as $objectif)
-                <tr>
-                    <td>{{ $objectif->libelle }}</td>
-                    <td class="n">{{ $objectif->auMoins ? '≥' : '≤' }} {{ $nombre($objectif->cible, 1) }} {{ $objectif->unite }}</td>
-                    <td class="n">{{ $nombre($objectif->realise, 1) }} {{ $objectif->unite }}</td>
-                    <td class="{{ $objectif->atteint() ? 'ok' : 'ko' }}">{{ match ($objectif->atteint()) { true => 'Atteint', false => 'Non atteint', default => 'Non mesurable' } }}</td>
-                </tr>
-            @endforeach
-        </table>
-    @endif
 
     <h2>Finances</h2>
     <table>

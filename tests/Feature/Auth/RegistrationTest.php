@@ -2,39 +2,29 @@
 
 namespace Tests\Feature\Auth;
 
-use App\Domain\Acces\Enums\RoleEnum;
-use App\Models\User;
-use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Route;
 use Tests\TestCase;
 
+/**
+ * Pas d'inscription publique : les acteurs de la filière ne font que visiter le site,
+ * et les comptes des agents sont créés par l'administrateur.
+ */
 class RegistrationTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_registration_screen_can_be_rendered(): void
+    public function test_il_ny_a_pas_dinscription_publique(): void
     {
-        $response = $this->get('/register');
-
-        $response->assertStatus(200);
+        $this->assertFalse(Route::has('register'));
+        $this->get('/register')->assertNotFound();
+        $this->post('/register', ['name' => 'X', 'email' => 'x@example.com'])->assertNotFound();
     }
 
-    public function test_new_users_can_register(): void
+    public function test_la_page_de_connexion_ne_propose_pas_de_creer_un_compte(): void
     {
-        // L'inscription attribue le rôle « acteur » : le référentiel des rôles
-        // doit exister, comme en production.
-        $this->seed(RolePermissionSeeder::class);
+        $this->withoutVite();
 
-        $response = $this->post('/register', [
-            'name' => 'Test User',
-            'email' => 'test@example.com',
-            'password' => 'Nouveau2026',
-            'password_confirmation' => 'Nouveau2026',
-        ]);
-
-        $this->assertAuthenticated();
-        $response->assertRedirect(route('dashboard', absolute: false));
-
-        $this->assertTrue(User::where('email', 'test@example.com')->sole()->hasRole(RoleEnum::acteur->value));
+        $this->get(route('login'))->assertOk()->assertDontSee('Créer un compte');
     }
 }

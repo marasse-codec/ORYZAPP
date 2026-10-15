@@ -15,8 +15,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable([
     'lib_campagne', 'mois_debut_campagne', 'mois_fin_campagne',
-    // v2 : objectifs et clôture
-    'objectif_taux_attribution', 'objectif_taux_traitement', 'objectif_taux_recouvrement', 'objectif_delai_arbitrage',
+    // v2 : clôture
     'cloturee_le', 'id_user_cloture',
 ])]
 #[Table('campagnes')]
@@ -29,10 +28,6 @@ class Campagne extends Model implements EstUtilisable
     protected $casts = [
         'mois_debut_campagne' => 'date',
         'mois_fin_campagne' => 'date',
-        'objectif_taux_attribution' => 'float',
-        'objectif_taux_traitement' => 'float',
-        'objectif_taux_recouvrement' => 'float',
-        'objectif_delai_arbitrage' => 'integer',
         'cloturee_le' => 'datetime',
     ];
     

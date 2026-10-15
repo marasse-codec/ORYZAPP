@@ -44,8 +44,6 @@
                        :valeur="$indicateurs['delai_retrait'] !== null ? number_format($indicateurs['delai_retrait'], 1, ',', ' ').' j' : '-'" />
         </section>
 
-        @include('statistiques.partials.objectifs')
-
         {{-- L'argent de la campagne --}}
         @include('statistiques.partials.finances')
 

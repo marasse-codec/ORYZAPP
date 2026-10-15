@@ -43,8 +43,8 @@ class UserSeed extends Seeder
             ])->assignRole($role->value);
         }
 
-        // Le compte « acteur » est aussi un demandeur : il consulte ses
-        // propres dossiers via Demande::scopePourUtilisateur.
+        // Un demandeur d'exemple. Les acteurs de la filière n'ont pas de compte :
+        // le délégué de pôle saisit leurs demandes.
         Acteur::create([
             'nom' => 'acteur',
             'date_naissance' => '2003-06-25',

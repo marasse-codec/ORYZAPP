@@ -12,7 +12,8 @@ Artisan::command('inspire', function () {
 
 // SNF05 : Sauvegarde quotidienne automatique de la base de données et des pièces téléversées à 2h du matin.
 Schedule::command('backup:run')->dailyAt('02:00')->onOneServer()->withoutOverlapping();
-Schedule::command('backup:clean')->dailyAt('02:30')->onOneServer();
+// Pas de nettoyage automatique (backup:clean) : aucune archive n'est supprimée par l'application.
+// Surveiller l'espace disque (écran « Santé du système ») et supprimer les anciennes archives à la main si besoin.
 Schedule::command('backup:monitor')->dailyAt('03:00')->onOneServer();
 
 // Résumé quotidien : à 7 h, pour les agents qui n'ont pas à être alertés en continu.

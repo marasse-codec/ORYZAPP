@@ -17,7 +17,7 @@ Pour régénérer les SVG : `java -jar plantuml.jar -tsvg docs/v2/**/*.puml` (Gr
 | `uc_agent_service` | Agent de service |
 | `uc_agent_commission` | Agent de commission |
 | `uc_gestionnaire_stock` | Gestionnaire de stock |
-| `uc_acteur_filiere` | Visiteur et acteur de la filière |
+| `uc_visiteur` | Visiteur (acteur de la filière) : consulte la vitrine, sans compte ni droit |
 | `uc_planificateur` | Planificateur (acteur système) |
 
 ## Diagrammes de communication (`communication/`)
@@ -39,4 +39,4 @@ Les objets sont reliés par des liens ; les messages sont numérotés dans leur 
 | Fichier | Contenu |
 |---|---|
 | `composants/composants_v2` | Les couches (navigateur, contrôle, domaine, infrastructure) et les composants ajoutés |
-| `classes/classes_v2` | Les entités modifiées (User, Campagne, Attribution, JournalAction) et les nouvelles (Parametre, FiltreStatistique, Objectif) |
+| `classes/classes_v2` | Les entités modifiées (User, Campagne, Attribution, JournalAction) et les nouvelles (Parametre, FiltreStatistique) |

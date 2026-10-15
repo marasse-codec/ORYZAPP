@@ -229,9 +229,7 @@ class Demande extends Model
     {
         $user = auth()->user();
         
-        if ($user->hasRole(RoleEnum::acteur->value)) {
-            return $query->whereHas('acteur', fn ($q) => $q->where('user_id', $user->id));
-        } else if($user->hasRole([RoleEnum::agentService->value])){
+        if ($user->hasRole([RoleEnum::agentService->value])) {
             // « date_soummission » appartient à la demande, pas au service : le filtre se pose hors de la sous-requête.
             return $query->whereNotNull('date_soummission')
                 ->whereHas('lignes.typeAppui.service', fn ($q) => $q->where('id_service', $user->id_service));

@@ -6,7 +6,6 @@ namespace App\Models;
 
 use App\Domain\Acces\Enums\RoleEnum;
 use App\Domain\Commission\Models\Attribution;
-use App\Domain\Demande\Models\Acteur;
 use App\Domain\Demande\Models\Demande;
 use App\Domain\Journal\Models\JournalAction;
 use App\Domain\Referentiel\Models\Service;
@@ -47,11 +46,6 @@ class User extends Authenticatable implements EstUtilisable
             'desactive_le' => 'datetime',
             'derniere_connexion_le' => 'datetime',
         ];
-    }
-
-    public function acteur(): HasOne
-    {
-        return $this->hasOne(Acteur::class, 'user_id', 'id');
     }
 
     /** Le service dont relève l'agent, s'il en est un. */

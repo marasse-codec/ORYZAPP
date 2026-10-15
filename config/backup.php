@@ -93,7 +93,8 @@ return [
         ],
     ],
 
-    // backup:clean : rétention 7 j complets, 16 j quotidiens, 8 sem., 4 mois, 2 ans.
+    // Rétention utilisée seulement par backup:clean, qui N'EST PAS planifié (routes/console.php) :
+    // les archives sont conservées tant qu'on ne les supprime pas.
     'cleanup' => [
         'strategy' => DefaultStrategy::class,
         'default_strategy' => [

@@ -106,7 +106,6 @@ Saisie → Visite → Soumission → Instruction → Arbitrage (séance) → Pub
 | Les 10 localités les plus demandeuses | `parLocalite` | **Top-k** (tri + `LIMIT`) |
 | Taux d'attribution, de traitement, de satisfaction, de recouvrement | services Suivi | **Ratio** (partie ÷ total × 100), « - » si le total est nul |
 | 🆕 Évolution d'une campagne à la suivante | `ComparaisonCampagnesService::evolution` | **Taux de variation** ((après − avant) ÷ \|avant\| × 100) |
-| 🆕 Objectif atteint ou non, avec feu tricolore | `Objectif::atteint`, `Objectif::ton` | **Comparaison à un seuil** avec **zone de tolérance** de 10 % (vert, ambre, rouge) |
 | 🆕 Le directeur voit la campagne et ce qui bloque | `PilotageService` | **Tableau de bord** (*indicateurs clés de performance*) |
 | 🆕 Rapport de campagne | `StatistiqueController::rapport`, dompdf | **Génération de document** (gabarit HTML → PDF) |
 
@@ -125,7 +124,7 @@ Saisie → Visite → Soumission → Instruction → Arbitrage (séance) → Pub
 | Le journal pointe vers n'importe quel objet (demande, attribution, campagne…) | `cible_type` / `cible_id` | **Association polymorphe** |
 | 🆕 Chronologie d'un dossier reconstituée à partir du journal | `ChronologieDemandeService` | **Reconstitution d'historique par événements** (inspiré de l'*event sourcing*) |
 | 🆕 Chaque export téléchargé est tracé | `JournaliserExport` | **Intercepteur** (middleware) |
-| Sauvegardes : 7 jours complets, puis une par jour, par semaine, par mois, par an | spatie/laravel-backup | **Rotation grand-père / père / fils** (*GFS, Grandfather-Father-Son*) |
+| Sauvegarde chaque nuit de la base et des pièces, toutes les archives conservées (pas de nettoyage automatique) | spatie/laravel-backup | **Sauvegarde complète planifiée** (*full backup*) + **surveillance de l'âge et de la taille** |
 | 🆕 Le planificateur note son passage chaque minute ; l'écran de santé vérifie qu'il est récent | `SanteSystemeService` | **Signal de vie** (*heartbeat*) |
 | 🆕 Les paramètres sont lus une fois par requête | `ParametreService` | **Mémoïsation** (cache le temps de la requête) |
 | 🆕 Les rôles se mettent à jour à chaque déploiement sans écraser les réglages de l'administrateur | `RolePermissionSeeder` | **Migration de données idempotente** (rejouable sans effet de bord) |
@@ -137,7 +136,7 @@ Saisie → Visite → Soumission → Instruction → Arbitrage (séance) → Pub
 | Patron | Exemple dans ORYZA |
 |---|---|
 | **Service** (couche métier) | `CreationDemandeService`, `ReglementService`, `ClotureCampagneService`… : une classe par cas d'usage, qui tient la règle et la transaction |
-| **Objet valeur** (*value object*) | `FiltreStatistique`, `Objectif`, `Verification` : de petits objets immuables qui portent une donnée et ses calculs |
+| **Objet valeur** (*value object*) | `FiltreStatistique`, `Verification` : de petits objets immuables qui portent une donnée et ses calculs |
 | **Observateur** | `AppuiObserver`, `JournaliserConnexions` |
 | **Énumération riche** | `RoleEnum`, `PermissionEnum`, `ParametreEnum`, `ActionJournalEnum` : chaque valeur porte son libellé, ses défauts et ses règles |
 | **Contrôleur mince** | les contrôleurs valident l'entrée (FormRequest), appellent un service et renvoient une vue |

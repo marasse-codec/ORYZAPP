@@ -70,7 +70,7 @@ class SauvegardesTest extends TestCase
         $expression = fn (string $commande) => $evenements->first(fn ($e) => str_contains($e->command, $commande))?->expression;
 
         $this->assertSame('0 2 * * *', $expression('backup:run'));
-        $this->assertSame('30 2 * * *', $expression('backup:clean'));
+        $this->assertNull($expression('backup:clean'));       // pas de suppression automatique des archives
         $this->assertSame('0 3 * * *', $expression('backup:monitor'));
     }
 

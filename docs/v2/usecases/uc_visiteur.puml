@@ -1,0 +1,25 @@
+@startuml uc_visiteur
+title Cas d'utilisation : Visiteur (acteur de la filière)
+!include ../style.puml
+left to right direction
+
+actor "Visiteur\n(acteur de la filière)" as Visiteur
+
+rectangle "<b>Plateforme ORYZA — vitrine publique</b>" {
+    usecase "Consulter la démarche\npour solliciter un appui" as UC_Demarche
+    usecase "Consulter les pièces\nà fournir" as UC_Pieces
+    usecase "Consulter le catalogue\ndes appuis" as UC_Catalogue
+    usecase "Consulter les contacts" as UC_Contacts
+}
+
+Visiteur --> UC_Demarche
+Visiteur --> UC_Pieces
+Visiteur --> UC_Catalogue
+Visiteur --> UC_Contacts
+
+note bottom of Visiteur
+  Aucun compte et aucun droit dans l'application :
+  sa demande est saisie par le délégué de pôle.
+  L'icône de connexion de la vitrine sert aux agents ADERIZ.
+end note
+@enduml
