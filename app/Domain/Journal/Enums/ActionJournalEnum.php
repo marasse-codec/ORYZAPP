@@ -36,6 +36,20 @@ enum ActionJournalEnum: string
     case compteCree = 'COMPTE_CREE';
     case compteModifie = 'COMPTE_MODIFIE';
 
+    // --- Ajouts v2 : administration, accès et historisation
+    case compteDesactive = 'COMPTE_DESACTIVE';
+    case compteReactive = 'COMPTE_REACTIVE';
+    case droitsModifies = 'DROITS_MODIFIES';
+    case parametresModifies = 'PARAMETRES_MODIFIES';
+    case referentielModifie = 'REFERENTIEL_MODIFIE';
+    case referentielSupprime = 'REFERENTIEL_SUPPRIME';
+    case campagneCloturee = 'CAMPAGNE_CLOTUREE';
+    case campagneRouverte = 'CAMPAGNE_ROUVERTE';
+    case connexion = 'CONNEXION';
+    case connexionEchouee = 'CONNEXION_ECHOUEE';
+    case deconnexion = 'DECONNEXION';
+    case exportTelecharge = 'EXPORT_TELECHARGE';
+
     public function libelle(): string
     {
         return match ($this) {
@@ -61,6 +75,18 @@ enum ActionJournalEnum: string
             self::appuiSupprime => 'Appui retiré du catalogue',
             self::compteCree => 'Compte utilisateur créé',
             self::compteModifie => 'Compte utilisateur modifié',
+            self::compteDesactive => 'Compte désactivé',
+            self::compteReactive => 'Compte réactivé',
+            self::droitsModifies => "Droits d'un rôle modifiés",
+            self::parametresModifies => 'Paramètres généraux modifiés',
+            self::referentielModifie => 'Référentiel modifié',
+            self::referentielSupprime => 'Élément de référentiel supprimé',
+            self::campagneCloturee => 'Campagne clôturée',
+            self::campagneRouverte => 'Campagne rouverte',
+            self::connexion => 'Connexion',
+            self::connexionEchouee => 'Connexion refusée',
+            self::deconnexion => 'Déconnexion',
+            self::exportTelecharge => 'Export ou rapport téléchargé',
         };
     }
 }

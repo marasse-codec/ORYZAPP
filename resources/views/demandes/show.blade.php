@@ -187,6 +187,25 @@
         </x-ui.card>
     @endforeach
 
+    {{-- Historique : tout ce qui est arrivé au dossier, d'après le journal des actions --}}
+    @if ($chronologie->isNotEmpty())
+        <x-ui.card titre="Chronologie du dossier" sans-marge>
+            <ol class="divide-y divide-[--color-border]">
+                @foreach ($chronologie as $evenement)
+                    <li class="px-4 py-3 text-sm sm:px-6">
+                        <div class="flex flex-wrap items-baseline justify-between gap-2">
+                            <span class="font-medium text-[--color-ink]">{{ $evenement->actionEnum()?->libelle() ?? $evenement->action }}</span>
+                            <span class="text-xs text-[--color-muted]">{{ $evenement->created_at->format('d/m/Y à H:i') }} · {{ $evenement->user?->name ?? 'Système' }}</span>
+                        </div>
+                        @if ($evenement->details)
+                            <p class="mt-1 text-xs text-[--color-muted]">{{ $evenement->detailsLisibles() }}</p>
+                        @endif
+                    </li>
+                @endforeach
+            </ol>
+        </x-ui.card>
+    @endif
+
     <div>
         <x-ui.bouton :href="route('demandes.index')" variante="discret">← Retour à la liste des demandes</x-ui.bouton>
     </div>

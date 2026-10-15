@@ -191,7 +191,7 @@ class Demande extends Model
     {
         return sprintf(
             'CASE
-                WHEN EXISTS (SELECT 1 FROM attributions WHERE attributions.id_demande = demandes.id_demande) THEN %d
+                WHEN EXISTS (SELECT 1 FROM attributions WHERE attributions.id_demande = demandes.id_demande AND attributions.deleted_at IS NULL) THEN %d
                 WHEN demandes.motifs_rejet IS NOT NULL THEN %d
                 WHEN demandes.date_soummission IS NULL THEN %d
                 ELSE %d

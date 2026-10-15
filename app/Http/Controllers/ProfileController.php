@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Domain\Journal\Enums\ActionJournalEnum;
+use App\Domain\Journal\Models\JournalAction;
 use App\Http\Requests\ProfileUpdateRequest;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -38,7 +40,9 @@ class ProfileController extends Controller
     }
 
     /**
-     * Delete the user's account.
+     * « Fermer mon compte » : le compte est désactivé, jamais supprimé. Ce que la
+     * personne a fait (demandes, journal) reste à son nom ; un administrateur
+     * peut le réactiver.
      */
     public function destroy(Request $request): RedirectResponse
     {
@@ -48,9 +52,10 @@ class ProfileController extends Controller
 
         $user = $request->user();
 
-        Auth::logout();
+        JournalAction::enregistrer(ActionJournalEnum::compteDesactive, $user, ['motif' => 'fermé par son titulaire']);
+        $user->update(['actif' => false, 'desactive_le' => now(), 'motif_desactivation' => 'Fermé par son titulaire']);
 
-        $user->delete();
+        Auth::logout();
 
         $request->session()->invalidate();
         $request->session()->regenerateToken();

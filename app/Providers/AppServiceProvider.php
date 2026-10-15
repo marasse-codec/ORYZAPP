@@ -3,10 +3,13 @@
 namespace App\Providers;
 
 use App\Domain\Acces\Enums\RoleEnum;
+use App\Domain\Administration\Services\ParametreService;
 use App\Domain\Commission\Models\Attribution;
 use App\Domain\Commission\Models\SessionCommission;
 use App\Domain\Commission\Policies\AttributionPolicy;
 use App\Domain\Demande\Models\Demande;
+use App\Domain\Journal\Listeners\JournaliserConnexions;
+use App\Domain\Referentiel\Models\Campagne;
 use App\Domain\Stock\Models\Approvisionnement;
 use App\Domain\Stock\Models\Appui;
 use App\Domain\Stock\Models\Equipement;
@@ -15,14 +18,18 @@ use App\Domain\Stock\Policies\AppuiPolicy;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Relations\Relation;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Validation\Rules\Password;
+use Spatie\Permission\Models\Role;
 
 class AppServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        //
+        // Les paramètres lus une fois sont gardés le temps de la requête.
+        $this->app->scoped(ParametreService::class);
     }
 
     public function boot(): void
@@ -39,6 +46,10 @@ class AppServiceProvider extends ServiceProvider
             'approvisionnement' => Approvisionnement::class,
             'equipement' => Equipement::class,
             'appui' => Appui::class,
+            // Ajouts v2 : cibles possibles du journal.
+            'user' => User::class,
+            'campagne' => Campagne::class,
+            'role' => Role::class,
         ]);
 
         // Une factory se trouve par son nom (« DemandeFactory »), où que soit le modèle.
@@ -49,6 +60,13 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(Attribution::class, AttributionPolicy::class);
 
         Appui::observe(AppuiObserver::class);
+
+        // Connexions, échecs et déconnexions sont notés au journal.
+        Event::subscribe(JournaliserConnexions::class);
+
+        // La politique de mot de passe vient des paramètres réglés par l'administrateur.
+        // Elle est lue au moment de valider, pas au démarrage (la base peut ne pas exister encore).
+        Password::defaults(fn () => app(ParametreService::class)->reglePassword());
 
         // L'administrateur passe toutes les autorisations sans qu'on ait à lui
         // rattacher chaque permission une à une.

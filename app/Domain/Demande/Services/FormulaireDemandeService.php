@@ -39,7 +39,7 @@ class FormulaireDemandeService
             'typesActeurs' => $typesActeurs,
             'typesAppuis' => $typesAppuis,
             'localites' => Localite::with('departement')->orderBy('lib_localite')->get(),
-            'campagnes' => Campagne::orderByDesc('mois_debut_campagne')->get(),
+            'campagnes' => Campagne::ouvertes()->orderByDesc('mois_debut_campagne')->get(),
             'typesSystemesProductions' => TypeSystemeProduction::orderBy('lib_type_systeme_production')->get(),
 
             // Les pièces requises, par type d'acteur.

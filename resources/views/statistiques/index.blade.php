@@ -3,25 +3,28 @@
 @section('titre-page', 'Statistiques')
 
 @section('content')
-<x-ui.page titre="Statistiques" sous-titre="Les chiffres d'une campagne, pour décider.">
-    <x-slot:actions>
-        {{-- Filtre par campagne : la campagne en cours est sélectionnée par défaut --}}
-        <form method="GET" action="{{ route('statistiques.index') }}" class="flex items-center gap-2">
-            <label for="campagne" class="text-sm text-[--color-muted]">Campagne</label>
-            <select id="campagne" name="campagne" onchange="this.form.submit()" class="rounded-lg border-slate-300 text-sm">
-                @foreach ($campagnes as $option)
-                    <option value="{{ $option->id_campagne }}" @selected($campagne && $option->is($campagne))>
-                        {{ $option->lib_campagne }} ({{ $option->mois_debut_campagne->format('m/Y') }} - {{ $option->mois_fin_campagne->format('m/Y') }})
-                    </option>
-                @endforeach
-            </select>
-            <noscript><button type="submit" class="text-sm underline">Afficher</button></noscript>
-        </form>
-    </x-slot:actions>
+<x-ui.page titre="Statistiques" sous-titre="Les chiffres d'une campagne, pour décider. Population : les demandes soumises de la campagne (et des filtres).">
+    @if ($campagne)
+        <x-slot:actions>
+            <x-ui.bouton :href="route('statistiques.comparaison', $filtre->parametres())" variante="secondaire">Comparer les campagnes</x-ui.bouton>
+            @can(\App\Domain\Acces\Enums\PermissionEnum::telechargerRapports->value)
+                <x-ui.bouton :href="route('statistiques.rapport', ['campagne' => $campagne->id_campagne] + $filtre->parametres())">Rapport PDF</x-ui.bouton>
+            @endcan
+        </x-slot:actions>
+    @endif
+
+    @include('statistiques.partials.filtres', ['action' => route('statistiques.index'), 'filtre' => $filtre ?? null, 'avecCampagne' => true])
 
     @if (! $campagne)
         <x-ui.card><p class="text-sm text-[--color-muted]">Aucune campagne n'est enregistrée.</p></x-ui.card>
     @else
+        @if ($campagne->estCloturee())
+            <p class="rounded-lg bg-slate-100 px-4 py-2 text-sm text-slate-700">Campagne clôturée le {{ $campagne->cloturee_le->format('d/m/Y') }} : ces chiffres sont définitifs.</p>
+        @endif
+        @unless ($filtre->estVide())
+            <p class="rounded-lg bg-amber-50 px-4 py-2 text-sm text-amber-800">Chiffres restreints par les filtres ci-dessus : ils ne portent pas sur toute la campagne.</p>
+        @endunless
+
         {{-- Chiffres clés --}}
         <section class="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
             <x-ui.stat libelle="Demandes soumises" :valeur="$indicateurs['soumises']" />
@@ -40,6 +43,11 @@
             <x-ui.stat libelle="Délai arbitrage → retrait"
                        :valeur="$indicateurs['delai_retrait'] !== null ? number_format($indicateurs['delai_retrait'], 1, ',', ' ').' j' : '-'" />
         </section>
+
+        @include('statistiques.partials.objectifs')
+
+        {{-- L'argent de la campagne --}}
+        @include('statistiques.partials.finances')
 
         {{-- Graphiques --}}
         <section class="grid gap-4 lg:grid-cols-2">

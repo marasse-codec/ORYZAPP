@@ -71,8 +71,11 @@ class CycleAttributionTest extends TestCase
         ])->assertSessionHasNoErrors();
         $this->assertSame(3.0, (float) $attribution->lignesAttributions()->first()->quantite_attribuee);
 
+        // Annuler = suppression douce : l'attribution disparaît des écrans mais reste en base, avec ses lignes.
         $this->delete(route('attributions.destroy', $attribution->id_attribution));
-        $this->assertDatabaseMissing('attributions', ['id_attribution' => $attribution->id_attribution]);
+        $this->assertSoftDeleted('attributions', ['id_attribution' => $attribution->id_attribution]);
+        $this->assertDatabaseHas('lignes_attributions', ['id_attribution' => $attribution->id_attribution]);
+        $this->assertNull($attribution->demande->fresh()->attribution);
     }
 
     public function test_les_superficies_traitees_se_creent_se_modifient_et_se_valident(): void
@@ -107,9 +110,10 @@ class CycleAttributionTest extends TestCase
         ])->assertSessionHasNoErrors();
         $this->assertSame([2 => 4.5], $attribution->superficies()->pluck('superficie_traitee', 'id_type_systeme_production')->map(fn ($v) => (float) $v)->all());
 
-        // Supprimer l'attribution supprime ses superficies.
+        // Annuler l'attribution la retire des calculs, mais garde ses superficies pour l'historique.
         $this->delete(route('attributions.destroy', $attribution->id_attribution));
-        $this->assertDatabaseCount('attributions_systemes_productions', 0);
+        $this->assertSoftDeleted('attributions', ['id_attribution' => $attribution->id_attribution]);
+        $this->assertDatabaseCount('attributions_systemes_productions', 1);
     }
 
     public function test_la_cloture_valide_lattribution_qui_ne_bouge_plus(): void

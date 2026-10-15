@@ -9,31 +9,47 @@ use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
 
+/**
+ * Rôles et droits. Ce seeder repasse à chaque déploiement : il ne doit donc pas
+ * écraser ce que l'administrateur a réglé lui-même dans « Rôles et droits ».
+ *
+ *  - un rôle qui n'existait pas reçoit ses droits par défaut (RoleEnum::droitsParDefaut) ;
+ *  - un droit qui n'existait pas est donné aux rôles qui l'ont par défaut ;
+ *  - le reste (les réglages de l'administrateur) n'est pas touché ;
+ *  - l'administrateur reçoit toujours tous les droits.
+ */
 class RolePermissionSeeder extends Seeder
 {
     public function run(): void
     {
         app(PermissionRegistrar::class)->forgetCachedPermissions();
 
-        foreach (PermissionEnum::cases() as $permission) {
-            Permission::firstOrCreate(['name' => $permission->value]);
+        $nouveauxDroits = [];
+
+        foreach (PermissionEnum::cases() as $droit) {
+            if (Permission::firstOrCreate(['name' => $droit->value])->wasRecentlyCreated) {
+                $nouveauxDroits[] = $droit;
+            }
         }
 
-        // Les rôles du diagramme de cas d'utilisation, chacun cantonné à son
-        // étape du cycle de vie de la demande.
-        $attributions = [
-            RoleEnum::admin->value => PermissionEnum::cases(),
-            RoleEnum::acteur->value => [PermissionEnum::creerDemande],
-            RoleEnum::dp->value => [PermissionEnum::creerDemande, PermissionEnum::editDemande],
-            // Lecture seule : ses demandes et attributions se filtrent par service ; il télécharge les stocks de ses appuis.
-            RoleEnum::agentService->value => [PermissionEnum::voirStocks],
-            RoleEnum::agentCommission->value => [PermissionEnum::gererCommission, PermissionEnum::gererSimulation, PermissionEnum::attribuerAppui],
-            RoleEnum::gestionnaireStock->value => [PermissionEnum::gererStock,PermissionEnum::gererMouvement, PermissionEnum::voirStocks],
-        ];
+        foreach (RoleEnum::cases() as $roleEnum) {
+            $role = Role::firstOrCreate(['name' => $roleEnum->value]);
+            $parDefaut = $roleEnum->droitsParDefaut();
 
-        foreach ($attributions as $nomRole => $permissions) {
-            Role::firstOrCreate(['name' => $nomRole])
-                ->syncPermissions(array_map(fn (PermissionEnum $p) => $p->value, $permissions));
+            if ($roleEnum === RoleEnum::admin || $role->wasRecentlyCreated) {
+                $role->syncPermissions(array_map(fn (PermissionEnum $d) => $d->value, $parDefaut));
+
+                continue;
+            }
+
+            // Rôle existant : on ajoute seulement les droits apparus avec cette version.
+            $aAjouter = array_filter($parDefaut, fn (PermissionEnum $d) => in_array($d, $nouveauxDroits, true));
+
+            if ($aAjouter !== []) {
+                $role->givePermissionTo(array_map(fn (PermissionEnum $d) => $d->value, $aAjouter));
+            }
         }
+
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
     }
 }

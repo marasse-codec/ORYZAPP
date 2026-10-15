@@ -72,7 +72,11 @@
                 const reponse = await fetch(`{{ route('demandes.brouillon.show') }}`, { headers: { 'Accept': 'application/json' } });
                 this.brouillonPropose = reponse.status === 200 ? await reponse.json() : null;
             } catch (e) { this.brouillonPropose = null; }
+            // Hors ligne (ou saisie restée sur l'appareil) : on propose la copie locale.
+            this.brouillonPropose ??= window.BrouillonLocal?.lire('demande');
             this.$watch('step', () => this.planifierSauvegarde());
+            // Retour du réseau : la copie locale part au serveur.
+            window.addEventListener('online', () => this.sauvegarderBrouillon());
         },
 
         // Valeurs à conserver : état Alpine + champs non liés (campagne, période).
@@ -104,7 +108,13 @@
                 if (!reponse.ok) throw new Error();
                 const { enregistre_le } = await reponse.json();
                 this.brouillonStatut = 'Brouillon enregistré à ' + new Date(enregistre_le).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-            } catch (e) { this.brouillonStatut = 'Brouillon non enregistré (connexion ?)'; }
+                window.BrouillonLocal?.effacer('demande'); // le serveur a la saisie : la copie locale ne sert plus
+            } catch (e) {
+                // Pas de réseau : la saisie est gardée sur l'appareil, elle repartira au retour de la connexion.
+                this.brouillonStatut = window.BrouillonLocal?.sauver('demande', this.instantane())
+                    ? 'Hors ligne : brouillon gardé sur cet appareil'
+                    : 'Brouillon non enregistré (connexion ?)';
+            }
         },
 
         reprendreBrouillon() {
@@ -126,6 +136,7 @@
 
         async ignorerBrouillon() {
             this.brouillonPropose = null;
+            window.BrouillonLocal?.effacer('demande');
             await fetch(`{{ route('demandes.brouillon.destroy') }}`, {
                 method: 'DELETE', headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
             });
@@ -254,6 +265,7 @@
 
         <form method="POST" action="{{ route('demandes.store') }}" enctype="multipart/form-data"
               @input="planifierSauvegarde()" @change="planifierSauvegarde()"
+              @submit="if (!navigator.onLine) { $event.preventDefault(); sauvegarderBrouillon(); alert('Vous êtes hors ligne : la demande est gardée sur cet appareil. Envoyez-la quand la connexion sera revenue.'); }"
               class="bg-white rounded-xl shadow-sm border border-slate-200">
             @csrf
 

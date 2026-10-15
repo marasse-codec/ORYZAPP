@@ -21,6 +21,9 @@ return Application::configure(basePath: dirname(__DIR__))
         // le contrôle de santé de l'hébergeur doit pourtant continuer à répondre.
         $middleware->preventRequestsDuringMaintenance(except: ['up']);
 
+        // Un compte désactivé ne garde pas sa session ouverte.
+        $middleware->appendToGroup('web', \App\Http\Middleware\CompteActif::class);
+
         $middleware->alias([
             'permission' => PermissionMiddleware::class,
         ]);

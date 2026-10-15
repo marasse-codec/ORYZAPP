@@ -4,13 +4,21 @@ namespace App\Domain\Referentiel\Models;
 
 use App\Domain\Demande\Models\Demande;
 use App\Domain\Shared\Contracts\EstUtilisable;
+use App\Domain\Shared\Exceptions\RegleMetierViolee;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Table;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable('lib_campagne','mois_debut_campagne','mois_fin_campagne')]
+#[Fillable([
+    'lib_campagne', 'mois_debut_campagne', 'mois_fin_campagne',
+    // v2 : objectifs et clôture
+    'objectif_taux_attribution', 'objectif_taux_traitement', 'objectif_taux_recouvrement', 'objectif_delai_arbitrage',
+    'cloturee_le', 'id_user_cloture',
+])]
 #[Table('campagnes')]
 class Campagne extends Model implements EstUtilisable
 {
@@ -20,7 +28,12 @@ class Campagne extends Model implements EstUtilisable
 
     protected $casts = [
         'mois_debut_campagne' => 'date',
-        'mois_fin_campagne' => 'date'
+        'mois_fin_campagne' => 'date',
+        'objectif_taux_attribution' => 'float',
+        'objectif_taux_traitement' => 'float',
+        'objectif_taux_recouvrement' => 'float',
+        'objectif_delai_arbitrage' => 'integer',
+        'cloturee_le' => 'datetime',
     ];
     
     /**
@@ -34,6 +47,43 @@ class Campagne extends Model implements EstUtilisable
             ->orderByDesc('mois_debut_campagne')
             ->first()
             ?? self::orderByDesc('mois_debut_campagne')->first();
+    }
+
+    /** Les campagnes encore ouvertes : seules elles acceptent de nouvelles demandes. */
+    public function scopeOuvertes($query)
+    {
+        return $query->whereNull('cloturee_le');
+    }
+
+    /** Qui a clôturé la campagne. */
+    public function clotureePar(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'id_user_cloture', 'id');
+    }
+
+    /** Une campagne clôturée est figée : ses chiffres ne bougent plus. */
+    public function estCloturee(): bool
+    {
+        return $this->cloturee_le !== null;
+    }
+
+    /**
+     * Refuse une opération sur une campagne clôturée, en disant pourquoi.
+     * Appelée par chaque cas d'usage qui modifie une demande, une attribution ou un rendement.
+     */
+    public function exigerOuverte(string $operation): void
+    {
+        if ($this->estCloturee()) {
+            throw new RegleMetierViolee("La campagne « {$this->lib_campagne} » est clôturée : {$operation} n'est plus possible.");
+        }
+    }
+
+    /** Même contrôle à partir d'un identifiant (utile quand on n'a que l'id de la demande). */
+    public static function exigerOuverteParId(int|string|null $idCampagne, string $operation): void
+    {
+        if ($idCampagne !== null) {
+            self::find($idCampagne)?->exigerOuverte($operation);
+        }
     }
 
     public function demandes() : HasMany {

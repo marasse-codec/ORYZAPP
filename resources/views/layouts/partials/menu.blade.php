@@ -7,6 +7,10 @@
 
 <x-ui.menu-lien :href="route('dashboard')" icone="space_dashboard" :actif="request()->routeIs('dashboard')">Tableau de bord</x-ui.menu-lien>
 
+@can(PermissionEnum::voirPilotage->value)
+    <x-ui.menu-lien :href="route('pilotage.index')" icone="speed" :actif="request()->routeIs('pilotage.*')">Pilotage</x-ui.menu-lien>
+@endcan
+
 <x-ui.menu-groupe titre="Demandes" icone="assignment" :ouvert="request()->routeIs('demandes.*')">
     @can(PermissionEnum::creerDemande->value)
         <x-ui.menu-lien :href="route('demandes.create')" :actif="request()->routeIs('demandes.create')">Nouvelle demande</x-ui.menu-lien>
@@ -49,8 +53,15 @@
     @endcan
 </x-ui.menu-groupe>
 
+@can(PermissionEnum::gererReglements->value)
+    <x-ui.menu-lien :href="route('reglements.index')" icone="payments" :actif="request()->routeIs('reglements.*')">Règlements</x-ui.menu-lien>
+@endcan
+
 @can(PermissionEnum::voirStatistiques->value)
-    <x-ui.menu-lien :href="route('statistiques.index')" icone="monitoring" :actif="request()->routeIs('statistiques.*')">Statistiques</x-ui.menu-lien>
+    <x-ui.menu-groupe titre="Statistiques" icone="monitoring" :ouvert="request()->routeIs('statistiques.*')">
+        <x-ui.menu-lien :href="route('statistiques.index')" :actif="request()->routeIs('statistiques.index')">Par campagne</x-ui.menu-lien>
+        <x-ui.menu-lien :href="route('statistiques.comparaison')" :actif="request()->routeIs('statistiques.comparaison')">Comparer les campagnes</x-ui.menu-lien>
+    </x-ui.menu-groupe>
 @endcan
 
 @hasrole(RoleEnum::admin->value)

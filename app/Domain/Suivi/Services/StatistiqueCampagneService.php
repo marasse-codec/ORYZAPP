@@ -5,6 +5,8 @@ namespace App\Domain\Suivi\Services;
 use App\Domain\Demande\Enums\StatutDemandeE;
 use App\Domain\Demande\Models\Demande;
 use App\Domain\Referentiel\Models\Campagne;
+use App\Domain\Suivi\Support\FiltreStatistique;
+use App\Domain\Suivi\Support\Objectif;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -19,15 +21,33 @@ use Illuminate\Support\Facades\DB;
  * Périmètre : les demandes soumises (un brouillon n'est pas une demande à
  * satisfaire) et rattachées à la campagne. Les dons directs, sans demande,
  * n'y figurent donc pas.
+ *
+ * Population statistique : les demandes soumises d'UNE campagne, éventuellement
+ * restreintes par un filtre (département, localité, type d'appui, type d'acteur,
+ * période). Chaque méthode reçoit la campagne et le filtre ; sans filtre, toute
+ * la campagne est prise.
+ *
+ * Les attributions annulées (suppression douce, colonne deleted_at) sont exclues
+ * de tous les calculs.
  */
 class StatistiqueCampagneService
 {
-    /** Demandes soumises de la campagne, en requête brute pour joindre à volonté. */
-    private function demandesSoumises(Campagne $campagne): Builder
+    /** Demandes soumises de la campagne (et du filtre), en requête brute pour joindre à volonté. */
+    private function demandesSoumises(Campagne $campagne, ?FiltreStatistique $filtre = null): Builder
     {
-        return DB::table('demandes')
+        $requete = DB::table('demandes')
             ->where('demandes.id_campagne', $campagne->id_campagne)
             ->whereNotNull('demandes.date_soummission');
+
+        return ($filtre ?? new FiltreStatistique)->appliquer($requete);
+    }
+
+    /** Les mêmes demandes, jointes à leur attribution encore valable (non annulée). */
+    private function demandesAttribuees(Campagne $campagne, ?FiltreStatistique $filtre = null): Builder
+    {
+        return $this->demandesSoumises($campagne, $filtre)
+            ->join('attributions', 'attributions.id_demande', '=', 'demandes.id_demande')
+            ->whereNull('attributions.deleted_at');
     }
 
     /**
@@ -35,18 +55,17 @@ class StatistiqueCampagneService
      *
      * @return array{soumises: int, attribuees: int, rejetees: int, taux_attribution: ?float, beneficiaires: int, delai_arbitrage: ?float, delai_retrait: ?float, superficie_concernee: float, superficie_traitee: float, taux_traitement: ?float}
      */
-    public function indicateurs(Campagne $campagne): array
+    public function indicateurs(Campagne $campagne, ?FiltreStatistique $filtre = null): array
     {
-        $parStatut = $this->parStatut($campagne);
+        $parStatut = $this->parStatut($campagne, $filtre);
 
         $soumises = array_sum($parStatut) - $parStatut[StatutDemandeE::brouillon->value];
         $attribuees = $parStatut[StatutDemandeE::recu_attribution->value];
 
-        $attributions = $this->demandesSoumises($campagne)
-            ->join('attributions', 'attributions.id_demande', '=', 'demandes.id_demande')
+        $attributions = $this->demandesAttribuees($campagne, $filtre)
             ->get(['demandes.id_acteur', 'demandes.date_soummission', 'attributions.created_at', 'attributions.date_destockage']);
 
-        $superficies = $this->superficiesParEcologie($campagne);
+        $superficies = $this->superficiesParEcologie($campagne, $filtre);
         $concernee = (float) $superficies->sum('concernee');
         $traitee = (float) $superficies->sum('traitee');
 
@@ -70,16 +89,15 @@ class StatistiqueCampagneService
      *
      * @return Collection<string, array{concernee: float, traitee: float}> libellé de l'écologie => hectares
      */
-    public function superficiesParEcologie(Campagne $campagne): Collection
+    public function superficiesParEcologie(Campagne $campagne, ?FiltreStatistique $filtre = null): Collection
     {
-        $concernees = $this->demandesSoumises($campagne)
+        $concernees = $this->demandesSoumises($campagne, $filtre)
             ->join('systemes_productions', 'systemes_productions.id_demande', '=', 'demandes.id_demande')
             ->groupBy('systemes_productions.id_type_systeme_production')
             ->selectRaw('systemes_productions.id_type_systeme_production AS id_type, SUM(systemes_productions.superficie) AS total')
             ->pluck('total', 'id_type');
 
-        $traitees = $this->demandesSoumises($campagne)
-            ->join('attributions', 'attributions.id_demande', '=', 'demandes.id_demande')
+        $traitees = $this->demandesAttribuees($campagne, $filtre)
             ->join('attributions_systemes_productions', 'attributions_systemes_productions.id_attribution', '=', 'attributions.id_attribution')
             ->groupBy('attributions_systemes_productions.id_type_systeme_production')
             ->selectRaw('attributions_systemes_productions.id_type_systeme_production AS id_type, SUM(attributions_systemes_productions.superficie_traitee) AS total')
@@ -101,9 +119,9 @@ class StatistiqueCampagneService
      *
      * @return Collection<string, array{rendement: ?float, production: float, recoltee: float, renseignees: int, declarees: int}>
      */
-    public function rendementsParEcologie(Campagne $campagne): Collection
+    public function rendementsParEcologie(Campagne $campagne, ?FiltreStatistique $filtre = null): Collection
     {
-        $lignes = $this->demandesSoumises($campagne)
+        $lignes = $this->demandesSoumises($campagne, $filtre)
             ->join('systemes_productions', 'systemes_productions.id_demande', '=', 'demandes.id_demande')
             ->leftJoin('rendements', 'rendements.id_systeme_production', '=', 'systemes_productions.id_systeme_production')
             ->groupBy('systemes_productions.id_type_systeme_production')
@@ -134,10 +152,11 @@ class StatistiqueCampagneService
      *
      * @return array<int, int> valeur de StatutDemandeE => total
      */
-    public function parStatut(Campagne $campagne): array
+    public function parStatut(Campagne $campagne, ?FiltreStatistique $filtre = null): array
     {
-        $comptes = Demande::query()
-            ->where('id_campagne', $campagne->id_campagne)
+        $requete = Demande::query()->where('demandes.id_campagne', $campagne->id_campagne);
+
+        $comptes = ($filtre ?? new FiltreStatistique)->appliquer($requete)
             ->selectRaw(Demande::statutSql().' AS code_statut, COUNT(*) AS total')
             ->groupBy('code_statut')
             ->pluck('total', 'code_statut');
@@ -153,18 +172,17 @@ class StatistiqueCampagneService
      *
      * @return Collection<int, array{appui: string, demandee: float, attribuee: float, taux: ?float}>
      */
-    public function satisfactionParAppui(Campagne $campagne): Collection
+    public function satisfactionParAppui(Campagne $campagne, ?FiltreStatistique $filtre = null): Collection
     {
         // Deux agrégats séparés, puis fusionnés : les joindre ferait multiplier les lignes.
-        $demandees = $this->demandesSoumises($campagne)
+        $demandees = $this->demandesSoumises($campagne, $filtre)
             ->join('lignes_demandes', 'lignes_demandes.id_demande', '=', 'demandes.id_demande')
             ->whereNotNull('lignes_demandes.id_appui')
             ->groupBy('lignes_demandes.id_appui')
             ->selectRaw('lignes_demandes.id_appui AS id_appui, SUM(lignes_demandes.quantite_demandee) AS total')
             ->pluck('total', 'id_appui');
 
-        $attribuees = $this->demandesSoumises($campagne)
-            ->join('attributions', 'attributions.id_demande', '=', 'demandes.id_demande')
+        $attribuees = $this->demandesAttribuees($campagne, $filtre)
             ->join('lignes_attributions', 'lignes_attributions.id_attribution', '=', 'attributions.id_attribution')
             ->groupBy('lignes_attributions.id_appui')
             ->selectRaw('lignes_attributions.id_appui AS id_appui, SUM(lignes_attributions.quantite_attribuee) AS total')
@@ -195,9 +213,9 @@ class StatistiqueCampagneService
      *
      * @return Collection<string, int> localité => nombre de demandes
      */
-    public function parLocalite(Campagne $campagne, int $limite = 10): Collection
+    public function parLocalite(Campagne $campagne, ?FiltreStatistique $filtre = null, int $limite = 10): Collection
     {
-        return $this->demandesSoumises($campagne)
+        return $this->demandesSoumises($campagne, $filtre)
             ->join('demandes_localites', 'demandes_localites.id_demande', '=', 'demandes.id_demande')
             ->join('localites', 'localites.id_localite', '=', 'demandes_localites.id_localite')
             ->groupBy('localites.id_localite', 'localites.lib_localite')
@@ -214,17 +232,16 @@ class StatistiqueCampagneService
      *
      * @return Collection<string, array{demandees: int, servies: int}>
      */
-    public function parTypeAppui(Campagne $campagne): Collection
+    public function parTypeAppui(Campagne $campagne, ?FiltreStatistique $filtre = null): Collection
     {
-        $demandees = $this->demandesSoumises($campagne)
+        $demandees = $this->demandesSoumises($campagne, $filtre)
             ->join('lignes_demandes', 'lignes_demandes.id_demande', '=', 'demandes.id_demande')
             ->join('types_appuis', 'types_appuis.id_type_appui', '=', 'lignes_demandes.id_type_appui')
             ->groupBy('types_appuis.id_type_appui', 'types_appuis.lib_type_appui')
             ->selectRaw('types_appuis.lib_type_appui AS type, COUNT(DISTINCT demandes.id_demande) AS total')
             ->pluck('total', 'type');
 
-        $servies = $this->demandesSoumises($campagne)
-            ->join('attributions', 'attributions.id_demande', '=', 'demandes.id_demande')
+        $servies = $this->demandesAttribuees($campagne, $filtre)
             ->join('lignes_attributions', 'lignes_attributions.id_attribution', '=', 'attributions.id_attribution')
             ->join('appuis', 'appuis.id_appui', '=', 'lignes_attributions.id_appui')
             ->join('types_appuis', 'types_appuis.id_type_appui', '=', 'appuis.id_type_appui')
@@ -244,15 +261,75 @@ class StatistiqueCampagneService
      *
      * @return Collection<string, int> type d'acteur => nombre de demandes attribuées
      */
-    public function parTypeActeur(Campagne $campagne): Collection
+    public function parTypeActeur(Campagne $campagne, ?FiltreStatistique $filtre = null): Collection
     {
-        return $this->demandesSoumises($campagne)
-            ->join('attributions', 'attributions.id_demande', '=', 'demandes.id_demande')
+        return $this->demandesAttribuees($campagne, $filtre)
             ->join('types_acteurs', 'types_acteurs.id_type_acteur', '=', 'demandes.id_type_acteur')
             ->groupBy('types_acteurs.id_type_acteur', 'types_acteurs.lib_type_acteur')
             ->orderByDesc('total')
             ->selectRaw('types_acteurs.lib_type_acteur AS type, COUNT(DISTINCT demandes.id_demande) AS total')
             ->pluck('total', 'type');
+    }
+
+    /**
+     * L'argent de la campagne : ce que valent les attributions (engagé), ce qui est
+     * dû une fois les résultats publiés, ce qui est encaissé, et le taux de
+     * recouvrement (encaissé ÷ dû).
+     *
+     * Montant d'une ligne = quantité × coût unitaire × (1 − remise %), comme
+     * LigneAttribution::montant(). Les paiements se somment à part : les joindre
+     * aux lignes compterait chaque paiement autant de fois qu'il y a de lignes.
+     *
+     * @return array{engage: float, du: float, encaisse: float, reste: float, taux_recouvrement: ?float}
+     */
+    public function finances(Campagne $campagne, ?FiltreStatistique $filtre = null): array
+    {
+        $montantLigne = 'lignes_attributions.quantite_attribuee * COALESCE(lignes_attributions.cout_attribution, 0) * (1 - COALESCE(lignes_attributions.remise, 0) / 100.0)';
+
+        $montants = $this->demandesAttribuees($campagne, $filtre)
+            ->join('lignes_attributions', 'lignes_attributions.id_attribution', '=', 'attributions.id_attribution')
+            ->selectRaw("COALESCE(SUM({$montantLigne}), 0) AS engage")
+            ->selectRaw("COALESCE(SUM(CASE WHEN attributions.date_publication IS NOT NULL THEN {$montantLigne} ELSE 0 END), 0) AS du")
+            ->first();
+
+        $encaisse = (float) $this->demandesAttribuees($campagne, $filtre)
+            ->whereNotNull('attributions.date_publication')
+            ->join('paiements', 'paiements.id_attribution', '=', 'attributions.id_attribution')
+            ->sum('paiements.montant');
+
+        $du = round((float) $montants->du, 2);
+
+        return [
+            'engage' => round((float) $montants->engage, 2),
+            'du' => $du,
+            'encaisse' => round($encaisse, 2),
+            'reste' => round(max(0, $du - $encaisse), 2),
+            'taux_recouvrement' => $du > 0 ? round($encaisse / $du * 100, 1) : null,
+        ];
+    }
+
+    /**
+     * Les objectifs fixés pour la campagne, chacun comparé au réalisé.
+     * Un objectif laissé vide par l'administrateur n'apparaît pas.
+     *
+     * @param  array<string, mixed>  $indicateurs  résultat de indicateurs()
+     * @param  array<string, mixed>  $finances  résultat de finances()
+     * @return array<int, Objectif>
+     */
+    public function objectifs(Campagne $campagne, array $indicateurs, array $finances): array
+    {
+        $possibles = [
+            [$campagne->objectif_taux_attribution, "Taux d'attribution", $indicateurs['taux_attribution'], '%', true],
+            [$campagne->objectif_taux_traitement, 'Superficie traitée', $indicateurs['taux_traitement'], '%', true],
+            [$campagne->objectif_taux_recouvrement, 'Taux de recouvrement', $finances['taux_recouvrement'], '%', true],
+            [$campagne->objectif_delai_arbitrage, 'Délai soumission → arbitrage', $indicateurs['delai_arbitrage'], 'j', false],
+        ];
+
+        return collect($possibles)
+            ->filter(fn (array $o) => $o[0] !== null)
+            ->map(fn (array $o) => new Objectif($o[1], (float) $o[0], $o[2] === null ? null : (float) $o[2], $o[3], $o[4]))
+            ->values()
+            ->all();
     }
 
     /**

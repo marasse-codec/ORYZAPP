@@ -2,10 +2,10 @@
 
 namespace App\Http\Requests\Demande;
 
-use App\Http\Requests\Concerns\ReglesNumeriques;
-
 use App\Domain\Demande\Models\Acteur;
+
 use App\Domain\Stock\Models\Appui;
+use App\Http\Requests\Concerns\ReglesNumeriques;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Validator;
 
@@ -18,9 +18,10 @@ class StoreDemandeSerieRequest extends FormRequest
     /** Au-delà, la saisie se découpe : une requête de taille raisonnable, une transaction raisonnable. */
     public const MAX_ACTEURS = 200;
 
+    /** La direction et la comptabilité consultent sans saisir de demande (cf. RoleEnum::peutSaisirDesDemandes). */
     public function authorize(): bool
     {
-        return true;
+        return $this->user()?->roleEnum()?->peutSaisirDesDemandes() ?? true;
     }
 
     /** Lignes vides écartées ; téléphone ramené à ses chiffres (« 07 01 02 03 04 » devient « 0701020304 »). */

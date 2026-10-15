@@ -8,9 +8,10 @@ use Illuminate\Foundation\Http\FormRequest;
 
 class StoreDemandeRequest extends FormRequest
 {
+    /** La direction et la comptabilité consultent sans saisir de demande (cf. RoleEnum::peutSaisirDesDemandes). */
     public function authorize(): bool
     {
-        return true;
+        return $this->user()?->roleEnum()?->peutSaisirDesDemandes() ?? true;
     }
 
     public function rules(): array
