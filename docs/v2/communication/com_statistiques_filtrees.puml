@@ -1,0 +1,19 @@
+@startuml com_statistiques_filtrees
+title Communication : statistiques filtrées d'une campagne
+!include style_communication.puml
+left to right direction
+
+actor "Directeur /\nAdministrateur" as Utilisateur
+rectangle "<u>:StatistiqueController</u>" as Controleur
+rectangle "<u>:StatistiqueRequest</u>" as Requete
+rectangle "<u>filtre:FiltreStatistique</u>" as Filtre
+rectangle "<u>:StatistiqueCampagneService</u>" as Stats
+database "Base de données" as BD
+
+Utilisateur --> Controleur : 1: GET /statistiques?campagne&localite&du…
+Controleur --> Requete : 1.1: valider les paramètres
+Requete --> Filtre : 1.2: depuis(paramètres validés)
+Controleur --> Stats : 1.3: indicateurs(campagne, filtre)\nfinances(), parStatut()…
+Stats --> Filtre : 1.3.1: appliquer(requête sur demandes)
+Stats --> BD : 1.3.2: SELECT COUNT / SUM … GROUP BY\nWHERE EXISTS (localité, type d'appui)
+@enduml

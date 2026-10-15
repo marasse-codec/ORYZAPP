@@ -4,7 +4,8 @@
 
 @php
     use App\Domain\Acces\Enums\PermissionEnum;
-    $nombre = fn ($v, $d = 0) => $v === null ? '-' : number_format($v, $d, ',', ' ');
+    // Une valeur avec son unité ; « - » seul quand il n'y a pas de donnée.
+    $nombre = fn ($v, $d = 0, $unite = '') => $v === null ? '-' : trim(number_format($v, $d, ',', ' ').' '.$unite);
     // L'évolution par rapport à la campagne précédente, en petit sous le chiffre.
     $evolution = function (string $cle) use ($tableau) {
         $valeur = $tableau['evolutions'][$cle] ?? null;
@@ -59,13 +60,13 @@
         {{-- Activité, avec l'évolution par rapport à la campagne précédente --}}
         <section class="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
             <x-ui.stat libelle="Demandes soumises" :valeur="$i['soumises']" :indice="$evolution('soumises')" />
-            <x-ui.stat libelle="Taux d'attribution" :valeur="$nombre($i['taux_attribution'], 1).' %'" :indice="$evolution('taux_attribution')" />
+            <x-ui.stat libelle="Taux d'attribution" :valeur="$nombre($i['taux_attribution'], 1, '%')" :indice="$evolution('taux_attribution')" />
             <x-ui.stat libelle="Bénéficiaires servis" :valeur="$i['beneficiaires']" :indice="$evolution('beneficiaires')" />
-            <x-ui.stat libelle="Superficie traitée" :valeur="$nombre($i['superficie_traitee'], 1).' ha'" :indice="$evolution('superficie_traitee')" />
-            <x-ui.stat libelle="Délai soumission → arbitrage" :valeur="$nombre($i['delai_arbitrage'], 1).' j'" :indice="$evolution('delai_arbitrage')" />
-            <x-ui.stat libelle="Délai arbitrage → retrait" :valeur="$nombre($i['delai_retrait'], 1).' j'" />
-            <x-ui.stat libelle="Montant dû" :valeur="$nombre($f['du']).' F'" :indice="$evolution('du')" />
-            <x-ui.stat libelle="Taux de recouvrement" :valeur="$nombre($f['taux_recouvrement'], 1).' %'" :indice="$evolution('taux_recouvrement')" />
+            <x-ui.stat libelle="Superficie traitée" :valeur="$nombre($i['superficie_traitee'], 1, 'ha')" :indice="$evolution('superficie_traitee')" />
+            <x-ui.stat libelle="Délai soumission → arbitrage" :valeur="$nombre($i['delai_arbitrage'], 1, 'j')" :indice="$evolution('delai_arbitrage')" />
+            <x-ui.stat libelle="Délai arbitrage → retrait" :valeur="$nombre($i['delai_retrait'], 1, 'j')" />
+            <x-ui.stat libelle="Montant dû" :valeur="$nombre($f['du'], 0, 'F')" :indice="$evolution('du')" />
+            <x-ui.stat libelle="Taux de recouvrement" :valeur="$nombre($f['taux_recouvrement'], 1, '%')" :indice="$evolution('taux_recouvrement')" />
         </section>
 
         <div class="flex flex-wrap gap-2">

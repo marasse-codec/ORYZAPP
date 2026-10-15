@@ -1,0 +1,17 @@
+@startuml com_saisie_hors_ligne
+title Communication : saisie d'une demande hors ligne
+!include style_communication.puml
+left to right direction
+
+actor "Délégué de pôle" as DP
+rectangle "<u>:Formulaire de demande\n(navigateur, Alpine)</u>" as Formulaire
+rectangle "<u>:ServiceWorker (sw.js)</u>" as SW
+rectangle "<u>:BrouillonLocal\n(localStorage)</u>" as Local
+rectangle "<u>:BrouillonDemandeController</u>" as Serveur
+
+DP --> SW : 1: ouvrir /demandes/create\n(sans réseau)
+SW --> Formulaire : 1.1: servir la copie gardée\n(sinon hors-ligne.html)
+DP --> Formulaire : 2: saisir
+Formulaire --> Serveur : 2.1: PUT /demandes/brouillon (échoue)\n3: [événement « online »] PUT /demandes/brouillon
+Formulaire --> Local : 2.2: sauver('demande', saisie)\n3.1: effacer('demande')
+@enduml

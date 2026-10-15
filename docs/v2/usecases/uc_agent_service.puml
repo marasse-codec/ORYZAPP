@@ -1,0 +1,20 @@
+@startuml uc_agent_service
+title Cas d'utilisation : Agent de service
+!include ../style.puml
+left to right direction
+
+actor "Agent de service" as Service
+
+rectangle "<b>Plateforme ORYZA</b>" {
+    usecase "S'authentifier" as UC_Auth
+    usecase "Consulter les demandes\nde son service" as UC_Demandes
+    usecase "Consulter la chronologie\nd'un dossier" as UC_Chrono $NOUVEAU
+    usecase "Télécharger l'état\ndes stocks de ses appuis" as UC_Stocks
+}
+
+Service --> UC_Demandes
+Service --> UC_Stocks
+UC_Chrono .> UC_Demandes : <<extend>>
+UC_Demandes ..> UC_Auth : <<include>>
+UC_Stocks ..> UC_Auth : <<include>>
+@enduml

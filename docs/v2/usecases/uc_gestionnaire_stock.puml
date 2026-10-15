@@ -1,0 +1,29 @@
+@startuml uc_gestionnaire_stock
+title Cas d'utilisation : Gestionnaire de stock
+!include ../style.puml
+left to right direction
+
+actor "Gestionnaire de stock" as Stock
+
+rectangle "<b>Plateforme ORYZA</b>" {
+    usecase "S'authentifier" as UC_Auth
+    usecase "Enregistrer un\napprovisionnement" as UC_Appro
+    usecase "Enregistrer un enlèvement\n(retrait d'un bon)" as UC_Enlever
+    usecase "Enregistrer la restitution\nd'un équipement" as UC_Restituer
+    usecase "Gérer le catalogue\ndes appuis" as UC_Catalogue
+    usecase "Consulter les mouvements\nde stock" as UC_Mouvements
+}
+
+Stock --> UC_Appro
+Stock --> UC_Enlever
+Stock --> UC_Restituer
+Stock --> UC_Catalogue
+Stock --> UC_Mouvements
+UC_Appro ..> UC_Auth : <<include>>
+UC_Enlever ..> UC_Auth : <<include>>
+
+note bottom of UC_Catalogue
+  v2 : chaque changement de prix, de dose
+  ou de seuil est noté au journal (avant → après).
+end note
+@enduml

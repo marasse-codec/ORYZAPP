@@ -1,0 +1,22 @@
+@startuml com_consulter_pilotage
+title Communication : le directeur consulte le tableau de pilotage
+!include style_communication.puml
+left to right direction
+
+actor "Directeur" as Directeur
+rectangle "<u>:PilotageController</u>" as Controleur
+rectangle "<u>:PilotageService</u>" as Pilotage
+rectangle "<u>:StatistiqueCampagneService</u>" as Stats
+rectangle "<u>:ComparaisonCampagnesService</u>" as Comparaison
+rectangle "<u>:StatistiqueService</u>" as Suivi
+rectangle "<u>:ReglementService</u>" as Reglements
+rectangle "<u>campagne:Campagne</u>" as Campagne
+
+Directeur --> Controleur : 1: GET /pilotage?campagne=…
+Controleur --> Pilotage : 1.1: tableau(campagne)
+Pilotage --> Stats : 1.1.1: indicateurs(), finances()\n1.1.2: objectifs(campagne, indicateurs, finances)
+Pilotage --> Campagne : 1.1.3: precedente()
+Pilotage --> Comparaison : 1.1.4: valeurs() + evolution()\n(campagne et précédente)
+Pilotage --> Suivi : 1.1.5: stock() (alertes de seuil)
+Pilotage --> Reglements : 1.1.6: acteursEnImpaye()
+@enduml

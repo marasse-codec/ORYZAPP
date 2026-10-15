@@ -1,0 +1,44 @@
+@startuml uc_administrateur
+title Cas d'utilisation : Administrateur
+!include ../style.puml
+left to right direction
+
+actor "Administrateur" as Admin
+
+rectangle "<b>Plateforme ORYZA</b>" {
+    usecase "S'authentifier" as UC_Auth
+
+    usecase "Gérer les comptes\n(créer, modifier)" as UC_Comptes
+    usecase "Désactiver / réactiver\nun compte" as UC_Desactiver $NOUVEAU
+    usecase "Modifier les droits\nd'un rôle" as UC_Droits $NOUVEAU
+    usecase "Régler les paramètres\ngénéraux" as UC_Parametres $NOUVEAU
+    usecase "Gérer les référentiels" as UC_Referentiels
+    usecase "Fixer les objectifs\nd'une campagne" as UC_Objectifs $NOUVEAU
+    usecase "Clôturer / rouvrir\nune campagne" as UC_Cloture $NOUVEAU
+    usecase "Consulter la santé\ndu système" as UC_Sante $NOUVEAU
+    usecase "Consulter le journal\ndes actions" as UC_Journal
+    usecase "Gérer les sauvegardes" as UC_Sauvegardes
+}
+
+Admin --> UC_Comptes
+Admin --> UC_Droits
+Admin --> UC_Parametres
+Admin --> UC_Referentiels
+Admin --> UC_Cloture
+Admin --> UC_Sante
+Admin --> UC_Journal
+Admin --> UC_Sauvegardes
+
+UC_Desactiver .> UC_Comptes : <<extend>>
+UC_Objectifs .> UC_Referentiels : <<extend>>
+
+UC_Comptes ..> UC_Auth : <<include>>
+UC_Droits ..> UC_Auth : <<include>>
+UC_Parametres ..> UC_Auth : <<include>>
+UC_Cloture ..> UC_Auth : <<include>>
+
+note right of Admin
+  L'administrateur a aussi tous les droits
+  des autres rôles (statistiques, règlements…).
+end note
+@enduml

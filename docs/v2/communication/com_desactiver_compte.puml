@@ -1,0 +1,24 @@
+@startuml com_desactiver_compte
+title Communication : désactiver un compte puis tentative de connexion
+!include style_communication.puml
+left to right direction
+
+actor "Administrateur" as Admin
+actor "Agent désactivé" as Agent
+rectangle "<u>:UserResource</u>" as Ecran
+rectangle "<u>:CompteService</u>" as Service
+rectangle "<u>agent:User</u>" as User
+rectangle "<u>:Session (table sessions)</u>" as Sessions
+rectangle "<u>:LoginRequest</u>" as Login
+rectangle "<u>:JournalAction</u>" as Journal
+
+Admin --> Ecran : 1: « Désactiver » (motif)
+Ecran --> Service : 1.1: desactiver(agent, motif)
+Service --> User : 1.1.1: refuser si soi-même ou dernier admin actif\n1.1.2: update(actif = faux, desactive_le)
+Service --> Sessions : 1.1.3: supprimer ses sessions ouvertes
+Service --> Journal : 1.1.4: enregistrer(COMPTE_DESACTIVE)
+
+Agent --> Login : 2: POST /login
+Login --> User : 2.1: estActif() ? non
+Login --> Journal : 2.2: consigner(CONNEXION_ECHOUEE,\nmotif « compte désactivé »)
+@enduml

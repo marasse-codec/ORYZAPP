@@ -1,0 +1,13 @@
+' Diagrammes de communication (UML 2) : les objets sont reliés par des liens,
+' et les messages sont numérotés dans l'ordre où ils sont envoyés (1, 1.1, 2…).
+!include ../style.puml
+skinparam linetype polyline
+skinparam rectangle {
+    BackgroundColor #F7FAFC
+    BorderColor #1A202C
+    FontColor #1A202C
+    FontStyle normal
+    BorderThickness 2
+}
+skinparam ArrowColor #2D3748
+skinparam ArrowFontSize 11

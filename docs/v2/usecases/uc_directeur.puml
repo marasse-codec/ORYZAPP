@@ -1,0 +1,28 @@
+@startuml uc_directeur
+title Cas d'utilisation : Directeur (nouveau rôle, lecture seule)
+!include ../style.puml
+left to right direction
+
+actor "Directeur" as Directeur
+
+rectangle "<b>Plateforme ORYZA</b>" {
+    usecase "S'authentifier" as UC_Auth
+    usecase "Consulter le tableau\nde pilotage" as UC_Pilotage $NOUVEAU
+    usecase "Consulter les statistiques\nd'une campagne" as UC_Stats
+    usecase "Filtrer les statistiques\n(lieu, type, période)" as UC_Filtrer $NOUVEAU
+    usecase "Comparer les campagnes" as UC_Comparer $NOUVEAU
+    usecase "Télécharger le rapport\nde campagne (PDF)" as UC_Rapport $NOUVEAU
+    usecase "Consulter l'état des stocks" as UC_Stocks
+}
+
+Directeur --> UC_Pilotage
+Directeur --> UC_Stats
+Directeur --> UC_Comparer
+Directeur --> UC_Rapport
+Directeur --> UC_Stocks
+
+UC_Filtrer .> UC_Stats : <<extend>>
+UC_Filtrer .> UC_Comparer : <<extend>>
+UC_Pilotage ..> UC_Auth : <<include>>
+UC_Stats ..> UC_Auth : <<include>>
+@enduml

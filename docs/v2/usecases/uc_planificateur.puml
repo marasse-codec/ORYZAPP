@@ -1,0 +1,29 @@
+@startuml uc_planificateur
+title Cas d'utilisation : Planificateur (acteur système)
+!include ../style.puml
+left to right direction
+
+actor "Planificateur\n(horloge)" as Horloge <<système>>
+
+rectangle "<b>Plateforme ORYZA</b>" {
+    usecase "Sauvegarder la base\net les pièces (2 h)" as UC_Sauver
+    usecase "Nettoyer les anciennes\nsauvegardes (2 h 30)" as UC_Nettoyer
+    usecase "Envoyer le résumé\nquotidien (7 h)" as UC_Resume
+    usecase "Envoyer les rappels\ndu lundi (8 h)" as UC_Rappels
+    usecase "Signaler son passage\n(chaque minute)" as UC_Battement $NOUVEAU
+}
+
+Horloge --> UC_Sauver
+Horloge --> UC_Nettoyer
+Horloge --> UC_Resume
+Horloge --> UC_Rappels
+Horloge --> UC_Battement
+
+note bottom of UC_Rappels
+  v2 : les délais viennent des paramètres
+  généraux réglés par l'administrateur.
+end note
+note bottom of UC_Battement
+  Lu par l'écran « Santé du système ».
+end note
+@enduml
