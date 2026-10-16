@@ -41,6 +41,7 @@ enum ActionJournalEnum: string
     case compteReactive = 'COMPTE_REACTIVE';
     case droitsModifies = 'DROITS_MODIFIES';
     case parametresModifies = 'PARAMETRES_MODIFIES';
+    case referentielCree = 'REFERENTIEL_CREE';
     case referentielModifie = 'REFERENTIEL_MODIFIE';
     case referentielSupprime = 'REFERENTIEL_SUPPRIME';
     case campagneCloturee = 'CAMPAGNE_CLOTUREE';
@@ -82,6 +83,7 @@ enum ActionJournalEnum: string
             self::compteReactive => 'Compte réactivé',
             self::droitsModifies => "Droits d'un rôle modifiés",
             self::parametresModifies => 'Paramètres généraux modifiés',
+            self::referentielCree => 'Élément de référentiel créé',
             self::referentielModifie => 'Référentiel modifié',
             self::referentielSupprime => 'Élément de référentiel supprimé',
             self::campagneCloturee => 'Campagne clôturée',

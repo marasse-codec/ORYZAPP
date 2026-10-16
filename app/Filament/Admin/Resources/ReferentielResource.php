@@ -8,6 +8,7 @@ use App\Domain\Journal\Models\JournalAction;
 use App\Domain\Journal\Support\Ecarts;
 use App\Domain\Shared\Contracts\EstUtilisable;
 use App\Domain\Shared\Exceptions\RegleMetierViolee;
+use Filament\Actions;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
@@ -15,6 +16,7 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\QueryException;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -25,8 +27,11 @@ use Illuminate\Support\Facades\DB;
  *  - réservé à l'administration ;
  *  - création et modification dans une fenêtre, sans page dédiée ;
  *  - suppression refusée, avec un message, quand l'élément est utilisé ;
- *  - chaque modification et suppression est notée au journal (valeurs avant/après) :
- *    un prix ou une dose changés restent retrouvables.
+ *  - chaque création, modification et suppression est notée au journal
+ *    (valeurs avant/après) : un prix ou une dose changés restent retrouvables ;
+ *  - un référentiel peut aussi porter des rattachements (tables de liaison,
+ *    ex. les pièces exigées d'un profil) : il les déclare avec
+ *    champsRattachements(), rattachementsActuels() et enregistrerRattachements().
  *
  * Seules des données de référence passent par ici. Les données transactionnelles
  * (demandes, attributions, stocks…) ne se modifient que par les cas d'usage du
@@ -41,6 +46,59 @@ abstract class ReferentielResource extends Resource
 
     /** @return array<int, \Filament\Tables\Columns\Column> */
     abstract protected static function colonnes(): array;
+
+    /**
+     * Les champs du formulaire qui ne sont pas des colonnes de l'élément mais
+     * des rattachements (lignes d'une table de liaison). Aucun par défaut.
+     *
+     * @return list<string>
+     */
+    protected static function champsRattachements(): array
+    {
+        return [];
+    }
+
+    /**
+     * Les rattachements actuels, pour pré-remplir la fenêtre de modification.
+     *
+     * @return array<string, mixed>
+     */
+    protected static function rattachementsActuels(Model $record): array
+    {
+        return [];
+    }
+
+    /**
+     * Enregistre les rattachements saisis et renvoie ce qui a changé, à noter au journal.
+     *
+     * @param  array<string, mixed>  $rattachements
+     * @return array<string, array{avant: mixed, apres: mixed}>
+     */
+    protected static function enregistrerRattachements(Model $record, array $rattachements): array
+    {
+        return [];
+    }
+
+    /** Bouton « Nouveau » des pages de référentiel : crée l'élément, ses rattachements, et le note au journal. */
+    public static function actionCreer(): Actions\CreateAction
+    {
+        return Actions\CreateAction::make()->using(fn (array $data) => static::creer($data));
+    }
+
+    /** @param  array<string, mixed>  $data  Les valeurs du formulaire. */
+    public static function creer(array $data): Model
+    {
+        return DB::transaction(function () use ($data) {
+            $record = static::getModel()::create(Arr::except($data, static::champsRattachements()));
+            $rattachements = static::enregistrerRattachements($record, Arr::only($data, static::champsRattachements()));
+
+            JournalAction::consigner(ActionJournalEnum::referentielCree, $record, [
+                'element' => static::getModelLabel(),
+            ] + $record->attributesToArray() + array_map(fn ($ecart) => $ecart['apres'], $rattachements));
+
+            return $record;
+        });
+    }
 
     public static function canViewAny(): bool
     {
@@ -66,19 +124,22 @@ abstract class ReferentielResource extends Resource
     /** Modifie l'élément et note au journal ce qui a changé (avant → après). */
     protected static function actionModifier(): Tables\Actions\EditAction
     {
-        return Tables\Actions\EditAction::make()->using(function (Model $record, array $data) {
-            return DB::transaction(function () use ($record, $data) {
-                $record->fill($data);
-                $ecarts = Ecarts::duModele($record);
-                $record->save();
+        return Tables\Actions\EditAction::make()
+            ->mutateRecordDataUsing(fn (array $data, Model $record) => $data + static::rattachementsActuels($record))
+            ->using(function (Model $record, array $data) {
+                return DB::transaction(function () use ($record, $data) {
+                    $record->fill(Arr::except($data, static::champsRattachements()));
+                    $ecarts = Ecarts::duModele($record);
+                    $record->save();
+                    $ecarts += static::enregistrerRattachements($record, Arr::only($data, static::champsRattachements()));
 
-                if ($ecarts !== []) {
-                    JournalAction::consigner(ActionJournalEnum::referentielModifie, $record, ['element' => static::getModelLabel()] + $ecarts);
-                }
+                    if ($ecarts !== []) {
+                        JournalAction::consigner(ActionJournalEnum::referentielModifie, $record, ['element' => static::getModelLabel()] + $ecarts);
+                    }
 
-                return $record;
+                    return $record;
+                });
             });
-        });
     }
 
     /**

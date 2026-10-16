@@ -3,7 +3,6 @@
 namespace App\Filament\Admin\Resources\DepartementResource\Pages;
 
 use App\Filament\Admin\Resources\DepartementResource;
-use Filament\Actions;
 use Filament\Resources\Pages\ManageRecords;
 
 class ManageDepartements extends ManageRecords
@@ -12,6 +11,6 @@ class ManageDepartements extends ManageRecords
 
     protected function getHeaderActions(): array
     {
-        return [Actions\CreateAction::make()];
+        return [static::getResource()::actionCreer()];
     }
 }

@@ -96,11 +96,11 @@ class StatistiqueController extends Controller
     {
         $filtre = $request->filtre();
 
-        // Les cycles cochés ; sinon tous les cycles de l'année choisie ; sinon les cinq plus récents.
+        // Les cycles cochés ; sinon tous les cycles de l'année choisie ; sinon les cinq plus récents déjà commencés.
         $choisies = match (true) {
             $request->filled('campagnes') => Campagne::whereIn('id_campagne', $request->input('campagnes'))->get(),
             $request->filled('annee') => Campagne::deLAnnee($request->integer('annee'))->get(),
-            default => Campagne::orderByDesc('mois_debut_campagne')->limit(5)->get(),
+            default => Campagne::commencees()->orderByDesc('mois_debut_campagne')->limit(5)->get(),
         };
 
         $lignes = $comparaison->comparer($choisies, $filtre);

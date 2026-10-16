@@ -45,8 +45,15 @@ class StatistiqueRequest extends FormRequest
 
         if ($annee !== null) {
             $enCours = Campagne::enCours();
+            $cycles = Campagne::deLAnnee($annee)->get();
 
-            return $enCours?->annee() === $annee ? $enCours : Campagne::deLAnnee($annee)->get()->last();
+            // L'année en cours : son cycle en cours. Une année passée : son dernier cycle.
+            // L'année à venir : son premier cycle, celui que l'on prépare.
+            return match (true) {
+                $enCours?->annee() === $annee => $enCours,
+                $cycles->isNotEmpty() && $cycles->first()->estAVenir() => $cycles->first(),
+                default => $cycles->last(),
+            };
         }
 
         return Campagne::enCours();

@@ -3,7 +3,6 @@
 namespace App\Filament\Admin\Resources\TypeAppuiResource\Pages;
 
 use App\Filament\Admin\Resources\TypeAppuiResource;
-use Filament\Actions;
 use Filament\Resources\Pages\ManageRecords;
 
 class ManageTypesAppuis extends ManageRecords
@@ -12,6 +11,6 @@ class ManageTypesAppuis extends ManageRecords
 
     protected function getHeaderActions(): array
     {
-        return [Actions\CreateAction::make()];
+        return [static::getResource()::actionCreer()];
     }
 }

@@ -38,6 +38,7 @@
                     <tr>
                         <th class="px-4 py-3">Demande</th>
                         <th class="px-4 py-3">Demandeur</th>
+                        <th class="px-4 py-3">Cycle visé</th>
                         <th class="px-4 py-3">Localités</th>
                         <th class="px-4 py-3 text-center">Appuis</th>
                         <th class="px-4 py-3 text-right"></th>
@@ -48,6 +49,12 @@
                         <tr class="hover:bg-slate-50">
                             <td class="px-4 py-3 font-medium text-[--color-ink]">DEM-{{ str_pad($demande->id_demande, 3, '0', STR_PAD_LEFT) }}</td>
                             <td class="px-4 py-3 text-slate-600">{{ $demande->acteur?->nom }}</td>
+                            <td class="px-4 py-3 text-slate-600">
+                                {{ $demande->campagne?->libelleComplet() ?? '-' }}
+                                @if ($demande->campagne?->estAVenir())
+                                    <x-ui.badge ton="bleu">à venir</x-ui.badge>
+                                @endif
+                            </td>
                             <td class="px-4 py-3 text-slate-600">{{ $demande->localites->pluck('lib_localite')->join(', ') ?: '-' }}</td>
                             <td class="px-4 py-3 text-center text-slate-600">{{ $demande->lignes->count() }}</td>
                             <td class="px-4 py-3 text-right">

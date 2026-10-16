@@ -17,20 +17,22 @@ class TypePieceSeeder extends Seeder
             4 => 'Demande-projet adressée à l\'ADERIZ',
             5 => 'Documents de constitution',
             6 => 'Plan de campagne',
+            7 => 'Scan de la demande écrite',
         ];
 
         foreach ($types as $id => $libelle) {
             TypePiece::create(['id_type_piece' => $id, 'lib_type_piece' => $libelle]);
         }
 
-        // Ce que chaque profil doit fournir. Le scan de la demande est exigé
-        // de tous ; le reste dépend de la forme juridique.
+        // Ce que chaque profil doit fournir. Le scan de la demande écrite est
+        // exigé de tous ; le reste dépend de la forme juridique.
+        // L'administration peut ensuite tout changer (Référentiels > Types de pièces).
         $exigences = [
-            1 => [6 => false],                                    // Producteur individuel
-            2 => [3 => true, 6 => false],                         // Groupement informel
-            3 => [1 => true, 3 => true, 2 => false, 6 => false],  // Coopérative
-            4 => [4 => true, 5 => true, 6 => false],              // Entreprise agricole
-            5 => [4 => true, 5 => true, 6 => false],              // ONG
+            1 => [7 => true, 6 => false],                                    // Producteur individuel
+            2 => [7 => true, 3 => true, 6 => false],                         // Groupement informel
+            3 => [7 => true, 1 => true, 3 => true, 2 => false, 6 => false],  // Coopérative
+            4 => [7 => true, 4 => true, 5 => true, 6 => false],              // Entreprise agricole
+            5 => [7 => true, 4 => true, 5 => true, 6 => false],              // ONG
         ];
 
         foreach ($exigences as $idTypeActeur => $pieces) {

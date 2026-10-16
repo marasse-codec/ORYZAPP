@@ -86,6 +86,9 @@ class DemonstrationSeeder extends Seeder
     ];
 
     /** Rendement de référence par écologie (t/ha) : bas-fond, irrigué, plateau. */
+    /** Le cycle en cours du jeu : avant lui, les cycles sont terminés ; après lui, à venir. */
+    private const CYCLE_EN_COURS = '2026-3';
+
     private const RENDEMENT_ECOLOGIE = [1 => 4.2, 2 => 5.8, 3 => 2.3];
 
     /**
@@ -93,6 +96,7 @@ class DemonstrationSeeder extends Seeder
      * [acteur, type d'acteur, structure, cycle, état, localités, superficies [écologie => ha], appuis, règlement, rendement]
      *
      * États : retire, a_retirer, validee, seance_ouverte, en_attente, brouillon, rejete.
+     * Un cycle à venir (2027) ne reçoit que des demandes en_attente ou brouillon : aucune séance ne l'a encore arbitré.
      * Règlement : solde (deux versements), comptant (un versement), partiel, brouillon (un versement soumis + un brouillon), aucun.
      * Rendement : coefficient appliqué au rendement de référence (null = pas encore transmis).
      * Types d'acteurs : 1 producteur individuel, 2 groupement informel, 3 coopérative, 4 entreprise agricole.
@@ -136,6 +140,11 @@ class DemonstrationSeeder extends Seeder
         [11, 1, null, '2026-3', 'rejete', [4], [1 => 1.0], [4], 'aucun', null],
         [13, 1, null, '2026-3', 'brouillon', [2], [1 => 2.5], [6, 7], 'aucun', null],
         [4, 1, null, '2026-3', 'brouillon', [4], [3 => 2.0], [6], 'aucun', null],
+        // ---- 2027 (année à venir) : des demandes déposées à l'avance, pas encore arbitrées
+        [1, 1, null, '2027-1', 'en_attente', [1], [1 => 4.0], [1, 7, 8], 'aucun', null],
+        [2, 3, 'Coopérative Ahouakro', '2027-1', 'en_attente', [1, 2], [1 => 14.0, 2 => 7.5], [5, 7, 8], 'aucun', null],
+        [15, 1, null, '2027-1', 'brouillon', [5], [2 => 3.5], [2], 'aucun', null],
+        [6, 4, 'EARL Bandama', '2027-2', 'brouillon', [5], [2 => 18.0], [5, 7, 11], 'aucun', null],
     ];
 
     private const MOTIFS_REJET = [
@@ -207,13 +216,16 @@ class DemonstrationSeeder extends Seeder
             $this->cycles[$cle] = Campagne::create(['lib_campagne' => $libelle, 'mois_debut_campagne' => $debut, 'mois_fin_campagne' => $fin]);
         }
 
-        foreach ([1, 2, 3] as $n) {
-            $this->cycles["2026-{$n}"] = Campagne::whereYear('mois_debut_campagne', 2026)->where('lib_campagne', "Cycle {$n}")->firstOrFail();
+        // Les cycles de 2026 (année en cours) et de 2027 (année à venir) viennent du jeu de base.
+        foreach ([2026, 2027] as $annee) {
+            foreach ([1, 2, 3] as $n) {
+                $this->cycles["{$annee}-{$n}"] = Campagne::whereYear('mois_debut_campagne', $annee)->where('lib_campagne', "Cycle {$n}")->firstOrFail();
+            }
         }
 
         // Une séance close par cycle passé, à six semaines de son début.
         foreach ($this->cycles as $cle => $cycle) {
-            if ($cle === '2026-3') {
+            if (! $this->estPasse($cle)) {
                 continue;
             }
 
@@ -232,10 +244,16 @@ class DemonstrationSeeder extends Seeder
 
         // Les cycles terminés sont clôturés par l'administrateur un mois après leur fin.
         foreach ($this->cycles as $cle => $cycle) {
-            if ($cle !== '2026-3') {
+            if ($this->estPasse($cle)) {
                 $cycle->update(['cloturee_le' => $cycle->mois_fin_campagne->copy()->addMonth(), 'id_user_cloture' => $this->auteurs['admin']->id]);
             }
         }
+    }
+
+    /** « 2025-2 » est passé, « 2026-3 » est en cours, « 2027-1 » est à venir (les clés se comparent comme du texte). */
+    private function estPasse(string $cle): bool
+    {
+        return strcmp($cle, self::CYCLE_EN_COURS) < 0;
     }
 
     private function seance(Carbon $debut, ?Carbon $fin, string $resume, ?SessionCommission $existante = null): SessionCommission
@@ -269,8 +287,10 @@ class DemonstrationSeeder extends Seeder
     {
         [$idActeur, $idTypeActeur, $structure, $cle, $etat, $localites, $superficies, $appuis, $reglement, $rendement] = $dossier;
         $cycle = $this->cycles[$cle];
-        $seances = $this->seances[$cle];
+        // Un dossier en attente ou en brouillon n'est passé devant aucune séance (un cycle à venir n'en a pas).
+        $seances = $this->seances[$cle] ?? [];
         $seance = match ($etat) {
+            'en_attente', 'brouillon' => null,
             'validee' => $seances['validee'],
             'seance_ouverte' => $seances['ouverte'],
             default => $seances['close'],

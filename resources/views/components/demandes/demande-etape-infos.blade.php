@@ -85,13 +85,9 @@
             <select id="id_campagne" name="id_campagne" required
                     class="mt-1 block w-full border-gray-300 focus:border-[--color-primary] focus:ring-[--color-primary] rounded-md shadow-sm">
                 <option value="">Sélectionner</option>
-                @foreach ($campagnes as $campagne)
-                    <option value="{{ $campagne->id_campagne }}" 
-                            @selected((string) old('id_campagne', $demande?->id_campagne) === (string) $campagne->id_campagne)>
-                        {{ $campagne->lib_campagne }} ({{ $campagne->mois_debut_campagne?->format('m/Y') }} - {{ $campagne->mois_fin_campagne?->format('m/Y') }})
-                    </option>
-                @endforeach
+                <x-demandes.options-campagnes :campagnes="$campagnes" :selection="old('id_campagne', $demande?->id_campagne)" />
             </select>
+            <p class="mt-1 text-xs text-[--color-muted]">Les cycles de l'année à venir sont proposés : on peut déjà y inscrire une demande.</p>
             <x-input-error :messages="$errors->get('id_campagne')" class="mt-1" />
         </div>
 

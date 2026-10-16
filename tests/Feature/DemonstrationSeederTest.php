@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Domain\Commission\Models\Attribution;
+use App\Domain\Commission\Models\SessionCommission;
 use App\Domain\Commission\Services\ReglementService;
 use App\Domain\Demande\Enums\StatutDemandeE;
 use App\Domain\Demande\Models\Acteur;
@@ -92,11 +93,33 @@ class DemonstrationSeederTest extends TestCase
         $this->assertGreaterThan(0, MouvementStock::where('id_type_mouvement_stock', TypeMouvementStock::idDe(TypeMouvementStockEnum::RETOUR))->count());
     }
 
-    public function test_deux_annees_de_cycles_dont_seul_le_cycle_en_cours_est_ouvert(): void
+    public function test_trois_annees_de_cycles_seuls_le_cycle_en_cours_et_lannee_a_venir_sont_ouverts(): void
     {
-        $this->assertEquals(collect([2026, 2025]), Campagne::annees());
+        $this->assertEquals(collect([2027, 2026, 2025]), Campagne::annees());
         $this->assertCount(3, Campagne::deLAnnee(2025)->get());
-        $this->assertSame(['Cycle 3 (2026)'], Campagne::ouvertes()->get()->map->libelleComplet()->all());
+        $this->assertSame(
+            ['Cycle 3 (2026)', 'Cycle 1 (2027)', 'Cycle 2 (2027)', 'Cycle 3 (2027)'],
+            Campagne::ouvertes()->orderBy('mois_debut_campagne')->get()->map->libelleComplet()->all(),
+        );
+    }
+
+    public function test_des_demandes_visent_deja_lannee_a_venir_sans_etre_arbitrees(): void
+    {
+        $this->travelTo('2026-10-16');
+        $this->assertSame('Cycle 3 (2026)', Campagne::enCours()->libelleComplet());
+
+        $aVenir = Demande::whereHas('campagne', fn ($q) => $q->whereYear('mois_debut_campagne', 2027))->with('campagne')->get();
+        $this->assertCount(4, $aVenir);
+        $this->assertTrue($aVenir->every(fn ($d) => $d->campagne->estAVenir() && $d->attribution === null && $d->id_session === null));
+        $this->assertSame(2, $aVenir->whereNotNull('date_soummission')->count());
+
+        // Les dossiers soumis pour 2027 attendent l'arbitrage, avec leur cycle affiché dans la séance.
+        $seance = SessionCommission::whereNull('date_fin_session')->sole();
+        $this->actingAs(User::role('agent-commission')->first())
+            ->get(route('commissions.show', $seance->id_session))
+            ->assertOk()
+            ->assertSee('Cycle 1 (2027)')
+            ->assertSee('à venir');
     }
 
     public function test_un_acteur_qui_doit_encore_na_pas_de_demande_plus_recente(): void

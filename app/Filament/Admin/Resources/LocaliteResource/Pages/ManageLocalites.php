@@ -3,7 +3,6 @@
 namespace App\Filament\Admin\Resources\LocaliteResource\Pages;
 
 use App\Filament\Admin\Resources\LocaliteResource;
-use Filament\Actions;
 use Filament\Resources\Pages\ManageRecords;
 
 class ManageLocalites extends ManageRecords
@@ -12,6 +11,6 @@ class ManageLocalites extends ManageRecords
 
     protected function getHeaderActions(): array
     {
-        return [Actions\CreateAction::make()];
+        return [static::getResource()::actionCreer()];
     }
 }

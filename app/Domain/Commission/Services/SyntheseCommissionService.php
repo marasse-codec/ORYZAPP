@@ -21,7 +21,8 @@ class SyntheseCommissionService
 
     /**
      * Les dossiers en attente d'arbitrage : soumis, ni rejetés ni déjà
-     * attribués.
+     * attribués. Ils peuvent viser le cycle en cours ou un cycle à venir
+     * (préparation de la saison suivante) : la séance affiche le cycle de chacun.
      *
      * @return Collection<int, Demande>
      */
@@ -30,6 +31,7 @@ class SyntheseCommissionService
         return Demande::query()
             ->with([
                 'acteur',
+                'campagne',
                 'localites',
                 'lignes',
                 'SystemesProductions',

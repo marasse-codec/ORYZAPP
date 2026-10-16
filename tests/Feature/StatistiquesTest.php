@@ -83,9 +83,14 @@ class StatistiquesTest extends TestCase
         Carbon::setTestNow('2026-04-01');
         $this->assertSame('Cycle 2', Campagne::enCours()->lib_campagne);
 
-        // Hors de toute campagne : la dernière ouverte.
+        // Entre deux cycles : le dernier commencé, pas un cycle de l'année à venir.
+        $this->campagne->delete(); // la campagne de test démarre le jour de l'exécution : on la retire ici
+        Carbon::setTestNow('2026-12-15');
+        $this->assertSame('Cycle 3 (2026)', Campagne::enCours()->libelleComplet());
+
+        // Avant tout cycle : le premier à venir.
         Carbon::setTestNow('2020-01-01');
-        $this->assertSame($this->campagne->lib_campagne, Campagne::enCours()->lib_campagne);
+        $this->assertSame('Cycle 1 (2026)', Campagne::enCours()->libelleComplet());
     }
 
     public function test_une_campagne_vide_saffiche_sans_erreur(): void

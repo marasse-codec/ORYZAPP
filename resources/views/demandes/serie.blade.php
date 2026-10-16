@@ -165,11 +165,7 @@
                     <div>
                         <label for="id_campagne" class="block text-sm font-medium text-slate-700">Campagne<span class="ml-0.5 text-red-600" aria-hidden="true">*</span></label>
                         <select id="id_campagne" name="id_campagne" required class="mt-1 block w-full rounded-lg border-slate-300 text-sm">
-                            @foreach ($campagnes as $campagne)
-                                <option value="{{ $campagne->id_campagne }}" @selected((int) old('id_campagne', $campagneParDefaut) === $campagne->id_campagne)>
-                                    {{ $campagne->lib_campagne }} ({{ $campagne->mois_debut_campagne->format('m/Y') }} - {{ $campagne->mois_fin_campagne->format('m/Y') }})
-                                </option>
-                            @endforeach
+                            <x-demandes.options-campagnes :campagnes="$campagnes" :selection="old('id_campagne', $campagneParDefaut)" />
                         </select>
                     </div>
 

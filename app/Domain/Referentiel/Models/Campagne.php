@@ -33,7 +33,10 @@ class Campagne extends Model implements EstUtilisable
     
     /**
      * La campagne dont les dates couvrent aujourd'hui (la plus récente si deux
-     * se touchent), à défaut la dernière campagne ouverte.
+     * se touchent). À défaut (entre deux cycles), la dernière déjà commencée ;
+     * et seulement s'il n'y en a aucune, la première à venir. Les cycles de
+     * l'année suivante, saisis à l'avance, ne deviennent donc pas « en cours »
+     * avant leur début.
      */
     public static function enCours(): ?self
     {
@@ -41,7 +44,23 @@ class Campagne extends Model implements EstUtilisable
             ->whereDate('mois_fin_campagne', '>=', today())
             ->orderByDesc('mois_debut_campagne')
             ->first()
-            ?? self::orderByDesc('mois_debut_campagne')->first();
+            ?? self::commencees()->orderByDesc('mois_debut_campagne')->first()
+            ?? self::orderBy('mois_debut_campagne')->first();
+    }
+
+    /** Les cycles déjà commencés (ceux qui ont des chiffres à montrer). */
+    public function scopeCommencees($query)
+    {
+        return $query->whereDate('mois_debut_campagne', '<=', today());
+    }
+
+    /**
+     * Un cycle à venir n'a pas encore commencé : on peut déjà y déposer des
+     * demandes (ex. le Cycle 1 de l'année prochaine), pour préparer la saison.
+     */
+    public function estAVenir(): bool
+    {
+        return $this->mois_debut_campagne->isAfter(today());
     }
 
     /**

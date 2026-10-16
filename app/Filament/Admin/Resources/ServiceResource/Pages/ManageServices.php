@@ -3,7 +3,6 @@
 namespace App\Filament\Admin\Resources\ServiceResource\Pages;
 
 use App\Filament\Admin\Resources\ServiceResource;
-use Filament\Actions;
 use Filament\Resources\Pages\ManageRecords;
 
 class ManageServices extends ManageRecords
@@ -12,6 +11,6 @@ class ManageServices extends ManageRecords
 
     protected function getHeaderActions(): array
     {
-        return [Actions\CreateAction::make()];
+        return [static::getResource()::actionCreer()];
     }
 }

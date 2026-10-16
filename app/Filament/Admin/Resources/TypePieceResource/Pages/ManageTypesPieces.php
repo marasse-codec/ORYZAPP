@@ -3,7 +3,6 @@
 namespace App\Filament\Admin\Resources\TypePieceResource\Pages;
 
 use App\Filament\Admin\Resources\TypePieceResource;
-use Filament\Actions;
 use Filament\Resources\Pages\ManageRecords;
 
 class ManageTypesPieces extends ManageRecords
@@ -12,6 +11,6 @@ class ManageTypesPieces extends ManageRecords
 
     protected function getHeaderActions(): array
     {
-        return [Actions\CreateAction::make()];
+        return [static::getResource()::actionCreer()];
     }
 }

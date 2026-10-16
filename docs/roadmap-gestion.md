@@ -409,15 +409,60 @@ pas identifié comme coopérative sur sa nouvelle demande :
 
 | Contenu | Détail |
 |---|---|
-| Cycles | 2025 : cycles 1, 2 et 3 ; 2026 : cycles 1 et 2. Tous clôturés. Seul le Cycle 3 (2026) est en cours |
+| Cycles | 2025 : cycles 1, 2 et 3 ; 2026 : cycles 1 et 2. Tous clôturés. Le Cycle 3 (2026) est en cours. Les trois cycles de 2027 (année à venir) sont ouverts |
 | Demandeurs | 18 producteurs, groupements, coopératives et entreprises, tous majeurs, plus l'acteur de base **Degny Alfred** (freddegny@gmail.com) |
-| Dossiers | 33 demandes. Cycles passés : arbitrés, publiés, retirés, réglés, rendements transmis, quelques rejets. Cycle en cours : brouillon, en attente, en séance, validé, publié à retirer, retiré, rejeté |
+| Dossiers | 37 demandes, dont 4 qui visent 2027 (2 en attente d'arbitrage, 2 en brouillon). Cycles passés : arbitrés, publiés, retirés, réglés, rendements transmis, quelques rejets. Cycle en cours : brouillon, en attente, en séance, validé, publié à retirer, retiré, rejeté |
 | Argent | Règlements en un ou deux versements, un règlement en brouillon, trois acteurs en impayé (tous sur le cycle en cours, sans demande plus récente) |
 | Stock | Un approvisionnement par cycle, les sorties aux retraits, les équipements prêtés puis restitués à la fin des cycles passés. Le stock ne descend jamais sous zéro |
 | Journal | L'histoire de chaque dossier (création, visite, soumission, attribution, publication, retrait, règlements, rendements), visible dans sa chronologie |
 | Exemple | Degny Alfred : en 2025, au nom de la « Coopérative du centre » ; en 2026, comme producteur individuel |
 
 Il ne se sème qu'une fois : relancé, il ne crée pas de doublon.
+
+### 2.15 Pièces exigées, année à venir, taux de recouvrement
+
+**Le scan de la demande écrite** est une pièce de plus (`TypePieceSeeder`), exigée et obligatoire pour tous les profils.
+L'administrateur règle désormais lui-même **quelles pièces chaque profil doit fournir**, sans toucher au code, des deux
+côtés de la même table de liaison (`types_acteurs_types_pieces`) :
+
+| Écran | Ce qu'on y fait |
+|---|---|
+| Référentiels → **Types de pièces** | Créer une pièce et cocher, dans la même fenêtre, les profils qui doivent la fournir (obligatoire ou facultative). La liste montre « Exigée de ». |
+| Référentiels → **Types d'acteurs** | Pour un profil, la liste de ses pièces à fournir, obligatoires ou facultatives. |
+
+Le formulaire de demande et la page vitrine lisent cette table : un changement s'y voit aussitôt. Le travail est fait
+par un service du métier (`ExigencePieceService`) et noté au journal sous une forme lisible, par exemple
+« Plan de campagne (facultative), Scan… » → « Plan de campagne, Scan… ». Toute création d'élément de référentiel est
+aussi journalisée maintenant (`REFERENTIEL_CREE`), en plus des modifications et suppressions.
+
+Les autres associations du métier avaient déjà leur écran : un type d'appui ↔ son service (Types d'appuis), une
+localité ↔ son département (Localités), un DP ↔ ses départements (Utilisateurs), un appui ↔ ses écologies (catalogue
+du magasin). Le mécanisme ajouté (`champsRattachements()` dans `ReferentielResource`) sert de modèle si une autre table
+de liaison doit un jour passer par l'administration.
+
+**L'année à venir.** Les trois cycles de 2027 existent déjà (`CampagneSeeder`). Le formulaire de demande, unitaire comme
+en série, range les campagnes par année (« 2026 · année en cours », « 2027 · année à venir ») : on peut viser la
+campagne de l'année prochaine pour préparer la saison. Ce qui ne change pas : un cycle à venir ne devient « en cours »
+qu'à sa date de début (`Campagne::enCours()` prend, entre deux cycles, le dernier commencé). La comparaison par défaut
+ne prend que des cycles commencés (les cycles vides de 2027 fausseraient les évolutions). Choisir 2027 dans les
+statistiques affiche son premier cycle. Dans une séance, chaque dossier en attente affiche son **cycle visé**, avec un
+badge « à venir » : la commission sait ce qu'elle arbitre en avance.
+
+**Le taux de recouvrement** répond à « sur l'argent que les producteurs doivent, combien est déjà rentré ? » :
+
+```
+taux de recouvrement = encaissé ÷ dû × 100
+```
+
+- **dû** : le montant des attributions **publiées** du cycle (quantité × coût unitaire, moins la remise). Une attribution
+  encore en séance ou non publiée n'est due par personne ;
+- **encaissé** : la somme des règlements **soumis** sur ces attributions. Un règlement en brouillon n'est pas encore de
+  l'argent reçu.
+
+Exemple du jeu de présentation : Cycle 3 (2026), dû 3 168 595 F, encaissé 2 110 297,5 F, soit **66,6 %**. Le reste
+(1 058 297,5 F) correspond aux impayés que suit la comptabilité. Les cycles passés sont à 100 %. Sans montant dû
+(cycles de 2027), le taux s'affiche « - », pas 0 %. Calcul : `StatistiqueCampagneService::finances()` (statistiques,
+pilotage, rapport PDF) et `ReglementService::synthese()` (écran Comptabilité).
 
 ---
 
@@ -428,7 +473,8 @@ Il ne se sème qu'une fois : relancé, il ne crée pas de doublon.
 | Accès → **Utilisateurs** | Un seul rôle par compte, **départements couverts** pour un DP (au moins un), dernière connexion, **Désactiver / Réactiver** (avec motif). On ne peut désactiver ni soi-même, ni le dernier administrateur actif. Une session ouverte est fermée aussitôt. |
 | Accès → **Rôles et droits** | Cocher ou décocher les droits de chaque rôle. Le rôle administrateur n'est pas modifiable, et chaque changement est journalisé (droits ajoutés et retirés). |
 | Système → **Paramètres généraux** | Longueur et complexité du mot de passe, tentatives de connexion avant blocage, délais des rappels. Les valeurs sont bornées et chaque changement est journalisé. |
-| Référentiels → **Campagnes** | Dates, **Clôturer** (avec le nombre de dossiers encore en cours), **Rouvrir** (motif obligatoire). |
+| Référentiels → **Types de pièces** / **Types d'acteurs** | Les pièces demandées (dont le scan de la demande écrite) et, pour chacune, les profils qui doivent la fournir, obligatoire ou facultative (§ 2.15). |
+| Référentiels → **Campagnes** | Dates (les cycles de l'année à venir se créent ici), **Clôturer** (avec le nombre de dossiers encore en cours), **Rouvrir** (motif obligatoire). |
 | Système → **Santé du système** | Base de données, sauvegardes, tâches automatiques, file d'attente, disque, mode débogage, connexions refusées, comptes. |
 | Système → Journal, Sauvegardes | Déjà présents ; le journal affiche maintenant les écarts avant → après et l'adresse IP. |
 
