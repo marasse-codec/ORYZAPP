@@ -29,10 +29,11 @@ class StatistiqueController extends Controller
     public function index(StatistiqueRequest $request, StatistiqueCampagneService $stats)
     {
         $campagne = $request->campagne();
+        $choixCycle = $this->choixCycle($request->annee($campagne));
 
         // Aucune campagne en base : la page l'indique plutôt que de planter.
         if (! $campagne) {
-            return view('statistiques.index', ['layout' => Helper::layout(), 'campagne' => null] + $this->listes());
+            return view('statistiques.index', ['layout' => Helper::layout(), 'campagne' => null] + $choixCycle + $this->listes());
         }
 
         $filtre = $request->filtre();
@@ -46,7 +47,7 @@ class StatistiqueController extends Controller
         $superficies = $donnees['superficies'];
         $rendements = $donnees['rendements'];
 
-        return view('statistiques.index', $donnees + $this->listes() + [
+        return view('statistiques.index', $donnees + $choixCycle + $this->listes() + [
             'layout' => Helper::layout(),
             'campagne' => $campagne,
             'filtre' => $filtre,
@@ -94,17 +95,22 @@ class StatistiqueController extends Controller
     public function comparaison(StatistiqueRequest $request, ComparaisonCampagnesService $comparaison)
     {
         $filtre = $request->filtre();
-        $choisies = $request->filled('campagnes')
-            ? Campagne::whereIn('id_campagne', $request->input('campagnes'))->get()
-            : Campagne::orderByDesc('mois_debut_campagne')->limit(5)->get();
+
+        // Les cycles cochés ; sinon tous les cycles de l'année choisie ; sinon les cinq plus récents.
+        $choisies = match (true) {
+            $request->filled('campagnes') => Campagne::whereIn('id_campagne', $request->input('campagnes'))->get(),
+            $request->filled('annee') => Campagne::deLAnnee($request->integer('annee'))->get(),
+            default => Campagne::orderByDesc('mois_debut_campagne')->limit(5)->get(),
+        };
 
         $lignes = $comparaison->comparer($choisies, $filtre);
-        $libelles = $lignes->map(fn ($ligne) => $ligne['campagne']->lib_campagne)->all();
+        $libelles = $lignes->map(fn ($ligne) => $ligne['campagne']->libelleComplet())->all();
 
         return view('statistiques.comparaison', $this->listes() + [
             'layout' => Helper::layout(),
             'filtre' => $filtre,
             'choisies' => $choisies->pluck('id_campagne')->all(),
+            'anneeChoisie' => $request->filled('annee') ? $request->integer('annee') : null,
             'lignes' => $lignes,
             'indicateurs' => ComparaisonCampagnesService::INDICATEURS,
             // Un graphique par famille d'indicateurs : les unités ne se mélangent pas sur un même axe.
@@ -129,7 +135,7 @@ class StatistiqueController extends Controller
             'parTypeActeur' => $stats->parTypeActeur($campagne, $filtre),
         ])->setPaper('a4');
 
-        return $pdf->download('rapport-campagne-'.str($campagne->lib_campagne)->slug().'.pdf');
+        return $pdf->download('rapport-campagne-'.str($campagne->libelleComplet())->slug().'.pdf');
     }
 
     /** Les chiffres partagés par la page et le rapport. */
@@ -144,10 +150,21 @@ class StatistiqueController extends Controller
         ];
     }
 
+    /** Le choix en deux temps : l'année, puis l'un de ses cycles. */
+    private function choixCycle(?int $annee): array
+    {
+        return [
+            'annees' => Campagne::annees(),
+            'annee' => $annee,
+            'cycles' => $annee ? Campagne::deLAnnee($annee)->get() : collect(),
+        ];
+    }
+
     /** Les listes des menus déroulants de filtre. */
     private function listes(): array
     {
         return [
+            'annees' => Campagne::annees(),
             'campagnes' => Campagne::orderByDesc('mois_debut_campagne')->get(),
             'departements' => Departement::orderBy('lib_departement')->get(),
             'localites' => Localite::orderBy('lib_localite')->get(),

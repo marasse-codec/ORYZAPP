@@ -75,8 +75,8 @@
 
 @can(PermissionEnum::voirStatistiques->value)
     <x-ui.menu-groupe titre="Statistiques" icone="monitoring" :ouvert="request()->routeIs('statistiques.*')">
-        <x-ui.menu-lien :href="route('statistiques.index')" :actif="request()->routeIs('statistiques.index')">Par campagne</x-ui.menu-lien>
-        <x-ui.menu-lien :href="route('statistiques.comparaison')" :actif="request()->routeIs('statistiques.comparaison')">Comparer les campagnes</x-ui.menu-lien>
+        <x-ui.menu-lien :href="route('statistiques.index')" :actif="request()->routeIs('statistiques.index')">Par année et cycle</x-ui.menu-lien>
+        <x-ui.menu-lien :href="route('statistiques.comparaison')" :actif="request()->routeIs('statistiques.comparaison')">Comparer les cycles</x-ui.menu-lien>
     </x-ui.menu-groupe>
 @endcan
 

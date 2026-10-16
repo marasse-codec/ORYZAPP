@@ -56,6 +56,7 @@
         periode_fin_mise_en_place: '{{ old('periode_fin_mise_en_place', isset($demande) ? $demande->periode_fin_mise_en_place : '') }}',
 
         suggestionsActeurs: [],
+        demandePrecedente: '',
         // Ce que l'acteur retrouvé doit encore sur ses attributions précédentes : s'il doit, l'enregistrement sera refusé.
         resteDu: 0,
         acteurTrouve: false,
@@ -164,10 +165,9 @@
             this.dateNaissance = acteur.date_naissance;
             this.telephone = acteur.telephone ?? '';
             this.email = acteur.email ?? '';
-            this.nomStructure = acteur.nom_structure ?? '';
-            if (acteur.id_type_acteur) {
-                this.idTypeActeur = acteur.id_type_acteur;
-            }
+            // Le type d'acteur et la structure ne sont pas repris : ils valent pour chaque demande
+            // (on peut venir en coopérative une fois, en individuel la suivante).
+            this.demandePrecedente = acteur.precedente ?? '';
             this.suggestionsActeurs = [];
             this.resteDu = Number(acteur.reste_du ?? 0);
             this.acteurTrouve = true;
@@ -180,6 +180,7 @@
             this.telephone = '';
             this.email = '';
             this.nomStructure = '';
+            this.demandePrecedente = '';
             this.resteDu = 0;
             this.acteurTrouve = false;
             this.suggestionsActeurs = [];

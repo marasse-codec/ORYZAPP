@@ -30,6 +30,12 @@ class DatabaseSeeder extends Seeder
             TypeMouvementStockSeed::class,
         ]);
 
+        // Le jeu de présentation (deux années de dossiers cohérents), sauf pendant les tests,
+        // qui partent d'un état neutre et sèment eux-mêmes ce dont ils ont besoin.
+        if (! app()->runningUnitTests()) {
+            $this->call(DemonstrationSeeder::class);
+        }
+
         $this->realignerLesSequences();
     }
 

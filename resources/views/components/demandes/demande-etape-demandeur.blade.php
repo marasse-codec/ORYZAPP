@@ -45,7 +45,11 @@
         </div>
 
         <div x-show="acteurTrouve" class="text-xs font-medium text-emerald-700 flex items-center justify-between" x-cloak>
-            <span>Acteur rattaché chargé avec succès !</span>
+            <span>Acteur rattaché chargé avec succès !
+                <span x-show="demandePrecedente" class="block font-normal text-slate-500">
+                    Dernière demande : <span x-text="demandePrecedente"></span>. Choisissez le profil de cette nouvelle demande à l'étape suivante.
+                </span>
+            </span>
             <button type="button" @click="reinitialiserActeur()" class="text-red-600 underline">
                 Réinitialiser
             </button>

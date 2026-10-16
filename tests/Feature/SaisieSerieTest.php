@@ -112,7 +112,8 @@ class SaisieSerieTest extends TestCase
         // Quantité laissée vide : null, comme dans la saisie unitaire.
         $traore = Demande::whereHas('acteur', fn ($q) => $q->where('nom', 'Traoré Awa'))->sole();
         $this->assertNull($traore->lignes->firstWhere('id_type_appui', 3)->quantite_demandee);
-        $this->assertSame('GVC Soleil', $traore->nom_structure);
+        // Lot de producteurs individuels (type 1) : pas de structure, même si une a été saisie.
+        $this->assertNull($traore->nom_structure);
 
         // Comme à la création unitaire, la demande est rattachée aux services dont elle sollicite les appuis (1 et 2).
         $this->assertEqualsCanonicalizing([1, 2], $kouassi->traitements->pluck('id_service')->all());

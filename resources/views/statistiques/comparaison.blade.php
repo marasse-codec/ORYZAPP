@@ -1,21 +1,21 @@
 @extends($layout ?? 'layouts.aderiz')
 
-@section('titre-page', 'Comparer les campagnes')
+@section('titre-page', 'Comparer les cycles')
 
 @section('content')
-<x-ui.page titre="Comparer les campagnes" sous-titre="Les mêmes indicateurs, calculés de la même façon pour chaque campagne, de la plus ancienne à la plus récente.">
+<x-ui.page titre="Comparer les cycles" sous-titre="Les mêmes indicateurs, calculés de la même façon pour chaque cycle, du plus ancien au plus récent. Choisissez une année ou cochez des cycles.">
     @include('statistiques.partials.filtres', ['action' => route('statistiques.comparaison'), 'campagnesACocher' => $choisies])
 
     @if ($lignes->isEmpty())
         <x-ui.card><p class="text-sm text-[--color-muted]">Aucune campagne à comparer.</p></x-ui.card>
     @else
-        <x-ui.card titre="Indicateurs par campagne" sans-marge>
+        <x-ui.card titre="Indicateurs par cycle" sans-marge>
             <x-ui.tableau>
                 <thead class="bg-slate-50 text-left text-xs uppercase tracking-wide text-[--color-muted]">
                     <tr>
                         <th class="px-4 py-3 sm:px-6">Indicateur</th>
                         @foreach ($lignes as $ligne)
-                            <th class="px-4 py-3 text-right">{{ $ligne['campagne']->lib_campagne }}</th>
+                            <th class="px-4 py-3 text-right">{{ $ligne['campagne']->libelleComplet() }}</th>
                         @endforeach
                     </tr>
                 </thead>
@@ -43,7 +43,7 @@
                 </tbody>
             </x-ui.tableau>
             <p class="px-4 py-3 text-xs text-[--color-muted] sm:px-6">
-                Sous chaque valeur : l'évolution par rapport à la campagne précédente du tableau. Pour un délai, une baisse est une amélioration.
+                Sous chaque valeur : l'évolution par rapport au cycle précédent du tableau. Pour un délai, une baisse est une amélioration.
             </p>
         </x-ui.card>
 

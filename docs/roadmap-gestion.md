@@ -389,6 +389,36 @@ demande reste « Soumise ». La page Statistiques garde la règle de gestion « 
 
 **Séances.** Après la clôture d'une séance, on revient sur cette séance (et non sur la liste).
 
+### 2.14 Années et cycles, profil de la demande, jeu de présentation
+
+**On choisit l'année, puis l'un de ses cycles.** Un cycle appartient à l'année de son début : un cycle de
+novembre 2025 à février 2026 compte pour 2025 (`Campagne::annee()`). Dans le Pilotage et les Statistiques, la liste
+« Année » vient d'abord. La liste « Cycle » ne propose ensuite que les cycles de cette année. Changer d'année affiche son
+cycle en cours, à défaut son dernier cycle. La comparaison prend « tous les cycles d'une année » ou des cycles cochés,
+regroupés par année. Les libellés affichent toujours l'année : « Cycle 2 (2026) ».
+
+**Le profil vaut pour chaque demande.** Le type d'acteur et le nom de structure appartiennent à la demande, pas à
+l'acteur. Un acteur venu en 2025 au nom de sa coopérative et qui revient en 2026 comme producteur individuel n'est donc
+pas identifié comme coopérative sur sa nouvelle demande :
+- quand on retrouve un acteur existant, le formulaire ne recopie plus son ancien type ni son ancienne structure. Il
+  rappelle seulement, pour information, sa dernière demande ;
+- une demande de producteur individuel n'a jamais de structure, même si une a été saisie (`TypeActeur::structureRetenue`).
+
+**Le jeu de présentation** (`DemonstrationSeeder`, semé par `php artisan db:seed` hors tests, ou seul avec
+`php artisan db:seed --class=DemonstrationSeeder`) :
+
+| Contenu | Détail |
+|---|---|
+| Cycles | 2025 : cycles 1, 2 et 3 ; 2026 : cycles 1 et 2. Tous clôturés. Seul le Cycle 3 (2026) est en cours |
+| Demandeurs | 18 producteurs, groupements, coopératives et entreprises, tous majeurs, plus l'acteur de base **Degny Alfred** (freddegny@gmail.com) |
+| Dossiers | 33 demandes. Cycles passés : arbitrés, publiés, retirés, réglés, rendements transmis, quelques rejets. Cycle en cours : brouillon, en attente, en séance, validé, publié à retirer, retiré, rejeté |
+| Argent | Règlements en un ou deux versements, un règlement en brouillon, trois acteurs en impayé (tous sur le cycle en cours, sans demande plus récente) |
+| Stock | Un approvisionnement par cycle, les sorties aux retraits, les équipements prêtés puis restitués à la fin des cycles passés. Le stock ne descend jamais sous zéro |
+| Journal | L'histoire de chaque dossier (création, visite, soumission, attribution, publication, retrait, règlements, rendements), visible dans sa chronologie |
+| Exemple | Degny Alfred : en 2025, au nom de la « Coopérative du centre » ; en 2026, comme producteur individuel |
+
+Il ne se sème qu'une fois : relancé, il ne crée pas de doublon.
+
 ---
 
 ## 3. Administration : ce que la v2 donne à l'administrateur

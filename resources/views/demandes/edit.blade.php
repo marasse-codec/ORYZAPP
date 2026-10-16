@@ -22,6 +22,7 @@
         email: '{{ old('email', $demande->acteur?->email ?? '') }}',
         nomStructure: '{{ old('nom_structure', $demande->nom_structure ?? $demande->acteur?->nom_structure ?? '') }}',
         suggestionsActeurs: [],
+        demandePrecedente: '',
         acteurTrouve: {{ $demande->id_acteur ? 'true' : 'false' }},
 
         /* --- ÉTAPE 3 : DEMANDE, LOCALITÉS & SUPERFICIES --- */
@@ -55,10 +56,9 @@
             this.dateNaissance = acteur.date_naissance;
             this.telephone = acteur.telephone ?? '';
             this.email = acteur.email ?? '';
-            this.nomStructure = acteur.nom_structure ?? '';
-            if (acteur.id_type_acteur) {
-                this.idTypeActeur = acteur.id_type_acteur;
-            }
+            // Le type d'acteur et la structure ne sont pas repris : ils valent pour chaque demande
+            // (on peut venir en coopérative une fois, en individuel la suivante).
+            this.demandePrecedente = acteur.precedente ?? '';
             this.suggestionsActeurs = [];
             this.acteurTrouve = true;
         },

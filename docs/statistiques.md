@@ -1,7 +1,7 @@
 # Fiche : les statistiques de campagne
 
 Page **Statistiques** (permission « voir-statistiques » : administrateur et directeur).
-Tous les chiffres portent sur **une campagne**, choisie en haut de page (la campagne en cours par défaut),
+Tous les chiffres portent sur **un cycle** : on choisit d'abord l'**année**, puis l'un de ses **cycles** (le cycle en cours par défaut),
 éventuellement restreinte par des **filtres** (département, localité, type d'appui, type d'acteur, période de soumission).
 Voir aussi la comparaison entre campagnes et le rapport PDF : [`roadmap-gestion.md`](roadmap-gestion.md).
 Code : `StatistiqueCampagneService` (calculs), `StatistiqueController` (mise en forme), `statistiques/index.blade.php` (affichage).

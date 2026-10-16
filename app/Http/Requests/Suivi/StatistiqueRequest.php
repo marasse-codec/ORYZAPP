@@ -20,6 +20,7 @@ class StatistiqueRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'annee' => 'nullable|integer|min:2000|max:2100',
             'campagne' => 'nullable|integer|exists:campagnes,id_campagne',
             // Comparaison : les campagnes cochées.
             'campagnes' => 'nullable|array',
@@ -27,10 +28,34 @@ class StatistiqueRequest extends FormRequest
         ] + FiltreStatistique::regles();
     }
 
-    /** La campagne demandée, sinon la campagne en cours. */
+    /**
+     * Le cycle à afficher. On choisit d'abord l'année, puis un de ses cycles :
+     *  - un cycle choisi (et de l'année choisie, s'il y en a une) ;
+     *  - sinon, pour une année choisie : son cycle en cours, à défaut son dernier cycle ;
+     *  - sinon, le cycle en cours.
+     */
     public function campagne(): ?Campagne
     {
-        return $this->filled('campagne') ? Campagne::find($this->integer('campagne')) : Campagne::enCours();
+        $annee = $this->filled('annee') ? $this->integer('annee') : null;
+        $choisie = $this->filled('campagne') ? Campagne::find($this->integer('campagne')) : null;
+
+        if ($choisie && ($annee === null || $choisie->annee() === $annee)) {
+            return $choisie;
+        }
+
+        if ($annee !== null) {
+            $enCours = Campagne::enCours();
+
+            return $enCours?->annee() === $annee ? $enCours : Campagne::deLAnnee($annee)->get()->last();
+        }
+
+        return Campagne::enCours();
+    }
+
+    /** L'année choisie (celle du cycle affiché si aucune n'est choisie). */
+    public function annee(?Campagne $campagne): ?int
+    {
+        return $this->filled('annee') ? $this->integer('annee') : $campagne?->annee();
     }
 
     public function filtre(): FiltreStatistique

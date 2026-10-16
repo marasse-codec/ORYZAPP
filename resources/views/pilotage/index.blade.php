@@ -10,20 +10,16 @@
     $evolution = function (string $cle) use ($tableau) {
         $valeur = $tableau['evolutions'][$cle] ?? null;
 
-        return $valeur === null ? null : ($valeur >= 0 ? '+' : '').number_format($valeur, 1, ',', ' ').' % vs campagne précédente';
+        return $valeur === null ? null : ($valeur >= 0 ? '+' : '').number_format($valeur, 1, ',', ' ').' % vs cycle précédent';
     };
 @endphp
 
 @section('content')
 <x-ui.page titre="Pilotage" sous-titre="La campagne en un coup d'œil : son activité, son évolution, et ce qui demande votre attention.">
     <x-slot:actions>
-        <form method="GET" action="{{ route('pilotage.index') }}" class="flex items-center gap-2">
-            <label for="campagne" class="text-sm text-[--color-muted]">Campagne</label>
-            <select id="campagne" name="campagne" onchange="this.form.submit()" class="rounded-lg border-slate-300 text-sm">
-                @foreach ($campagnes as $option)
-                    <option value="{{ $option->id_campagne }}" @selected($campagne && $option->is($campagne))>{{ $option->lib_campagne }}</option>
-                @endforeach
-            </select>
+        {{-- On choisit l'année, puis l'un de ses cycles. --}}
+        <form method="GET" action="{{ route('pilotage.index') }}" class="flex flex-wrap items-end gap-2">
+            @include('statistiques.partials.choix-cycle')
         </form>
         @if ($campagne)
             @can(PermissionEnum::telechargerRapports->value)
@@ -38,8 +34,9 @@
         @php [$i, $f] = [$tableau['indicateurs'], $tableau['finances']]; @endphp
 
         <p class="text-sm text-[--color-muted]">
-            {{ $campagne->estCloturee() ? 'Campagne clôturée : chiffres définitifs.' : 'Campagne en cours : chiffres provisoires.' }}
-            @if ($tableau['precedente']) Comparée à « {{ $tableau['precedente']->lib_campagne }} ». @endif
+            <strong>{{ $campagne->libelleComplet() }}</strong> ·
+            {{ $campagne->estCloturee() ? 'cycle clôturé : chiffres définitifs.' : 'cycle en cours : chiffres provisoires.' }}
+            @if ($tableau['precedente']) Comparé au cycle précédent : {{ $tableau['precedente']->libelleComplet() }}. @endif
         </p>
 
         {{-- Ce qui demande l'attention --}}
@@ -67,7 +64,7 @@
         <div class="flex flex-wrap gap-2">
             @can(PermissionEnum::voirStatistiques->value)
                 <x-ui.bouton :href="route('statistiques.index', ['campagne' => $campagne->id_campagne])" variante="secondaire">Détail des statistiques</x-ui.bouton>
-                <x-ui.bouton :href="route('statistiques.comparaison')" variante="secondaire">Comparer les campagnes</x-ui.bouton>
+                <x-ui.bouton :href="route('statistiques.comparaison')" variante="secondaire">Comparer les cycles</x-ui.bouton>
             @endcan
         </div>
     @endif

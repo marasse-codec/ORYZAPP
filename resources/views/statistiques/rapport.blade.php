@@ -10,7 +10,7 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>Rapport de campagne {{ $campagne->lib_campagne }}</title>
+    <title>Rapport de campagne {{ $campagne->libelleComplet() }}</title>
     <style>
         @page { margin: 1.6cm 1.5cm; }
         body { font-family: 'DejaVu Sans', Arial, sans-serif; font-size: 9.5pt; color: #1a1a1a; }
@@ -29,7 +29,7 @@
     <table class="entete">
         <tr>
             <td>
-                <h1>Rapport de campagne : {{ $campagne->lib_campagne }}</h1>
+                <h1>Rapport de campagne : {{ $campagne->libelleComplet() }}</h1>
                 <p class="sous-titre">Du {{ $campagne->mois_debut_campagne->format('d/m/Y') }} au {{ $campagne->mois_fin_campagne->format('d/m/Y') }}
                     · {{ $campagne->estCloturee() ? 'clôturée le '.$campagne->cloturee_le->format('d/m/Y').' (chiffres définitifs)' : 'en cours (chiffres provisoires)' }}</p>
                 <p class="sous-titre">Périmètre : {{ $descriptionFiltre }}</p>
@@ -86,8 +86,8 @@
             @foreach ($satisfaction as $ligne)
                 <tr>
                     <td>{{ $ligne['appui'] }}</td>
-                    <td class="n">{{ $nombre($ligne['demandee']) }}</td>
-                    <td class="n">{{ $nombre($ligne['attribuee']) }}</td>
+                    <td class="n">{{ \App\Utils\Helper::quantite($ligne['demandee']) }}</td>
+                    <td class="n">{{ \App\Utils\Helper::quantite($ligne['attribuee']) }}</td>
                     <td class="n">{{ $ligne['taux'] !== null ? $nombre($ligne['taux'], 1).' %' : '-' }}</td>
                 </tr>
             @endforeach

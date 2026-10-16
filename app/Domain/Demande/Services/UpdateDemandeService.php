@@ -9,6 +9,7 @@ use App\Domain\Journal\Enums\ActionJournalEnum;
 use App\Domain\Journal\Models\JournalAction;
 use App\Domain\Journal\Support\Ecarts;
 use App\Domain\Referentiel\Models\Campagne;
+use App\Domain\Referentiel\Models\TypeActeur;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
@@ -41,7 +42,7 @@ class UpdateDemandeService
             $demande->update([
                 'id_type_acteur'              => $data['id_type_acteur'] ?? $demande->id_type_acteur,
                 'id_campagne'                 => $data['id_campagne'] ?? $demande->id_campagne,
-                'nom_structure'               => $data['nom_structure'] ?? null,
+                'nom_structure'               => TypeActeur::structureRetenue($data['id_type_acteur'] ?? $demande->id_type_acteur, $data['nom_structure'] ?? null),
                 'commentaire_rejet'           => null, // Réinitialisation de l'observation de renvoi
                 'date_rejet'                  => null,
             ]);
