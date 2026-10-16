@@ -15,11 +15,15 @@ class PilotageController extends Controller
     public function index(StatistiqueRequest $request, PilotageService $pilotage)
     {
         $campagne = $request->campagne();
+        $annee = $request->annee($campagne);
 
         return view('pilotage.index', [
             'layout' => Helper::layout(),
             'campagne' => $campagne,
-            'campagnes' => Campagne::orderByDesc('mois_debut_campagne')->get(),
+            // On choisit l'année, puis l'un de ses cycles.
+            'annees' => Campagne::annees(),
+            'annee' => $annee,
+            'cycles' => $annee ? Campagne::deLAnnee($annee)->get() : collect(),
             'tableau' => $campagne ? $pilotage->tableau($campagne) : null,
             'indicateursComparables' => ComparaisonCampagnesService::INDICATEURS,
         ]);

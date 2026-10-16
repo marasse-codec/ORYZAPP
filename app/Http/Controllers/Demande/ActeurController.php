@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers\Demande;
 
+use App\Domain\Commission\Services\ReglementService;
 use App\Domain\Demande\Models\Demande;
 use App\Http\Controllers\Controller;
-use App\Domain\Commission\Services\ReglementService;
 use Illuminate\Http\Request;
 
 class ActeurController extends Controller
@@ -36,8 +36,8 @@ class ActeurController extends Controller
                 'date_naissance' => $demande->acteur->date_naissance?->format('Y-m-d') ?? '',
                 'telephone' => $demande->acteur->telephone ?? '',
                 'email' => $demande->acteur->email ?? '',
-                'nom_structure' => $demande->nom_structure ?? '',
-                'id_type_acteur' => $demande->id_type_acteur ?? '',
+                // Pour information seulement : le type d'acteur et la structure se choisissent à chaque demande.
+                'precedente' => trim(($demande->typeActeur?->lib_type_acteur ?? '').($demande->nom_structure ? ' — '.$demande->nom_structure : '')),
                 // Le formulaire peut ainsi prévenir avant la saisie : l'enregistrement sera refusé.
                 'reste_du' => $demande->acteur ? $reglements->resteDuActeur($demande->acteur) : 0,
             ];

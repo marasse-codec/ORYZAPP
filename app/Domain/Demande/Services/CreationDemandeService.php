@@ -12,6 +12,7 @@ use App\Domain\Demande\Models\Traitement;
 use App\Domain\Journal\Enums\ActionJournalEnum;
 use App\Domain\Journal\Models\JournalAction;
 use App\Domain\Referentiel\Models\Campagne;
+use App\Domain\Referentiel\Models\TypeActeur;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -39,7 +40,9 @@ class CreationDemandeService
             $demande = Demande::create([
                 'id_acteur'                   => $acteur->id_acteur,
                 'id_type_acteur'              => $donnees['id_type_acteur'],
-                'nom_structure'               => $donnees['nom_structure'] ?? null,
+                // Le type et la structure valent pour CETTE demande : un acteur venu hier pour sa
+                // coopérative peut venir aujourd'hui en individuel, sans structure.
+                'nom_structure'               => TypeActeur::structureRetenue($donnees['id_type_acteur'] ?? null, $donnees['nom_structure'] ?? null),
                 'date_demande'                => now()->toDateString(),
 
                 'periode_debut_mise_en_place' => $donnees['periode_debut_mise_en_place'],

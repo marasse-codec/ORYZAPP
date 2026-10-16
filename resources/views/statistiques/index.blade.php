@@ -6,7 +6,7 @@
 <x-ui.page titre="Statistiques" sous-titre="Les chiffres d'une campagne, pour décider. Population : les demandes soumises de la campagne (et des filtres).">
     @if ($campagne)
         <x-slot:actions>
-            <x-ui.bouton :href="route('statistiques.comparaison', $filtre->parametres())" variante="secondaire">Comparer les campagnes</x-ui.bouton>
+            <x-ui.bouton :href="route('statistiques.comparaison', $filtre->parametres())" variante="secondaire">Comparer les cycles</x-ui.bouton>
             @can(\App\Domain\Acces\Enums\PermissionEnum::telechargerRapports->value)
                 <x-ui.bouton :href="route('statistiques.rapport', ['campagne' => $campagne->id_campagne] + $filtre->parametres())">Rapport PDF</x-ui.bouton>
             @endcan
@@ -117,8 +117,8 @@
                         @foreach ($satisfaction as $ligne)
                             <tr>
                                 <td class="px-4 py-3 text-[--color-ink] sm:px-6">{{ $ligne['appui'] }}</td>
-                                <td class="px-4 py-3 text-right">{{ number_format($ligne['demandee'], 0, ',', ' ') }}</td>
-                                <td class="px-4 py-3 text-right">{{ number_format($ligne['attribuee'], 0, ',', ' ') }}</td>
+                                <td class="px-4 py-3 text-right">{{ \App\Utils\Helper::quantite($ligne['demandee']) }}</td>
+                                <td class="px-4 py-3 text-right">{{ \App\Utils\Helper::quantite($ligne['attribuee']) }}</td>
                                 <td class="px-4 py-3 text-right font-semibold sm:px-6">{{ $ligne['taux'] !== null ? number_format($ligne['taux'], 1, ',', ' ').' %' : '-' }}</td>
                             </tr>
                         @endforeach

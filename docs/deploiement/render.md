@@ -6,7 +6,7 @@ Fichiers : `Dockerfile`, `docker/entrypoint.sh`, `render.yaml` (Blueprint).
 
 1. Pousser le dépôt sur GitHub, puis Render → **New → Blueprint**.
 2. Renseigner `APP_KEY`, `APP_URL`, `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`.
-3. Mettre `SEED_ON_DEPLOY=true` pour le premier démarrage (référentiels + comptes de démonstration), puis le repasser à `false`.
+3. Mettre `SEED_ON_DEPLOY=true` pour le premier démarrage (référentiels, comptes de démonstration et jeu de présentation : deux années de dossiers cohérents), puis le repasser à `false`.
 
 Au démarrage, `docker/entrypoint.sh` joue les migrations et resynchronise les rôles et permissions
 (`RolePermissionSeeder`, idempotent) : une permission ajoutée par une nouvelle version est donc donnée à l'admin sans geste.

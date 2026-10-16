@@ -47,10 +47,10 @@ class UserSeed extends Seeder
         // Un demandeur d'exemple. Les acteurs de la filière n'ont pas de compte :
         // le délégué de pôle saisit leurs demandes.
         Acteur::create([
-            'nom' => 'acteur',
+            'nom' => 'Degny Alfred',
             'date_naissance' => '2003-06-25',
             'telephone' => '0758221948',
-            'email' => 'acteur@example.com',
+            'email' => 'freddegny@gmail.com',
         ]);
 
         // Le DP de démonstration couvre tous les départements.

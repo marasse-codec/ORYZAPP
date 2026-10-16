@@ -44,6 +44,40 @@ class Campagne extends Model implements EstUtilisable
             ?? self::orderByDesc('mois_debut_campagne')->first();
     }
 
+    /**
+     * L'année d'un cycle : celle de son début. Un cycle de novembre 2026 à février 2027
+     * appartient à 2026. On choisit d'abord l'année, puis l'un de ses cycles.
+     */
+    public function annee(): int
+    {
+        return (int) $this->mois_debut_campagne->year;
+    }
+
+    /** « Cycle 2 (2026) » : le cycle et son année, pour les listes de choix. */
+    public function libelleComplet(): string
+    {
+        return "{$this->lib_campagne} ({$this->annee()})";
+    }
+
+    /** Les cycles d'une année, du premier au dernier. */
+    public function scopeDeLAnnee($query, int $annee)
+    {
+        return $query->whereYear('mois_debut_campagne', $annee)->orderBy('mois_debut_campagne');
+    }
+
+    /**
+     * Les années qui ont au moins un cycle, de la plus récente à la plus ancienne.
+     *
+     * @return \Illuminate\Support\Collection<int, int>
+     */
+    public static function annees()
+    {
+        return self::orderByDesc('mois_debut_campagne')->get(['mois_debut_campagne'])
+            ->map(fn (self $c) => $c->annee())
+            ->unique()
+            ->values();
+    }
+
     /** Les campagnes encore ouvertes : seules elles acceptent de nouvelles demandes. */
     public function scopeOuvertes($query)
     {

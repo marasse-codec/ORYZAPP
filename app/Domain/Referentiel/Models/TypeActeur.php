@@ -35,6 +35,25 @@ class TypeActeur extends Model implements EstUtilisable
         return $this->hasMany(Demande::class, 'id_type_acteur', 'id_type_acteur');
     }
 
+    /** Un producteur individuel agit en son nom propre : il n'a pas de structure. */
+    public function estIndividuel(): bool
+    {
+        return $this->code_type_acteur === 'PIN';
+    }
+
+    /**
+     * Le nom de structure à garder sur une demande de ce type : aucun pour un individuel,
+     * même si l'acteur s'était présenté auparavant au nom d'une coopérative.
+     */
+    public static function structureRetenue(int|string|null $idTypeActeur, ?string $nomStructure): ?string
+    {
+        if (blank($nomStructure) || self::find($idTypeActeur)?->estIndividuel()) {
+            return null;
+        }
+
+        return trim($nomStructure);
+    }
+
     /** Utilisé : on ne le supprime pas. */
     public function estUtilise(): bool
     {

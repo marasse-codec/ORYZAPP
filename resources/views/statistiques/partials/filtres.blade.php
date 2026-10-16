@@ -1,24 +1,15 @@
 {{--
     Barre de filtres des statistiques. Paramètres : $action (URL du formulaire),
     $filtre (FiltreStatistique), les listes ($departements, $localites, $typesAppuis,
-    $typesActeurs) et, en option, $avecCampagne + $campagnes + $campagne pour choisir la campagne,
-    ou $campagnesACocher (ids) pour cocher plusieurs campagnes à comparer.
+    $typesActeurs) et, en option, $avecCampagne (+ $annees, $annee, $cycles, $campagne) pour choisir
+    l'année puis le cycle, ou $campagnesACocher (ids) pour cocher plusieurs cycles à comparer.
     Un filtre vide est ignoré : « Tous » = pas de restriction.
 --}}
 @php $p = $filtre?->parametres() ?? []; @endphp
 <x-ui.card titre="Filtres">
     <form method="GET" action="{{ $action }}" class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         @if ($avecCampagne ?? false)
-            <label class="text-sm">
-                <span class="text-[--color-muted]">Campagne</span>
-                <select name="campagne" class="mt-1 w-full rounded-lg border-slate-300 text-sm">
-                    @foreach ($campagnes as $option)
-                        <option value="{{ $option->id_campagne }}" @selected($campagne && $option->is($campagne))>
-                            {{ $option->lib_campagne }} ({{ $option->mois_debut_campagne->format('m/Y') }} - {{ $option->mois_fin_campagne->format('m/Y') }}){{ $option->estCloturee() ? ' · clôturée' : '' }}
-                        </option>
-                    @endforeach
-                </select>
-            </label>
+            @include('statistiques.partials.choix-cycle')
         @endif
 
         @foreach ([
@@ -48,15 +39,29 @@
         </label>
 
         @isset($campagnesACocher)
-            {{-- Comparaison : les campagnes à mettre côte à côte (les 5 plus récentes si rien n'est coché). --}}
+            {{-- Comparaison : une année (tous ses cycles) ou des cycles cochés, regroupés par année. --}}
+            <label class="text-sm">
+                <span class="text-[--color-muted]">Année</span>
+                <select name="annee" class="mt-1 w-full rounded-lg border-slate-300 text-sm">
+                    <option value="">Cycles cochés ci-dessous</option>
+                    @foreach ($annees as $option)
+                        <option value="{{ $option }}" @selected($option === ($anneeChoisie ?? null))>Tous les cycles de {{ $option }}</option>
+                    @endforeach
+                </select>
+            </label>
             <fieldset class="text-sm sm:col-span-2 lg:col-span-4">
-                <legend class="text-[--color-muted]">Campagnes comparées</legend>
-                <div class="mt-1 flex flex-wrap gap-x-4 gap-y-1">
-                    @foreach ($campagnes as $option)
-                        <label class="inline-flex items-center gap-1.5">
-                            <input type="checkbox" name="campagnes[]" value="{{ $option->id_campagne }}" @checked(in_array($option->id_campagne, $campagnesACocher)) class="rounded border-slate-300">
-                            {{ $option->lib_campagne }}
-                        </label>
+                <legend class="text-[--color-muted]">Cycles comparés</legend>
+                <div class="mt-1 space-y-1">
+                    @foreach ($campagnes->groupBy(fn ($c) => $c->annee()) as $anneeGroupe => $cyclesGroupe)
+                        <div class="flex flex-wrap items-center gap-x-4 gap-y-1">
+                            <span class="w-12 font-semibold text-slate-700">{{ $anneeGroupe }}</span>
+                            @foreach ($cyclesGroupe->sortBy('mois_debut_campagne') as $option)
+                                <label class="inline-flex items-center gap-1.5">
+                                    <input type="checkbox" name="campagnes[]" value="{{ $option->id_campagne }}" @checked(in_array($option->id_campagne, $campagnesACocher)) class="rounded border-slate-300">
+                                    {{ $option->lib_campagne }}
+                                </label>
+                            @endforeach
+                        </div>
                     @endforeach
                 </div>
             </fieldset>
